@@ -19,7 +19,7 @@ Welcome to the documentation for the Leave Tracking Tool! This tool is designed 
 
 The Leave Tracking Tool consists of the following components:
 
-- **Django Backend: Implements the core logic and provides API endpoints for managing leave requests.
+- **Django Backend**: Implements the core logic and provides API endpoints for managing leave requests.
 - **Django Rest Framework (DRF) Backend**: Implements the core logic and provides API endpoints for managing leave requests and user onboarding.
 - **PostgreSQL Database**: Stores data related to users, leave requests, and other application entities.
 - **OAuth2 Authentication**: Utilizes OAuth2 for secure authentication and authorization of users accessing the API.
