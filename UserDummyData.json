@@ -1,0 +1,92 @@
+[
+    {
+        "email": "john.doe1@example.com",
+        "first_name": "John",
+        "last_name": "Doe",
+        "doj": "2023-01-01",
+        "phone_number": "1234567890",
+        "emergency_contact": "9876543210",
+        "gender": "M",
+        "work_status": "WFH"
+    },
+    {
+        "email": "jane.smith@example.com",
+        "first_name": "Jane",
+        "last_name": "Smith",
+        "doj": "2023-02-15",
+        "phone_number": "1234567891",
+        "emergency_contact": "9876543211",
+        "gender": "F",
+        "work_status": "WFO"
+    },
+    {
+        "email": "michael.jackson@example.com",
+        "first_name": "Michael",
+        "last_name": "Jackson",
+        "doj": "2023-03-20",
+        "phone_number": "1234567892",
+        "emergency_contact": "9876543212",
+        "gender": "M",
+        "work_status": "WFH"
+    },
+    {
+        "email": "mary.johnson@example.com",
+        "first_name": "Mary",
+        "last_name": "Johnson",
+        "doj": "2023-04-25",
+        "phone_number": "1234567893",
+        "emergency_contact": "9876543213",
+        "gender": "F",
+        "work_status": "WFO"
+    },
+    {
+        "email": "james.bond@example.com",
+        "first_name": "James",
+        "last_name": "Bond",
+        "doj": "2023-05-10",
+        "phone_number": "1234567894",
+        "emergency_contact": "9876543214",
+        "gender": "M",
+        "work_status": "WFH"
+    },
+    {
+        "email": "john.doe2@example.com",
+        "first_name": "John",
+        "last_name": "Doe",
+        "doj": "2023-01-01",
+        "phone_number": "1234567891",
+        "emergency_contact": "9876543211",
+        "gender": "M",
+        "work_status": "WFH"
+    },
+    {
+        "email": "susan.davis@example.com",
+        "first_name": "Susan",
+        "last_name": "Davis",
+        "doj": "2023-06-15",
+        "phone_number": "1234567895",
+        "emergency_contact": "9876543215",
+        "gender": "F",
+        "work_status": "WFO"
+    },
+    {
+        "email": "david.jones@example.com",
+        "first_name": "David",
+        "last_name": "Jones",
+        "doj": "2023-07-20",
+        "phone_number": "1234567896",
+        "emergency_contact": "9876543216",
+        "gender": "M",
+        "work_status": "WFH"
+    },
+    {
+        "email": "emily.wilson@example.com",
+        "first_name": "Emily",
+        "last_name": "Wilson",
+        "doj": "2023-08-25",
+        "phone_number": "1234567897",
+        "emergency_contact": "9876543217",
+        "gender": "F",
+        "work_status": "WFO"
+    }
+]
