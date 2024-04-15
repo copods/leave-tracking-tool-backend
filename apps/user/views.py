@@ -4,11 +4,17 @@ from rest_framework import status
 from .models import User
 from .serializers import UserSerializers
 from rest_framework import generics
+# from django.shortcuts import render, redirect
+# from django.contrib.auth import logout
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 class UserListCreateAPIView(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializers
+    authentication_classes = [JWTAuthentication]  
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data, many=True)
@@ -20,6 +26,8 @@ class UserListCreateAPIView(generics.ListCreateAPIView):
 class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializers
+    authentication_classes = [JWTAuthentication]  
+    permission_classes = [IsAuthenticated]
 
     def put(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
@@ -33,3 +41,5 @@ class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
         instance = self.get_object()
         self.perform_destroy(instance)
         return Response({"message": "User deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+    
+

@@ -1,0 +1,17 @@
+#TODO LATER
+
+
+POST http://127.0.0.1:8000/api/v1/user/
+Content-Type: application/json
+
+{
+    "email": "john.doe3222@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "doj": "2023-01-01",
+    "phone_number": "1234567892",
+    "emergency_contact": "9876543212",
+    "gender": "M",
+    "work_status": "WFH",
+},
+

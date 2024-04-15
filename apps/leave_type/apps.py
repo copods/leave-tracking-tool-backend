@@ -3,4 +3,4 @@ from django.apps import AppConfig
 
 class LeaveTypeConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "leave_type"
+    name = "apps.leave_type"
