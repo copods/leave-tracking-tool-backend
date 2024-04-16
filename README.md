@@ -1,10 +1,6 @@
 
 # Leave Tracking Tool Documentation
 
-Certainly! Here's the README file tailored for an existing Django project already pushed to GitHub:
-
----
-
 This is a Django project that utilizes a PostgreSQL database and includes instructions for setting up the project and creating a superuser.
 
 ## Prerequisites
