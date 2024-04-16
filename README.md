@@ -1,14 +1,13 @@
 
 # Leave Tracking Tool Documentation
 
-This is a Django project that utilizes a PostgreSQL database and includes instructions for setting up the project and creating a superuser.
+This is a Django project that utilizes a PostgreSQL database and includes instructions for setting up the project, creating a superuser, and running it locally.
 
 ## Prerequisites
 
 Before you begin, ensure you have the following installed on your system:
 
 - Python (3.x recommended)
-- Django
 - PostgreSQL
 
 ## Setting Up Locally
@@ -18,23 +17,95 @@ Before you begin, ensure you have the following installed on your system:
     git clone https://github.com/your_username/your_repository.git
     ```
 
-2. Navigate into the project directory:
+2. Create a new virtual environment:
+    ```bash
+    python3 -m venv env
+    ```
+
+3. Activate the virtual environment:
+    - On Windows:
+        ```bash
+        env\Scripts\activate
+        ```
+    - On macOS and Linux:
+        ```bash
+        source env/bin/activate
+        ```
+
+4. Navigate into the project directory:
     ```bash
     cd your_project_name
     ```
 
-3. Install the necessary Django packages:
+5. Install the necessary Django packages:
     ```bash
     pip install -r requirements.txt
     ```
 
-4. Ensure PostgreSQL is installed on your system and running.
+6. Ensure PostgreSQL is installed on your system and running.
 
-5. Create a new PostgreSQL database for your Django project.
+    ### Installing PostgreSQL with pgAdmin (MacOS/Windows)
 
-6. Configure your Django project settings to use PostgreSQL:
-    - Open `your_project_name/settings.py` in your preferred text editor.
-    - Update the `DATABASES` setting with your PostgreSQL configuration.
+1. **Download PostgreSQL Installer:**
+   - Visit the [official PostgreSQL download page](https://www.postgresql.org/download/windows/) for Windows.
+   - Choose the version appropriate for your system (32-bit or 64-bit).
+   - Click on the download link to download the PostgreSQL installer.
+
+2. **Run the Installer:**
+   - Once the installer is downloaded, double-click on it to run it.
+   - Follow the installation wizard's instructions:
+     - Choose the installation directory.
+     - Select the components to install. Make sure to select pgAdmin as one of the components to install.
+     - Choose a password for the `postgres` user when prompted.
+
+3. **Install pgAdmin:**
+   - During the PostgreSQL installation, make sure to select pgAdmin for installation.
+
+4. **Complete the Installation:**
+   - Continue following the installation wizard's instructions until the installation process is complete.
+
+5. **Start pgAdmin:**
+   - After the installation is finished, you can start pgAdmin by searching for it in the Start menu or launching it from the installed directory.
+
+
+    ### Setting Up PostgreSQL Database in pgAdmin
+
+Follow the steps mentioned in the previous response under "Setting Up PostgreSQL Database in pgAdmin" section for both Windows and macOS.
+
+Now you have PostgreSQL installed with pgAdmin and a database set up ready for use with your Django project. Make sure to update your Django project's settings to use the newly created PostgreSQL database.
+
+
+6. Create a `.env` file in the project directory with the following format:
+    ```plaintext
+    DB_NAME=Leave_Tracking_Tool
+    DB_USER=postgres
+    DB_PASSWORD=admin
+    DB_HOST=127.0.0.1
+    DB_PORT=5432
+    ```
+
+7. Update your Django project's settings to use the PostgreSQL configuration from the `.env` file:
+    - Open `your_project_name/settings/base.py` in a text editor.
+    - Update the `DATABASES` setting with the following code:
+        ```python
+        import os
+
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql_psycopg2',
+                'NAME': os.getenv('DB_NAME'),
+                'USER': os.getenv('DB_USER'),
+                'PASSWORD': os.getenv('DB_PASSWORD'),
+                'HOST': os.getenv('DB_HOST'),
+                'PORT': os.getenv('DB_PORT'),
+            }
+        }
+        ```
+   ## Migrate the models into the database:
+    ```bash
+    python manage.py makemigrations
+    python manage.py migrate
+    ```
 
 ## Creating a Superuser
 
@@ -57,6 +128,7 @@ Before you begin, ensure you have the following installed on your system:
 2. Open your web browser and visit `http://127.0.0.1:8000/` to view your Django project.
 
 3. To access the Django admin interface, go to `http://127.0.0.1:8000/admin/` and log in using the superuser credentials you created.
+
 
 ## Additional Resources
 
