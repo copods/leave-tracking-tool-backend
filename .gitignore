@@ -12,5 +12,5 @@ env
 #src
 *.sqlite*
 
-.venv
+venv
 .env
