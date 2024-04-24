@@ -1,11 +1,11 @@
 from django.urls import path
 from apps.user.views import UserListCreateAPIView, UserRetrieveUpdateDestroyAPIView
 from apps.user import views
-from apps.authentication.views import googleSignIn, validate_token
+from apps.authentication.views import GoogleSignInView,AccessTokenValidateView, RefreshTokenView
 from rest_framework_simplejwt import views as jwt_views
-from allauth.account.views import LoginView
+# from allauth.account.views import LoginView
 # from apps.auth.googleServices.google import GoogleLoginAPIView
-from apps.allauth.accounts import views
+# from apps.allauth.accounts import views
 
 urlpatterns = [
     #USER API's
@@ -16,8 +16,9 @@ urlpatterns = [
     
 
 
-    path('v1/authenticate', googleSignIn , name='googleSignIn'),
-    path('v1/validate', validate_token , name='validate_token'),
+    path('v1/authenticate', GoogleSignInView.as_view(), name='googleSignIn'),
+    path('v1/validate', AccessTokenValidateView.as_view(), name='validate_token'),
+    path('v1/refresh', RefreshTokenView.as_view(), name='refresh_token'),
     
     # path('login/', LoginView.as_view(), name='signup'),
     # path("profile/", views.profile),

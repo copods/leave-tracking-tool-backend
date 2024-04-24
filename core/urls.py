@@ -7,9 +7,9 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     
     #GOOGLE SERVICE
-    path(
-        "google_sso/", include("django_google_sso.urls", namespace="django_google_sso")
-    ),
+    # path(
+    #     "google_sso/", include("django_ google_sso.urls", namespace="django_google_sso")
+    # ),
     #APP
     path('api/', include('apps.api.v1.urls')),
     

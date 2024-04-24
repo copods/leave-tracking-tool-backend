@@ -1,26 +1,37 @@
-from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
+from datetime import datetime
 from django.http import JsonResponse
 from google.oauth2 import id_token
 from google.auth.transport import requests
-import json
+import os
 from django.core.exceptions import MultipleObjectsReturned
 from django.contrib.auth.models import User
-from rest_framework_simplejwt.tokens import AccessToken
-from rest_framework.decorators import api_view
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.decorators import api_view
+from dotenv import load_dotenv
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 
-@csrf_exempt 
-@api_view(['POST'])
-def googleSignIn(request):
-    if request.method == 'POST':
-        # print(request.body)  # Check post data
+load_dotenv()
 
-        # data = json.loads(request.body.decode('utf-8'))
-        # token = data.get('token')
-        # email = data.get('email')
+def get_or_create_user(email):
+    users = User.objects.filter(email=email)
+    if users.count() > 1:
+        user = users.first()
+    else:
+        user, created = User.objects.get_or_create(email=email)
+    return user
 
+def generate_tokens(user):
+    access_token = AccessToken.for_user(user)
+    refresh_token = RefreshToken.for_user(user)
+    return access_token, refresh_token
+
+class GoogleSignInView(APIView):
+    @csrf_exempt
+    @staticmethod
+    def post(self,request):
         token = request.data.get('token')
         email = request.data.get('email')
 
@@ -28,28 +39,13 @@ def googleSignIn(request):
         print("email", email)
 
         try:
-            CLIENT_ID = '357319250308-3m2228pa5kq64kcooi65ehej5snr0svg.apps.googleusercontent.com'
+            CLIENT_ID = os.getenv('SECRET_KEY')
             id_info = id_token.verify_oauth2_token(token, requests.Request(), CLIENT_ID)
             print(id_info)
             if id_info['email'] == email:
                 request.session['user_email'] = email
-                # return JsonResponse({'message': 'Authentication successful'})
-                #after successfull validation, retrieve or create user
-                
-                # query users by email
-                users = User.objects.filter(email = email)
-
-                #if multiple
-                if users.count() >1:
-                    user = users.first()
-                else:
-                    user, created = User.objects.get_or_create(email = email)
-
-
-
-                #generate JWT token
-                access_token =AccessToken.for_user(user)
-                refresh_token = RefreshToken.for_user(user)
+                user = get_or_create_user(email)
+                access_token, refresh_token = generate_tokens(user)
 
                 return Response({
                     'access_token': str(access_token),
@@ -59,25 +55,47 @@ def googleSignIn(request):
             else:
                 return Response({'error': 'Email mismatch'}, status=400)
             
-            
         except ValueError as e:
-            # Invalid token
             return Response({'error': 'Invalid token'}, status=400)
-        # except Exception as e:
-        #     return JsonResponse({'error': str(e)}, status=400)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
+
+
+class AccessTokenValidateView(APIView):
+    @csrf_exempt
+    @staticmethod
+    def post(self,request):
+        token = request.data.get('access_token')
+        try:
+            access_token = AccessToken(token)
+            current_time = timezone.now()
+            token_expires_at = access_token['exp']
+
+            if (access_token):
+                if current_time < datetime.fromtimestamp(token_expires_at):
+                    return Response({'valid': True})
+                else:
+                    return Response({'valid': False, 'error': 'Access token has expired'})
+
+        except Exception as e:
+            return Response({'valid': False, 'error': str(e)})
+
+class RefreshTokenView(APIView):
+    @csrf_exempt
+    def post(self,request):
         
+        refresh_token = request.data.get('refresh_token')
+        if not refresh_token:
+            return Response({'error': 'Refresh token is missing'}, status=400)
         
-    else:
-        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
-    
-
-
-@api_view(['POST'])
-def validate_token(request):
-    token = request.data.get('access_token')
-    try:
-        AccessToken(token) #will give error if not valid token
-        return Response({'valid' : True})
-
-    except Exception as e:
-        return Response({'valid' : False, 'error':str(e)})
+        try:
+            refresh_token_obj = RefreshToken(refresh_token)
+            if not refresh_token_obj.token:
+                return Response({'error': 'Invalid refresh token'}, status=400)
+            
+            access_token = refresh_token_obj.access_token
+            return Response({'access_token': str(access_token)})
+        except Exception as e:
+            print(str(e))
+            return Response({'error': str(e)}, status=400)

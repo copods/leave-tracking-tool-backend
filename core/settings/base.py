@@ -40,13 +40,6 @@ EXTERNAL_APPS = [
     'apps.user',
     'rest_framework',
     
-    "django_google_sso",
-    
-    
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "allauth.socialaccount.providers.google",
 
     # "debug_toolbar",
     # # 'oauth2_provider',
@@ -116,6 +109,7 @@ DATABASES = {
     }
 }
 
+# SECRET_ID = str(os.getenv('WEB_CLIENT_ID'))
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -274,7 +268,7 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES':('JWT',),
-    'ACCESS_TOKEN_LIFETIME': timedelta(milliseconds=500),
+    'ACCESS_TOKEN_LIFETIME': timedelta(seconds=5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -282,13 +276,13 @@ SIMPLE_JWT = {
 }
 
 CORS_ORIGIN_ALLOW_ALL = True
-CSRF_COOKIE_SECURE = "Null"
+CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
-
+SESSION_COOKIE_SECURE = True
 
 # # Google OAuth2 settings
-GOOGLE_SSO_CLIENT_ID = '235885884053-98m5vbfnv48jq8pqm3airkflco052hff.apps.googleusercontent.com'
-GOOGLE_SSO_CLIENT_SECRET = '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'
-GOOGLE_SSO_ALLOWABLE_DOMAINS = ["gmail.com", "copods.co"]
-GOOGLE_SSO_AUTO_CREATE_USERS = True
-# SSO_SHOW_FORM_ON_ADMIN_PAGE = False
+# GOOGLE_SSO_CLIENT_ID = '235885884053-98m5vbfnv48jq8pqm3airkflco052hff.apps.googleusercontent.com'
+# GOOGLE_SSO_CLIENT_SECRET = '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'
+# GOOGLE_SSO_ALLOWABLE_DOMAINS = ["gmail.com", "copods.co"]
+# GOOGLE_SSO_AUTO_CREATE_USERS = True
+# # SSO_SHOW_FORM_ON_ADMIN_PAGE = False
