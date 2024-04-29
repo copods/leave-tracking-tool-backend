@@ -39,8 +39,8 @@ class GoogleSignInView(APIView):
         print("email", email)
 
         try:
-            CLIENT_ID = os.getenv('SECRET_KEY')
-            id_info = id_token.verify_oauth2_token(token, requests.Request(), CLIENT_ID)
+            id_info = id_token.verify_oauth2_token(token, requests.Request())
+      
             print(id_info)
             if id_info['email'] == email:
                 request.session['user_email'] = email
