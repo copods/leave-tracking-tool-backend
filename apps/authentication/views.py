@@ -20,7 +20,7 @@ def get_or_create_user(email):
     if users.count() > 1:
         user = users.first()
     else:
-        user, created = User.objects.get_or_create(email=email)
+        user= User.objects.get_or_create(email=email)
     return user
 
 def generate_tokens(user):
@@ -47,7 +47,7 @@ class GoogleSignInView(APIView):
                     'refresh_token': str(refresh_token),
                 })
             else:
-                return Response({'error': 'Email mismatch'}, status=400)
+                return Response({'error': 'Invalid Credentials.'}, status=400)
         except ValueError as e:
             return Response({'error': 'Invalid token'}, status=400)
         except Exception as e:
@@ -85,5 +85,4 @@ class RefreshTokenView(APIView):
             access_token = refresh_token_obj.access_token
             return Response({'access_token': str(access_token)})
         except Exception as e:
-            print(str(e))
             return Response({'error': str(e)}, status=400)

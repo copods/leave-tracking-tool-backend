@@ -15,13 +15,10 @@ class User(models.Model):
     work_status = models.CharField(max_length=3, choices=WORK_STATUS_CHOICES)
     created_date = models.DateTimeField(default=timezone.now)
     modified_date = models.DateTimeField(default=timezone.now)
-    
     def __str__(self):
         return self.email
-    
     def short_name(self):
         return self.first_name
-    
     def long_name(self):
         return f'(self.first_name) (self.last_name)'
     

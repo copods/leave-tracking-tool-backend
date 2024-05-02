@@ -20,11 +20,7 @@ WORK_STATUS_CHOICES = [
     ('WFO', 'Work From Office'),
     ('WFH', 'Work From Home')
 ]
-
-ADMIN = 1
-STAFF = 2
-USER = 3
-    
+  
 ROLE_CHOICES = (
     ('ADMIN', 'Admin'),
     ('STAFF', 'Staff'),
