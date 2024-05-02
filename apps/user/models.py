@@ -3,7 +3,6 @@ import uuid
 from django.utils import timezone
 from .constants import *
 
-
 # USER-CLASS
 class User(models.Model):
     email = models.EmailField(unique=True)
@@ -16,7 +15,6 @@ class User(models.Model):
     work_status = models.CharField(max_length=3, choices=WORK_STATUS_CHOICES)
     created_date = models.DateTimeField(default=timezone.now)
     modified_date = models.DateTimeField(default=timezone.now)
-    
     
     def __str__(self):
         return self.email

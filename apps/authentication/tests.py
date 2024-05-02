@@ -47,7 +47,7 @@ class GoogleSignInViewTest(APITestCase):
 
 
 class AccessTokenValidateViewTest(APITestCase):
-
+#(WIP) Test case fialing
     # def test_access_token_validation_success(self):
     #     url = reverse('validate_token')
     #     data = {'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzE0MzkwNzc4LCJpYXQiOjE3MTQzOTA3MTgsImp0aSI6ImE0YzMwYTUzNWE1YjRmY2RiMTA3ZTAzOGNlMmQ1OWQ1IiwidXNlcl9pZCI6MX0.fhwp646q3x4byxQdMS1-csSCUUYTPIst3LMfNsHac3A'}
@@ -70,7 +70,6 @@ class AccessTokenValidateViewTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['valid'], False)
         self.assertEqual(response.data['error'], 'Token is invalid or expired')
-
 
 
 class RefreshTokenViewTest(APITestCase):
