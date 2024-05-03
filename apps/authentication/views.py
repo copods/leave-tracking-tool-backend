@@ -15,12 +15,12 @@ from django.utils import timezone
 
 load_dotenv()
 
-def get_or_create_user(email):
+def get_user(email):
     users = User.objects.filter(email=email)
     if users.count() > 1:
         user = users.first()
     else:
-        user= User.objects.get_or_create(email=email)
+        user= User.objects.get(email=email)
     return user
 
 def generate_tokens(user):
@@ -40,7 +40,7 @@ class GoogleSignInView(APIView):
             id_info = id_token.verify_oauth2_token(token, requests.Request())
             if id_info['email'] == email:
                 request.session['user_email'] = email
-                user = get_or_create_user(email)
+                user = get_user(email)
                 access_token, refresh_token = generate_tokens(user)
                 return Response({
                     'access_token': str(access_token),
