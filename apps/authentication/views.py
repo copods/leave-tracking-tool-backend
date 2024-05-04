@@ -15,49 +15,37 @@ from django.utils import timezone
 
 load_dotenv()
 
-def get_or_create_user(email):
-    users = User.objects.filter(email=email)
-    if users.count() > 1:
-        user = users.first()
-    else:
-        user, created = User.objects.get_or_create(email=email)
-    return user
-
-def generate_tokens(user):
-    access_token = AccessToken.for_user(user)
-    refresh_token = RefreshToken.for_user(user)
-    return access_token, refresh_token
-
 class GoogleSignInView(APIView):
     @csrf_exempt
     @staticmethod
     def post(self,request):
-        token = request.data.get('token')
-        email = request.data.get('email')
+        token = request.data['token']
+        email = request.data['email']
 
-        print("Token:", token)
-        print("email", email)
+        #getting the platform from which the user is logging in
+        platform = request.data.get('platform')
 
         try:
+            #verify token and email
             id_info = id_token.verify_oauth2_token(token, requests.Request())
-      
-            print(id_info)
             if id_info['email'] == email:
-                request.session['user_email'] = email
-                user = get_or_create_user(email)
-                access_token, refresh_token = generate_tokens(user)
+                try:
+                    #check if user exists
+                    user = User.objects.get(email=email)
 
-                return Response({
-                    'access_token': str(access_token),
-                    'refresh_token': str(refresh_token),
-                })
-
+                    #check platform type and user's role
+                    if platform == 'web' and user.role not in {'ADMIN', 'SUPER-ADMIN'}:
+                        return Response({'error': 'Access denied, only admins are allowed'}, status=403)
+                    else:
+                        request.session['user_email'] = email
+                        access_token, refresh_token = generate_tokens(user)
+                        return Response({'access_token': str(access_token), 'refresh_token': str(refresh_token), 'user_role': user.role}, status=200)
+                except User.DoesNotExist:
+                    return Response({'error': 'Email not registered'}, status=401)
             else:
-                return Response({'error': 'Email mismatch'}, status=400)
-            
-        except ValueError as e:
+                return Response({'error': 'Email mismatch'}, status=401)
+        except ValueError:
             return Response({'error': 'Invalid token'}, status=400)
-
         except Exception as e:
             return Response({'error': str(e)}, status=400)
 
@@ -99,3 +87,10 @@ class RefreshTokenView(APIView):
         except Exception as e:
             print(str(e))
             return Response({'error': str(e)}, status=400)
+
+
+
+def generate_tokens(user):
+    access_token = AccessToken.for_user(user)
+    refresh_token = RefreshToken.for_user(user)
+    return access_token, refresh_token

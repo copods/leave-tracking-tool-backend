@@ -2,7 +2,7 @@ from django.db import models
 import uuid
 from django.utils import timezone
 from .constants import *
-
+from ..role.models import Role
 
 # USER-CLASS
 class User(models.Model):
@@ -16,7 +16,7 @@ class User(models.Model):
     work_status = models.CharField(max_length=3, choices=WORK_STATUS_CHOICES)
     created_date = models.DateTimeField(default=timezone.now)
     modified_date = models.DateTimeField(default=timezone.now)
-    
+    role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True) #Foreign key to Role model
     
     def __str__(self):
         return self.email
