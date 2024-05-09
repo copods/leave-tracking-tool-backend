@@ -1,7 +1,7 @@
 from django.urls import path
 from apps.role.views import GetPostRoles, GetPutDeleteRole
 from apps.user.views import UserListCreateAPIView, UserRetrieveUpdateDestroyAPIView
-from apps.authentication.views import GoogleSignInView,AccessTokenValidateView, RefreshTokenView
+from apps.authentication.views import GoogleSignInView,AccessTokenValidateView, RefreshTokenView, AdminPanelGoogleSignInView
 from rest_framework_simplejwt import views as jwt_views
 
 
@@ -21,6 +21,9 @@ urlpatterns = [
     path('v1/authenticate', GoogleSignInView.as_view(), name='googleSignIn'),
     path('v1/validate', AccessTokenValidateView.as_view(), name='validate_token'),
     path('v1/refresh', RefreshTokenView.as_view(), name='refresh_token'),
+    
+    #endpoint for web app sign in
+    path('v1/admin/authenticate', AdminPanelGoogleSignInView.as_view(), name='googleSignIn'),
 ]
     
 
