@@ -5,7 +5,7 @@ from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from dotenv import load_dotenv
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from .util_functions import authenticate_user
+from .auth_utils import authenticate_user
 
 load_dotenv()
 
