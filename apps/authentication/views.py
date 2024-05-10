@@ -5,21 +5,20 @@ from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from dotenv import load_dotenv
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from .auth_utils import authenticate_user
+from .auth_for_app.utils import sign_in_app
+from .auth_for_web.utils import sign_in_web
 
 load_dotenv()
 
 class GoogleSignInView(APIView):
     @csrf_exempt
-    @staticmethod
-    def post(self, request):
-        return authenticate_user(request)
+    def post(self, request):  
+        return sign_in_app(request)
 
 class AdminPanelGoogleSignInView(APIView):
     @csrf_exempt
-    @staticmethod
     def post(self, request):
-        return authenticate_user(request, roles_allowed={'ADMIN', 'SUPER-ADMIN'})
+        return sign_in_web(request)
 
 
 class AccessTokenValidateView(APIView):
