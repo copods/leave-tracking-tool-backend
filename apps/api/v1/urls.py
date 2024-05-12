@@ -1,7 +1,7 @@
 from django.urls import path
-from apps.role.views import GetPostRoles, GetPutDeleteRole
-from apps.user.views import UserListCreateAPIView, UserRetrieveUpdateDestroyAPIView
-from apps.authentication.views import GoogleSignInView,AccessTokenValidateView, RefreshTokenView
+from apps.role.views import *
+from apps.user.views import *
+from apps.authentication.views import *
 from rest_framework_simplejwt import views as jwt_views
 
 
@@ -11,6 +11,7 @@ urlpatterns = [
     path('v1/user/<int:pk>', UserRetrieveUpdateDestroyAPIView.as_view(), name='user-details'),
     path('token/', jwt_views.TokenObtainPairView.as_view(), name='token-obtain-pair-view'),
     path('token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token-refresh'),
+    path('v1/approver-list/', ApproverListView.as_view() , name='approvers'),
     
     #ROLE APIs
     path('v1/role/', GetPostRoles.as_view(), name='role'),
