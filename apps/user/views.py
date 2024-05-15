@@ -7,19 +7,22 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.http import JsonResponse
+from apps.authorization.decorators import user_has_permission, user_is_authenticated
+from django.utils.decorators import method_decorator
 
-
-
+@method_decorator(user_is_authenticated, name='dispatch')
 class UserListCreateAPIView(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializers
     # authentication_classes = [JWTAuthentication]  
     # permission_classes = [IsAuthenticated]
 
+    
+    @method_decorator(user_has_permission('getEmployeeList'), name='dispatch')
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
-    
+    @method_decorator(user_has_permission('addEmployee'), name='dispatch')
     def post(self, request, *args, **kwargs):
         data = request.data
         
@@ -46,17 +49,21 @@ class UserListCreateAPIView(generics.ListCreateAPIView):
             return JsonResponse({"message": f"Department '{dept_name}' does not exist."})
         
 
+@method_decorator(user_is_authenticated, name='dispatch')
 class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializers
     # authentication_classes = [JWTAuthentication]  
     # permission_classes = [IsAuthenticated]
 
+    
+    @method_decorator(user_has_permission('getEmployee'), name='dispatch')
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return JsonResponse(serializer.data, safe=False)
     
+    @method_decorator(user_has_permission('editEmployee'), name='dispatch')
     def put(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
@@ -64,7 +71,7 @@ class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
         self.perform_update(serializer)
         return JsonResponse(serializer.data, safe=False)
 
-    
+    @method_decorator(user_has_permission('deleteEmployee'), name='dispatch')
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
         self.perform_destroy(instance)
