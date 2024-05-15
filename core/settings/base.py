@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = os.environ.get('DEBUG') == 'True'
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost","10.0.2.2", "192.168.1.59", "192.168.1.104","0.0.0.0"]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost","10.0.2.2", "192.168.1.59", "192.168.1.104", "0.0.0.0", "159.89.175.231"]
 
 
 # Application definition
