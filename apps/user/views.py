@@ -59,23 +59,36 @@ class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     
     @method_decorator(user_has_permission('getEmployee'), name='dispatch')
     def get(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return JsonResponse(serializer.data, safe=False)
+        user_id = kwargs.get('id')
+        try:
+            user = User.objects.get(user_id=user_id)
+            serializer = self.get_serializer(user)
+            return JsonResponse(serializer.data, safe=False)
+        except User.DoesNotExist:
+            return JsonResponse({"message": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        
     
     @method_decorator(user_has_permission('editEmployee'), name='dispatch')
     def put(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return JsonResponse(serializer.data, safe=False)
+        user_id = kwargs.get('id')
+        try:
+            user = User.objects.get(user_id = user_id)
+            serializer = self.get_serializer(user, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return JsonResponse(serializer.data, safe=False)
+        except User.DoesNotExist:
+            return JsonResponse({"message": "User does not exists."}, status=status.HTTP_404_NOT_FOUND)
 
     @method_decorator(user_has_permission('deleteEmployee'), name='dispatch')
     def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        return JsonResponse({"message": "User deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        user_id = kwargs.get('id')
+        try:
+            user = User.objects.get(user_id = user_id)
+            self.perform_destroy(user)
+            return JsonResponse({"message": "User deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        except User.DoesNotExist:
+            return JsonResponse({"message": "User does not exists."}, status=status.HTTP_404_NOT_FOUND)
     
 
 class ApproverListView(APIView):

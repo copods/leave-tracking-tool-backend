@@ -5,7 +5,7 @@ from apps.user.models import User
 def isJWTValid(token):
     try:
         token = AccessToken(token)
-        return token.__getitem__('email')
+        return token.__getitem__('user_id')  #user_id is set to have the email in the token (see base settings file)
     except:
         return False
 

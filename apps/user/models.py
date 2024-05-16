@@ -19,7 +19,7 @@ def validate_phone_number(value):
 class User(models.Model):
     # Basic Information
     user_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="Public identifier")
-    email = models.EmailField(unique=True)
+    email = models.EmailField(primary_key=True,unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     phone_number = models.BigIntegerField(validators=[validate_phone_number])
