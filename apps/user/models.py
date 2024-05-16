@@ -16,35 +16,45 @@ def validate_phone_number(value):
             params={'value': value},
         )
 
-# USER-CLASS
 class User(models.Model):
+    # Basic Information
+    user_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="Public identifier")
     email = models.EmailField(unique=True)
-    first_name = models.CharField(max_length=20)
-    last_name = models.CharField(max_length=20)
-    doj = models.DateField()
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
     phone_number = models.BigIntegerField(validators=[validate_phone_number])
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
-    work_status = models.CharField(max_length=3, choices=WORK_STATUS_CHOICES)
-    created_date = models.DateTimeField(default=timezone.now)
-    modified_date = models.DateTimeField(default=timezone.now)
-    role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True)
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
-    dob = models.DateField(default=datetime.date.today)
+    dob = models.DateField()
+    profile_image = models.CharField(null=True)
+    
+    # Work Information
+    doj = models.DateField()
+    work_type = models.CharField(max_length=3, choices=WORK_STATUS_CHOICES, null=True)
     designation = models.CharField(max_length=100, null=True)
     work_location = models.CharField(max_length=100, null=True)
-    current_address_line = models.CharField(max_length=200, null=False, default='')
-    current_address_city = models.CharField(max_length=100, null=False, default='')
-    current_address_state = models.CharField(max_length=100, null=False, default='')
-    current_address_pincode = models.IntegerField(default=0, null=False)
-    permanent_address_line = models.CharField(max_length=200, null=False, default='')
-    permanent_address_city = models.CharField(max_length=100, null=False, default='')
-    permanent_address_state = models.CharField(max_length=100, null=False, default='') 
-    permanent_address_pincode = models.IntegerField(default=0, null=False)  
+    role = models.ForeignKey(Role, on_delete=models.PROTECT) #foreign key to role model
+    department = models.ForeignKey(Department, on_delete=models.PROTECT) #foreign key to department model
+    
+    # Address Information
+    current_address_line = models.CharField(max_length=200, null=True)
+    current_address_city = models.CharField(max_length=100, null=True)
+    current_address_state = models.CharField(max_length=100, null=True)
+    current_address_pincode = models.IntegerField(null=True)
+    permanent_address_line = models.CharField(max_length=200, null=True)
+    permanent_address_city = models.CharField(max_length=100, null=True)
+    permanent_address_state = models.CharField(max_length=100, null=True)
+    permanent_address_pincode = models.IntegerField(null=True)
+    
+    # Emergency Contact Information
     emergency_contact_name = models.CharField(max_length=100, null=True)
     emergency_contact_number = models.BigIntegerField(validators=[validate_phone_number],  null=True)
     emergency_contact_relation = models.CharField(max_length=100, null=True)
     emergency_contact_email = models.EmailField(max_length=100, null=True)
     
+    # Metadata
+    created_date = models.DateTimeField(default=timezone.now)
+    modified_date = models.DateTimeField(default=timezone.now)
+
     def short_name(self):
         return self.first_name
     
