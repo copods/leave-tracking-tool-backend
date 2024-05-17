@@ -15,18 +15,19 @@ from django.utils import timezone
 
 load_dotenv()
 
-def get_or_create_user(email):
+def get_user(email):
     users = User.objects.filter(email=email)
     if users.count() > 1:
         user = users.first()
     else:
-        user, created = User.objects.get_or_create(email=email)
+        user= User.objects.get(email=email)
     return user
 
 def generate_tokens(user):
     access_token = AccessToken.for_user(user)
     refresh_token = RefreshToken.for_user(user)
     return access_token, refresh_token
+
 
 class GoogleSignInView(APIView):
     @csrf_exempt
@@ -35,29 +36,20 @@ class GoogleSignInView(APIView):
         token = request.data.get('token')
         email = request.data.get('email')
 
-        print("Token:", token)
-        print("email", email)
-
         try:
             id_info = id_token.verify_oauth2_token(token, requests.Request())
-      
-            print(id_info)
             if id_info['email'] == email:
                 request.session['user_email'] = email
-                user = get_or_create_user(email)
+                user = get_user(email)
                 access_token, refresh_token = generate_tokens(user)
-
                 return Response({
                     'access_token': str(access_token),
                     'refresh_token': str(refresh_token),
                 })
-
             else:
-                return Response({'error': 'Email mismatch'}, status=400)
-            
+                return Response({'error': 'Invalid Credentials.'}, status=400)
         except ValueError as e:
             return Response({'error': 'Invalid token'}, status=400)
-
         except Exception as e:
             return Response({'error': str(e)}, status=400)
 
@@ -71,31 +63,26 @@ class AccessTokenValidateView(APIView):
             access_token = AccessToken(token)
             current_time = timezone.now()
             token_expires_at = access_token['exp']
-
             if (access_token):
                 if current_time < datetime.fromtimestamp(token_expires_at):
                     return Response({'valid': True})
                 else:
                     return Response({'valid': False, 'error': 'Access token has expired'})
-
         except Exception as e:
             return Response({'valid': False, 'error': str(e)})
 
+
 class RefreshTokenView(APIView):
     @csrf_exempt
-    def post(self,request):
-        
+    def post(self,request):    
         refresh_token = request.data.get('refresh_token')
         if not refresh_token:
-            return Response({'error': 'Refresh token is missing'}, status=400)
-        
+            return Response({'error': 'Refresh token is missing'}, status=400)    
         try:
             refresh_token_obj = RefreshToken(refresh_token)
             if not refresh_token_obj.token:
-                return Response({'error': 'Invalid refresh token'}, status=400)
-            
+                return Response({'error': 'Invalid refresh token'}, status=400)        
             access_token = refresh_token_obj.access_token
             return Response({'access_token': str(access_token)})
         except Exception as e:
-            print(str(e))
             return Response({'error': str(e)}, status=400)

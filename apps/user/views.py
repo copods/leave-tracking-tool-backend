@@ -21,6 +21,7 @@ class UserListCreateAPIView(generics.ListCreateAPIView):
         headers = self.get_success_headers(serializer.data)
         return JsonResponse(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+
 class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializers
