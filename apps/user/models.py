@@ -4,6 +4,7 @@ from django.utils import timezone
 from .constants import *
 from ..role.models import Role
 
+
 # USER-CLASS
 class User(models.Model):
     email = models.EmailField(unique=True)
@@ -18,12 +19,11 @@ class User(models.Model):
     modified_date = models.DateTimeField(default=timezone.now)
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True) #Foreign key to Role model
     
+
     def __str__(self):
         return self.email
-    
     def short_name(self):
         return self.first_name
-    
     def long_name(self):
         return f'(self.first_name) (self.last_name)'
     

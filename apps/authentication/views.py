@@ -10,6 +10,7 @@ from .auth_for_web.utils import sign_in_web
 
 load_dotenv()
 
+
 class GoogleSignInView(APIView):
     @csrf_exempt
     def post(self, request):  
@@ -20,7 +21,7 @@ class AdminPanelGoogleSignInView(APIView):
     def post(self, request):
         return sign_in_web(request)
 
-
+      
 class AccessTokenValidateView(APIView):
     @csrf_exempt
     @staticmethod
@@ -34,6 +35,7 @@ class AccessTokenValidateView(APIView):
                 return Response({'valid': True})
             else:
                 return Response({'valid': False, 'error': 'Access token has expired'})
+
         except Exception as e:
             return Response({'valid': False, 'error': str(e)})
 
