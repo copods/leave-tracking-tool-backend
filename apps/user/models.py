@@ -54,9 +54,7 @@ class User(models.Model):
     # Metadata
     created_date = models.DateTimeField(default=timezone.now)
     modified_date = models.DateTimeField(default=timezone.now)
-
     def short_name(self):
         return self.first_name
-    
     def long_name(self):
         return f'{self.first_name} {self.last_name}'
