@@ -20,9 +20,30 @@ class UserListCreateAPIView(generics.ListCreateAPIView):
     
     @method_decorator(user_has_permission('getEmployeeList'), name='dispatch')
     def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
+        query_params = request.query_params
+        
+        if query_params:
+            filters = {}
+            for param, value in query_params.items():
+                if param == 'role':
+                    filters['role__role_name'] = value
+                elif param == 'department':
+                    filters['department__dept_name'] = value
+                else:
+                    filters[param] = value
+            
+            query = self.queryset.filter(**filters)
+            serializer = UserListSerializer(query, many=True)
+            return JsonResponse(serializer.data, safe=False)
 
-    @method_decorator(user_has_permission('addEmployee'), name='dispatch')
+        else:
+            all_users = self.get_queryset()
+            serializer = UserListSerializer(all_users, many=True)
+            return JsonResponse(serializer.data, safe=False)
+
+        
+
+    # @method_decorator(user_has_permission('addEmployee'), name='dispatch')
     def post(self, request, *args, **kwargs):
         data = request.data
         
