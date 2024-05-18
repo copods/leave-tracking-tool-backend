@@ -1,9 +1,7 @@
-
-
 # Global permissions list
 permission_list = {
         'admin': {'getEmployee', 'editEmployee', 'deleteEmployee', 'getEmployeeList', 'addEmployee'},
-        'team lead': {'getEmployee', 'getEmployeeList'},
+        'team lead': {'getEmployee'},
         'team member': {'getEmployee'},
     }
 

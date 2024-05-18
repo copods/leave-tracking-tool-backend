@@ -1,5 +1,4 @@
-from django.http import JsonResponse
-from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+from rest_framework_simplejwt.tokens import AccessToken
 from apps.user.models import User
 
 def isJWTValid(token):

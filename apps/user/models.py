@@ -1,13 +1,11 @@
-import datetime
 from django.db import models
 import uuid
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-
-from .constants import *
-from ..role.models import Role
-from ..department.models import Department
+from apps.user.constants import GENDER_CHOICES, WORK_STATUS_CHOICES
+from apps.role.models import Role
+from apps.department.models import Department
 
 def validate_phone_number(value):
     if len(str(value)) != 10:
@@ -54,6 +52,7 @@ class User(models.Model):
     # Metadata
     created_date = models.DateTimeField(default=timezone.now)
     modified_date = models.DateTimeField(default=timezone.now)
+    
     def short_name(self):
         return self.first_name
     def long_name(self):
