@@ -9,10 +9,11 @@ def isJWTValid(token):
         return False
 
 def getRole(user_email):
-    if not user_email:
-        return False
-    try:
-        user = User.objects.get(email=user_email)
-        return user.role.role_name
-    except:
+    if user_email:
+        try:
+            user = User.objects.get(email=user_email)
+            return user.role.role_name
+        except:
+            return False
+    else:
         return False
