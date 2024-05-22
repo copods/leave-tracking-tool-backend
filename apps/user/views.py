@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework.decorators import api_view
 from apps.department.models import Department
 from apps.role.models import Role
 from .models import User
@@ -9,6 +10,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.http import JsonResponse
 from apps.authorization.decorators import user_has_permission, user_is_authenticated
 from django.utils.decorators import method_decorator
+from django.db.models import Q
 
 @method_decorator(user_is_authenticated, name='dispatch')
 class UserListCreateAPIView(generics.ListCreateAPIView):
@@ -17,33 +19,7 @@ class UserListCreateAPIView(generics.ListCreateAPIView):
     # authentication_classes = [JWTAuthentication]  
     # permission_classes = [IsAuthenticated]
 
-    
-    @method_decorator(user_has_permission('getEmployeeList'), name='dispatch')
-    def get(self, request, *args, **kwargs):
-        query_params = request.query_params
-        
-        if query_params:
-            filters = {}
-            for param, value in query_params.items():
-                if param == 'role':
-                    filters['role__role_name'] = value
-                elif param == 'department':
-                    filters['department__dept_name'] = value
-                else:
-                    filters[param] = value
-            
-            query = self.queryset.filter(**filters)
-            serializer = UserListSerializer(query, many=True)
-            return JsonResponse(serializer.data, safe=False)
-
-        else:
-            all_users = self.get_queryset()
-            serializer = UserListSerializer(all_users, many=True)
-            return JsonResponse(serializer.data, safe=False)
-
-        
-
-    # @method_decorator(user_has_permission('addEmployee'), name='dispatch')
+    @method_decorator(user_has_permission('addEmployee'), name='dispatch')
     def post(self, request, *args, **kwargs):
         data = request.data
         
@@ -118,3 +94,44 @@ class ApproverListView(APIView):
         approvers = User.objects.filter(role__role_name='team lead')
         serializer = ApproverListSerializer(approvers, many=True)
         return JsonResponse(serializer.data, status=status.HTTP_200_OK, safe=False)
+
+
+# using POST API for getting user list to make query passing easy
+@api_view(['POST'])
+@user_is_authenticated
+@user_has_permission('getEmployeeList')
+def get_user_list(request):
+    search_query = request.data.get('search', '')
+    sort_params = request.data.get('sort_by', [])
+    filter_params = request.data.get('filter', {})
+
+    queryset = User.objects.all()
+    mapping = {'role': 'role__role_name', 'department': 'department__dept_name'}
+
+    if filter_params:
+        filter_params = {mapping.get(key, key): value for key, value in filter_params.items()}
+        filter_q_objects = Q()
+        for key, value in filter_params.items():
+            if isinstance(value, list):
+                temp_q = Q()
+                for val in value:
+                    temp_q |= Q(**{key: val})
+                filter_q_objects &= temp_q
+            else:
+                filter_q_objects &= Q(**{key: value})
+        queryset = queryset.filter(filter_q_objects)
+
+    if search_query:
+        queryset = queryset.filter(
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(role__role_name__icontains=search_query) | 
+            Q(department__dept_name__icontains=search_query)
+        )
+
+    if sort_params:
+        sort_params = [mapping.get(param, param) for param in sort_params]
+        queryset = queryset.order_by(*sort_params)
+
+    serializer = UserListSerializer(queryset, many=True)
+    return JsonResponse(serializer.data, safe=False)
