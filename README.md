@@ -51,7 +51,7 @@ cd leave-tracking-tool-backend
 
 ```bash
 
-python3 -m venv .env
+python3 -m venv .venv
 
 ```
 
@@ -63,7 +63,7 @@ python3 -m venv .env
 
 ```bash
 
-env\Scripts\activate
+.venv\Scripts\activate
 
 ```
 
@@ -71,7 +71,7 @@ env\Scripts\activate
 
 ```bash
 
-source env/bin/activate
+source .venv/bin/activate
 
 ```
 
