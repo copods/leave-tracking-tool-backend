@@ -22,9 +22,9 @@ def sign_in_web(request):
                 return JsonResponse({'error': 'Access denied'}, status=403)
             
         except User.DoesNotExist:
-            return JsonResponse({'error': 'User not found'}, status=401)
+            return JsonResponse({'error': 'User not found'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     
     else:
-        return JsonResponse({'error': 'Invalid token'}, status=400)
+        return JsonResponse({'error': 'Invalid token'}, status=498)
