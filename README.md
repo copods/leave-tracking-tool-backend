@@ -21,7 +21,7 @@ Before you begin, ensure you have the following installed on your system:
 
 - Python (3.x recommended)
 
-- PostgreSQL
+- PostgreSQL (PgAdmin 4 GUI)
 
   
 
@@ -43,7 +43,7 @@ git clone https://github.com/copods/leave-tracking-tool-backend.git
 
 ```bash
 
-cd leave-tracking-tool-backend
+cd leave-tracking-tool-backend/
 
 ```
 
@@ -94,7 +94,7 @@ pip install -r requirements.txt
 
 - Visit the [official PostgreSQL download page](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads) for MacOS/Windows.
 
-- Choose the version appropriate for your system (32-bit or 64-bit).
+- Choose the PostgreSQL version 16.3
 
 - Click on the download link to download the PostgreSQL installer.
 
@@ -134,11 +134,19 @@ pip install -r requirements.txt
         
     -   **Connect to PostgreSQL Server:** In pgAdmin, navigate to the "Servers" section in the left sidebar. Open "Servers" and then Right-click on "PostgreSQL" and choose "Create" > "Database...". Enter the necessary connection details:
         
-         -   **Name:** Enter `Leave_Tracking_Tool`.
+         ### CREATE SERVER INFORMATION
+   
+
+        - **Name** Enter `Copods-LTT`.
         -   **Connection Hostname/Address:** Use `localhost` or `127.0.0.1`.
         -   **Username:** Enter `postgres`.
         -   **Password:** Provide the password you set during PostgreSQL installation.
         -   **Port:** Default PostgreSQL port is `5432`.
+
+         ### CREATE DATABASE INFORMATION
+
+         - **Databse**: Enter `Leave-Tracking-Tool`
+
     
   
   
@@ -154,7 +162,7 @@ Now you have PostgreSQL installed with pgAdmin and a database set up ready for u
 
 ```plaintext
 
-DB_NAME=Leave_Tracking_Tool
+DB_NAME=Leave-Tracking-Tool
 
 DB_USER=postgres
 
@@ -163,6 +171,8 @@ DB_PASSWORD=admin
 DB_HOST=127.0.0.1
 
 DB_PORT=5432
+
+SECRET_KEY = "ABCD-Replacehere"
 
 ```
 
@@ -223,19 +233,23 @@ python manage.py runserver
   
   
 
-## Additional Resources
+## Resources
 
   
 
 - [Django Documentation](https://docs.djangoproject.com/en/stable/)
 
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
-
-- [GitHub Guides](https://guides.github.com/)
-
+- [DRF - DjangoRestFrameork](https://www.django-rest-framework.org/) 
   
 
----
+
+## Naming conventions followed
+
+- [App Name] : snake_case.
+- [App File] : snake_case.
+- [Class Name] : PascalCase.
+- [Function Name] : snake_case.
+- [Global constants] : CAPITAL_CASE.
 
   
   
