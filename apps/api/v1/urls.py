@@ -8,7 +8,6 @@ from rest_framework_simplejwt import views as jwt_views
 urlpatterns = [
     #USER APIs
     path('v1/user/', UserListCreateAPIView.as_view(), name='user'),
-    path('v1/user/search/', get_user_list, name='user-search'), #post method for search queries in user model
     path('v1/user/<str:id>', UserRetrieveUpdateDestroyAPIView.as_view(), name='user-details'),
     path('token/', jwt_views.TokenObtainPairView.as_view(), name='token-obtain-pair-view'),
     path('token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token-refresh'),

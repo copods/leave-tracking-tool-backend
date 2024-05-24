@@ -5,19 +5,67 @@ from apps.role.models import Role
 from .models import User
 from .serializers import *
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.http import JsonResponse
 from apps.authorization.decorators import user_has_permission, user_is_authenticated
 from django.utils.decorators import method_decorator
 from django.db.models import Q
+from core.pagination import StandardResultsPagination
+from urllib.parse import parse_qs
 
 @method_decorator(user_is_authenticated, name='dispatch')
 class UserListCreateAPIView(generics.ListCreateAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializers
-    # authentication_classes = [JWTAuthentication]  
-    # permission_classes = [IsAuthenticated]
+    serializer_class = UserListSerializer
+    paginator = StandardResultsPagination()
+
+    @method_decorator(user_has_permission('getEmployee'), name='dispatch')
+    def get(self, request, *args, **kwargs):
+        query_string = request.META['QUERY_STRING']
+        params = parse_qs(query_string)
+        search_query = params.get('search', '')
+        sort_params = params.get('sort_by', [])
+        filter_params = {}
+        for key, value in params.items():
+            if(key.startswith('filter-')):
+                if len(value) > 1:
+                    filter_params[key[7:]] = []
+                    for item in value:
+                        filter_params[key[7:]].append(item)
+                else:
+                    filter_params[key[7:]] = value[0]
+
+        queryset = User.objects.all()
+        mapping = {'role': 'role__role_name', 'department': 'department__dept_name'}
+
+        if filter_params:
+            filter_params = {mapping.get(key, key): value for key, value in filter_params.items()}
+            filter_q_objects = Q()
+            for key, value in filter_params.items():
+                if isinstance(value, list):
+                    temp_q = Q()
+                    for val in value:
+                        temp_q |= Q(**{key: val})
+                    filter_q_objects &= temp_q
+                else:
+                    filter_q_objects &= Q(**{key: value})
+            queryset = queryset.filter(filter_q_objects)
+
+        if search_query:
+            search_query = search_query[0]
+            queryset = queryset.filter(
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) |
+                Q(role__role_name__icontains=search_query) | 
+                Q(department__dept_name__icontains=search_query)
+            )
+
+        if sort_params:
+            sort_params = [mapping.get(param, param) for param in sort_params]
+            queryset = queryset.order_by(*sort_params)
+        
+        page = self.paginator.paginate_queryset(queryset, request)
+        serializer = self.serializer_class(page, many=True)
+        return self.get_paginated_response(serializer.data)    
 
     @method_decorator(user_has_permission('addEmployee'), name='dispatch')
     def post(self, request, *args, **kwargs):
@@ -50,10 +98,7 @@ class UserListCreateAPIView(generics.ListCreateAPIView):
 class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializers
-    # authentication_classes = [JWTAuthentication]  
-    # permission_classes = [IsAuthenticated]
 
-    
     @method_decorator(user_has_permission('getEmployee'), name='dispatch')
     def get(self, request, *args, **kwargs):
         user_id = kwargs.get('id')
@@ -96,42 +141,5 @@ class ApproverListView(APIView):
         return JsonResponse(serializer.data, status=status.HTTP_200_OK, safe=False)
 
 
-# using POST API for getting user list to make query passing easy
-@api_view(['POST'])
-@user_is_authenticated
-@user_has_permission('getEmployeeList')
-def get_user_list(request):
-    search_query = request.data.get('search', '')
-    sort_params = request.data.get('sort_by', [])
-    filter_params = request.data.get('filter', {})
 
-    queryset = User.objects.all()
-    mapping = {'role': 'role__role_name', 'department': 'department__dept_name'}
 
-    if filter_params:
-        filter_params = {mapping.get(key, key): value for key, value in filter_params.items()}
-        filter_q_objects = Q()
-        for key, value in filter_params.items():
-            if isinstance(value, list):
-                temp_q = Q()
-                for val in value:
-                    temp_q |= Q(**{key: val})
-                filter_q_objects &= temp_q
-            else:
-                filter_q_objects &= Q(**{key: value})
-        queryset = queryset.filter(filter_q_objects)
-
-    if search_query:
-        queryset = queryset.filter(
-            Q(first_name__icontains=search_query) |
-            Q(last_name__icontains=search_query) |
-            Q(role__role_name__icontains=search_query) | 
-            Q(department__dept_name__icontains=search_query)
-        )
-
-    if sort_params:
-        sort_params = [mapping.get(param, param) for param in sort_params]
-        queryset = queryset.order_by(*sort_params)
-
-    serializer = UserListSerializer(queryset, many=True)
-    return JsonResponse(serializer.data, safe=False)
