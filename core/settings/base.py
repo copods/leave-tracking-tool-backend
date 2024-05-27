@@ -28,6 +28,8 @@ INSTALLED_APPS = [
 
 EXTERNAL_APPS = [
     'apps.user',
+    'apps.role',
+
     'rest_framework',
 ]
 
