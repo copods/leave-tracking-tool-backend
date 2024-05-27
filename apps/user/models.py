@@ -14,6 +14,7 @@ def validate_phone_number(value):
             params={'value': value},
         )
 
+# USER-CLASS
 class User(models.Model):
     # Basic Information
     user_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="Public identifier")
@@ -53,6 +54,11 @@ class User(models.Model):
     created_date = models.DateTimeField(default=timezone.now)
     modified_date = models.DateTimeField(default=timezone.now)
     
+    role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True) #Foreign key to Role model
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True) #Foreign key to Department model
+     
+    def __str__(self):
+        return self.email
     def short_name(self):
         return self.first_name
     def long_name(self):
