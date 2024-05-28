@@ -68,6 +68,7 @@ class User(models.Model):
     designation = models.CharField(max_length=100, null=True)
     work_location = models.CharField(max_length=100, null=True)
     role = models.ForeignKey(Role, on_delete=models.PROTECT)
+    department= models.ForeignKey(Department, on_delete=models.PROTECT, default=Department.objects.first().id)
 
     # Address Information
     current_address_line = models.CharField(max_length=200, null=True)
