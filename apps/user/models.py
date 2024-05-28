@@ -5,7 +5,6 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from apps.user.constants import GENDER_CHOICES, WORK_STATUS_CHOICES
 from apps.role.models import Role
-from apps.department.models import Department
 
 def validate_phone_number(value):
     if len(str(value)) != 10:
@@ -32,7 +31,6 @@ class User(models.Model):
     designation = models.CharField(max_length=100, null=True)
     work_location = models.CharField(max_length=100, null=True)
     role = models.ForeignKey(Role, on_delete=models.PROTECT) #foreign key to role model
-    department = models.ForeignKey(Department, on_delete=models.PROTECT) #foreign key to department model
     
     # Address Information
     current_address_line = models.CharField(max_length=200, null=True)
@@ -55,7 +53,6 @@ class User(models.Model):
     modified_date = models.DateTimeField(default=timezone.now)
     
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True) #Foreign key to Role model
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True) #Foreign key to Department model
      
     def __str__(self):
         return self.email

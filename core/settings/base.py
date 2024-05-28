@@ -27,11 +27,12 @@ INSTALLED_APPS = [
 ]
 
 EXTERNAL_APPS = [
+    'apps.department',
     'apps.user',
     'apps.role',
-    'apps.department',
-
     'rest_framework',
+    'LeaveTrackingApp.apps.LeavetrackingappConfig',
+    'UserApp.apps.UserappConfig',
 ]
 
 INSTALLED_APPS += EXTERNAL_APPS
