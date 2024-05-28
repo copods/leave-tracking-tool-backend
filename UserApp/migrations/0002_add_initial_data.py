@@ -15,8 +15,8 @@ def add_initial_data(apps, schema_editor):
     Role = apps.get_model('UserApp', 'Role')
     Role.objects.create(role_key='admin', role_name='Admin')
     Role.objects.create(role_key='employee', role_name='Employee')
-
-
+    Role.objects.create(role_key='hr', role_name='HR')
+    Role.objects.create(role_key='lead', role_name='Lead')
 
 class Migration(migrations.Migration):
 
@@ -27,3 +27,4 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(add_initial_data),
     ]
+    
