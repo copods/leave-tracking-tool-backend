@@ -4,8 +4,6 @@ from django.views.generic import TemplateView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    
-    path('api/', include('apps.api.v1.urls')),
 
     # users crud operations
     path("api/v1/", include("UserApp.urls")),

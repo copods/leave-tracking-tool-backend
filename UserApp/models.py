@@ -4,7 +4,6 @@ from django.utils.timezone import now  # Import the now function
 
 
 # Create your models here.
-
 def validate_phone_number(value):
     if len(str(value)) != 10:
         raise ValidationError(
@@ -96,5 +95,3 @@ class User(models.Model):
         return self.first_name
     def long_name(self):
         return f'{self.first_name} {self.last_name}'
-
-    

@@ -1,7 +1,12 @@
 from functools import wraps
 from django.http import JsonResponse
-from apps.authorization.permissions import get_permission_list
-from apps.authorization.utils import isJWTValid, getRole
+from UserApp.utils import isJWTValid, getRole
+
+permission_list = {
+        'admin': {'getEmployee', 'editEmployee', 'deleteEmployee', 'getEmployeeList', 'addEmployee'},
+        'team lead': {'getEmployee'},
+        'team member': {'getEmployee'},
+    }
 
 def user_is_authorized(view_func):
     @wraps(view_func)
@@ -24,7 +29,6 @@ def user_has_permission(api_name):
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
-            permission_list = get_permission_list()
             user_role = getRole(request.user_email)
             if user_role and (api_name in permission_list[user_role]):
                 return view_func(request, *args, **kwargs)

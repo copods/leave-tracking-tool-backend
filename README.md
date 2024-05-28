@@ -145,6 +145,12 @@ python manage.py migrate
 
 ```
 
+## to create empty migration
+
+```bash
+python manage.py makemigrations your_app_name --empty --name add_initial_data
+```
+
 ## Creating a Superuser
 
 1. Navigate to your Django project directory if you're not already there.
