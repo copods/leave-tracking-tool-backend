@@ -26,6 +26,7 @@ class Role(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     role_key = models.CharField(max_length=100)
     role_name = models.CharField(max_length=100)
+    permissions = models.JSONField(default=dict)
     createdAt = models.DateTimeField(default=now)
     updatedAt = models.DateTimeField(auto_now=True)
 

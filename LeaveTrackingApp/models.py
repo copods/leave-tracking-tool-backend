@@ -9,7 +9,7 @@ class RuleSet(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     name = models.CharField(max_length=100)
     max_days_allowed = models.IntegerField()
-    duration = models.IntegerField()
+    duration = models.CharField(default=None, max_length=100)
     createdAt = models.DateTimeField(default=now)
     updatedAt = models.DateTimeField(auto_now=True)
 
