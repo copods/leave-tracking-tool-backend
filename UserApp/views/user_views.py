@@ -17,11 +17,10 @@ def userList(request):
         page = request.GET.get('page', 1)
         pageSize = request.GET.get('pageSize', 10)
 
-        # filter = request.GET.get('filter', None)
-        # if filter:
-        #     filter = filter.split(':')
-        #     users = users.filter(**{filter[0]: filter[1]})
-
+        filter = request.GET.get('filter', None)
+        if filter:
+            filter = filter.split(':')
+            users = users.filter(**{filter[0]: filter[1]})
         if search:
             users = users.filter(first_name__icontains=search) | users.filter(last_name__icontains=search) | users.filter(email__icontains=search)
         if sort:
