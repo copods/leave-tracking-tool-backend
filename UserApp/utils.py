@@ -45,13 +45,18 @@ def sign_in_web(request):
     if user_info != '':
         try:
             user = User.objects.get(email=user_info['email'])
+            user.profile_image = user_info['picture']
+            user.save()
             if user.role.role_key in {'admin', 'super-admin'}:
                 access_token, refresh_token = generate_tokens(user)
                 return JsonResponse({
                     'access_token': str(access_token), 
                     'refresh_token': str(refresh_token), 
                     'user_role': user.role.role_name,
-                    'user': user
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'profile_image': user.profile_image
                 }, status=200)
     
             else:
@@ -73,12 +78,17 @@ def sign_in_app(request):
     if user_info != '':
         try:
             user = User.objects.get(email=user_info['email'])
+            user.profile_image = user_info['picture']
+            user.save()
             access_token, refresh_token = generate_tokens(user)
             return JsonResponse({
                 'access_token': str(access_token), 
                 'refresh_token': str(refresh_token),
                 'user_role': user.role.role_name,
-                'user': user
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+                'profile_image': user.profile_image
             })
         except User.DoesNotExist:
             return JsonResponse({'error': 'User not found'}, status=404)
