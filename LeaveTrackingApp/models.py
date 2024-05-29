@@ -50,7 +50,7 @@ class StatusReason(models.Model):
 class DayDetails(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     date = models.DateField()
-    type = models.CharField(max_length=100)
+    type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
     is_half_day = models.BooleanField()
     HALF_DAY_CHOICES = [
         ('FH', 'First Half'),
@@ -77,8 +77,9 @@ class DayDetails(models.Model):
 
 class Leave(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_of_leaves')
     leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
-    approver = models.ForeignKey(User, on_delete=models.CASCADE)
+    approver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='approver_of_leave')
     leave_reason = models.CharField(max_length=100)
     STATUS_CHOICES = [
         ('P', 'PENDING'),
@@ -91,11 +92,11 @@ class Leave(models.Model):
         choices=STATUS_CHOICES,
         default='P',
     )        
-    status_reasons = models.ManyToManyField(StatusReason)
+    status_reasons = models.ManyToManyField(StatusReason, blank=True)
     start_date = models.DateField()
     end_date = models.DateField()
     day_details = models.ManyToManyField(DayDetails)
-    assets_documents = models.FileField()
+    assets_documents = models.FileField(blank=True, null=True)
     createdAt = models.DateTimeField(default=now)
     updatedAt = models.DateTimeField(auto_now=True)
 

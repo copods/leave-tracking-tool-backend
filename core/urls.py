@@ -7,6 +7,9 @@ urlpatterns = [
 
     # users crud operations
     path("api/v1/", include("UserApp.urls")),
+
+    # leave crud operations
+    path("api/v1/", include("LeaveTrackingApp.urls")),
     
     #DEBUGGER
     path("__debug__/", include("debug_toolbar.urls")),
