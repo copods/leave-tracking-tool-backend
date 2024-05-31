@@ -36,10 +36,12 @@ def getAllLeaves(request):
 @csrf_exempt
 def getUserLeaves(request):
     if request.method=='GET':
+        print(request.headers)
+        id= request.headers['id']
+        print(id)
         leaves = Leave.objects.filter(user_id=id)
         leaves_serializer = LeaveSerializer(leaves, many=True)
         return JsonResponse(leaves_serializer.data, safe=False)
-
 
 
 # get leaves left
@@ -47,4 +49,5 @@ def getUserLeaves(request):
 # get leave list for approver
 # get leave details
 # change leave status with status message
-
+# unpaid leave count list etc
+# enable editing of leave request
