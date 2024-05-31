@@ -5,10 +5,39 @@ from django.utils.timezone import now  # Import the now function
 
 # Create your models here.
 
+class Holiday(models.Model):
+    id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
+    date = models.DateField()
+    name = models.CharField(max_length=100)
+    TYPE_CHOICES = [
+        ('O', 'Optional'),
+        ('C', 'Confirmed'),
+    ]
+    type = models.CharField(
+        max_length=100,
+        choices=TYPE_CHOICES,
+        default='C',
+    )
+    createdAt = models.DateTimeField(default=now)
+    updatedAt = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+class yearCalendar(models.Model):
+    id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
+    year = models.IntegerField()
+    holidays = models.ManyToManyField('Holiday')
+    createdAt = models.DateTimeField(default=now)
+    updatedAt = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.year
+
 class RuleSet(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     name = models.CharField(max_length=100)
-    max_days_allowed = models.IntegerField()
+    max_days_allowed = models.FloatField()
     duration = models.CharField(default=None, max_length=100)
     createdAt = models.DateTimeField(default=now)
     updatedAt = models.DateTimeField(auto_now=True)
