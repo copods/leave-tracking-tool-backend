@@ -6,9 +6,12 @@ from rest_framework import status
 
 from UserApp.models import Department, Role, User
 from UserApp.serializers import DepartmentSerializer, RoleSerializer, UserSerializer
+from UserApp.decorators import user_is_authorized
+from django.utils.decorators import method_decorator
 
 # format of query param: filter=role:9f299ed6-caf0-4241-9265-7576af1d6426
 @csrf_exempt
+@user_is_authorized
 def userList(request):
     if request.method=='GET':
         users = User.objects.all()
@@ -31,6 +34,7 @@ def userList(request):
         return JsonResponse(users_serializer.data, safe=False)
 
 @csrf_exempt
+@user_is_authorized
 def createUser(request):
     if request.method=='POST':
         user_data = JSONParser().parse(request)
@@ -43,6 +47,7 @@ def createUser(request):
             return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
     
 @csrf_exempt
+@user_is_authorized
 def user(request,id):
     if request.method=='GET':
         user = User.objects.get(id=id)
