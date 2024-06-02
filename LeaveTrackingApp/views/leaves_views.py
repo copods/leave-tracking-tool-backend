@@ -10,6 +10,7 @@ from LeaveTrackingApp.models import Leave, LeaveType
 from LeaveTrackingApp.serializers import LeaveSerializer, LeaveTypeSerializer
 
 @csrf_exempt
+@user_is_authorized
 def getLeaveTypes(request):
     if request.method=='GET':
         leave_types = LeaveType.objects.all()
@@ -17,6 +18,7 @@ def getLeaveTypes(request):
         return JsonResponse(leave_types_serializer.data, safe=False)
 
 @csrf_exempt
+@user_is_authorized
 def createLeaveRequest(request):
     if request.method=='POST':
         leave_data = JSONParser().parse(request)
@@ -27,6 +29,7 @@ def createLeaveRequest(request):
         return JsonResponse(leave_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @csrf_exempt
+@user_is_authorized
 def getAllLeaves(request):
     if request.method=='GET':
         leaves = Leave.objects.all()
@@ -34,6 +37,7 @@ def getAllLeaves(request):
         return JsonResponse(leaves_serializer.data, safe=False)
 
 @csrf_exempt
+@user_is_authorized
 def getUserLeaves(request):
     if request.method=='GET':
         print(request.headers)
