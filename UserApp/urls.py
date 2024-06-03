@@ -1,7 +1,16 @@
 from django.urls import re_path
-
-from UserApp.views.user_views import userList, createUser, user
-from UserApp.views.authentication_views import googleSignIn, adminPanelGoogleSignIn, accessTokenValidate, refreshToken
+from UserApp.views.user_views import (
+    userList, 
+    createUser, 
+    user,
+    workTypeCounts
+)
+from UserApp.views.authentication_views import (
+    googleSignIn, 
+    adminPanelGoogleSignIn, 
+    accessTokenValidate, 
+    refreshToken
+)
 from UserApp.views.role_department_views import role, department
 
 urlpatterns = [
@@ -15,6 +24,7 @@ urlpatterns = [
     re_path(r'^users$', userList),
     re_path(r'^createUser$', createUser),
     re_path(r'^user/([0-9a-f-]+)$', user),
+    re_path(r'^workTypeCounts$', workTypeCounts),
 
     # roles and department APIs URL
     re_path(r'^roles$', role),

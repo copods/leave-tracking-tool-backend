@@ -3,7 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
 from rest_framework import status
-
+from django.db.models import Count, Q
 from UserApp.models import Department, Role, User
 from UserApp.serializers import DepartmentSerializer, RoleSerializer, UserSerializer
 from UserApp.decorators import user_is_authorized
@@ -70,7 +70,18 @@ def user(request,id):
             errors = user_serializer.errors
             return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
 
-
+@csrf_exempt
+@user_is_authorized
+def workTypeCounts(request):
+     if request.method == 'GET':
+        work_type_counts = User.objects.aggregate(
+            in_office=Count('id', filter=Q(work_type="In-Office")),
+            work_from_home=Count('id', filter=Q(work_type="Work-From-Home"))
+        )
+        return JsonResponse({
+            "In-Office": work_type_counts['in_office'],
+            "Work-From-Home": work_type_counts['work_from_home']
+        }, safe=False)
 
 
 
