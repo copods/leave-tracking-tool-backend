@@ -8,6 +8,7 @@ from rest_framework import status
 
 from UserApp.models import Department, Role, User
 from UserApp.serializers import DepartmentSerializer, RoleSerializer
+from UserApp.decorators import user_is_authorized
 
 @csrf_exempt
 @user_is_authorized

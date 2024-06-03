@@ -8,6 +8,7 @@ from rest_framework import status
 
 from LeaveTrackingApp.models import Leave, LeaveType
 from LeaveTrackingApp.serializers import LeaveSerializer, LeaveTypeSerializer
+from UserApp.decorators import user_is_authorized
 
 @csrf_exempt
 @user_is_authorized
