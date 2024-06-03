@@ -58,14 +58,10 @@ class User(models.Model):
         ('Full-time', 'Full-time'),
         ('Part-time', 'Part-time'),
         ('Contract', 'Contract')
-    ] # Employement type information (is necessary to keep in db)
-    WORK_TYPE_CHOICES = [
-        ('In-Office', 'In-Office'),
-        ('Work-From-Home', 'Work-From-Home')
     ]
     work_type = models.CharField(   
-        max_length=15,
-        choices=WORK_TYPE_CHOICES,
+        max_length=9,
+        choices=EMPLOYMENT_TYPE_CHOICES,
         null=True
     )
     designation = models.CharField(max_length=100, null=True)
