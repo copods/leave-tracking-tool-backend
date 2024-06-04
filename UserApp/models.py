@@ -49,7 +49,7 @@ class User(models.Model):
         choices=GENDER_CHOICES
     )
     date_of_birth = models.DateField()
-    profile_image = models.CharField(max_length=100)
+    profile_image = models.CharField(max_length=250)
 
 
     # Work Information
