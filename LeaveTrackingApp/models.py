@@ -10,13 +10,13 @@ class Holiday(models.Model):
     date = models.DateField()
     name = models.CharField(max_length=100)
     TYPE_CHOICES = [
-        ('O', 'Optional'),
-        ('C', 'Confirmed'),
+        ('Optional', 'Optional'),
+        ('Confirmed', 'Confirmed'),
     ]
     type = models.CharField(
         max_length=100,
         choices=TYPE_CHOICES,
-        default='C',
+        default='Confirmed',
     )
     createdAt = models.DateTimeField(default=now)
     updatedAt = models.DateTimeField(auto_now=True)
@@ -28,6 +28,16 @@ class yearCalendar(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     year = models.IntegerField()
     holidays = models.ManyToManyField('Holiday')
+    STATUS_CHOICES = [
+        ('Draft', 'Draft'),
+        ('Approved', 'Approved'),
+        ('Published', 'Published'),
+    ]
+    status = models.CharField(
+        max_length=100,
+        choices=STATUS_CHOICES,
+        default='Draft',
+    )
     createdAt = models.DateTimeField(default=now)
     updatedAt = models.DateTimeField(auto_now=True)
 
