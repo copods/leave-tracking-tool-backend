@@ -21,8 +21,14 @@ class UserRoleSerializer(serializers.ModelSerializer):
         model = Role
         fields = ['role_name','role_key']
 
+UserDepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Department
+        fields = ['department_name','department_key']
+
 class UserListSerializer(serializers.ModelSerializer):
     role= UserRoleSerializer(read_only=True)
+    department= UserDepartmentSerializer(read_only=True)
 
     class Meta:
         model = User
