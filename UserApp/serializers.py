@@ -21,7 +21,7 @@ class UserRoleSerializer(serializers.ModelSerializer):
         model = Role
         fields = ['role_name','role_key']
 
-UserDepartmentSerializer(serializers.ModelSerializer):
+class UserDepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
         fields = ['department_name','department_key']
