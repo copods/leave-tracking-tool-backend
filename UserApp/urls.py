@@ -3,7 +3,8 @@ from UserApp.views.user_views import (
     userList, 
     createUser, 
     user,
-    workTypeCounts
+    workTypeCounts,
+    createUserUnauthorized
 )
 from UserApp.views.authentication_views import (
     googleSignIn, 
@@ -25,6 +26,7 @@ urlpatterns = [
     re_path(r'^createUser$', createUser),
     re_path(r'^user/([0-9a-f-]+)$', user),
     re_path(r'^workTypeCounts$', workTypeCounts),
+    re_path(r'^createFirstUser$', createUserUnauthorized),
 
     # roles and department APIs URL
     re_path(r'^roles$', role),

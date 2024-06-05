@@ -84,11 +84,12 @@ def sign_in_app(request):
             return JsonResponse({
                 'access_token': str(access_token), 
                 'refresh_token': str(refresh_token),
+                'user_id': user.id,
                 'user_role': user.role.role_name,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'email': user.email,
-                'profile_image': user.profile_image
+                'profile_image': user.profile_image,
             })
         except User.DoesNotExist:
             return JsonResponse({'error': 'User not found'}, status=404)

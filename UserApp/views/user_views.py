@@ -9,6 +9,23 @@ from UserApp.serializers import DepartmentSerializer, RoleSerializer, UserSerial
 from UserApp.decorators import user_is_authorized
 from django.utils.decorators import method_decorator
 
+# create user unauthorized
+@csrf_exempt
+def createUserUnauthorized(request):
+    if request.method=='POST':
+        user_data = JSONParser().parse(request)
+        role = RoleSerializer(Role.objects.get(role_key='admin'))
+        department = DepartmentSerializer(Department.objects.get(department_key='developer'))
+        user_data['role'] = role.data['id']
+        user_data['department'] = department.data['id']
+        user_serializer = UserSerializer(data=user_data)
+        if user_serializer.is_valid():
+            user_serializer.save()
+            return JsonResponse("Added Successfully!!", safe=False)
+        else:
+            errors = user_serializer.errors
+            return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+
 # format of query param: filter=role:9f299ed6-caf0-4241-9265-7576af1d6426
 @csrf_exempt
 @user_is_authorized
