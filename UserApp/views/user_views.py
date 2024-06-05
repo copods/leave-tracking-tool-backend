@@ -5,7 +5,12 @@ from django.http.response import JsonResponse
 from rest_framework import status
 from django.db.models import Count, Q
 from UserApp.models import Department, Role, User
-from UserApp.serializers import DepartmentSerializer, RoleSerializer, UserSerializer
+from UserApp.serializers import (
+    ApproverListSerializer, 
+    DepartmentSerializer, 
+    RoleSerializer, 
+    UserSerializer
+)
 from UserApp.decorators import user_is_authorized
 from django.utils.decorators import method_decorator
 
@@ -99,6 +104,22 @@ def workTypeCounts(request):
             "In-Office": work_type_counts['in_office'],
             "Work-From-Home": work_type_counts['work_from_home']
         }, safe=False)
+     
+@csrf_exempt
+@user_is_authorized
+def getApproverList(request):
+    if request.method == 'GET':
+        try:
+            page = request.GET.get('page', 1)
+            pageSize = request.GET.get('pageSize', 100)
+            approver_list = User.objects.filter(role__role_key='lead')
+            if page or pageSize:
+                approver_list = approver_list[(int(page)-1)*int(pageSize):int(page)*int(pageSize)]
+            approver_list_serializer = ApproverListSerializer(approver_list, many=True)
+            return JsonResponse(approver_list_serializer.data, status=status.HTTP_200_OK, safe=False)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 
