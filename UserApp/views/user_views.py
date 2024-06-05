@@ -5,7 +5,7 @@ from django.http.response import JsonResponse
 from rest_framework import status
 from django.db.models import Count, Q
 from UserApp.models import Department, Role, User
-from UserApp.serializers import DepartmentSerializer, RoleSerializer, UserSerializer
+from UserApp.serializers import DepartmentSerializer, RoleSerializer, UserSerializer, UserListSerializer
 from UserApp.decorators import user_is_authorized
 from django.utils.decorators import method_decorator
 
@@ -47,7 +47,7 @@ def userList(request):
             users = users.order_by(sort)
         if page and pageSize:
             users = users[(int(page)-1)*int(pageSize):int(page)*int(pageSize)]
-        users_serializer = UserSerializer(users, many=True)
+        users_serializer = UserListSerializer(users, many=True)
         return JsonResponse(users_serializer.data, safe=False)
 
 @csrf_exempt
