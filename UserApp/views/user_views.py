@@ -6,7 +6,7 @@ from rest_framework import status
 from django.db.models import Count, Q
 from UserApp.models import Department, Role, User
 from UserApp.serializers import (
-    ApproverListSerializer, 
+    RoleBasedListSerializer, 
     DepartmentSerializer, 
     RoleSerializer, 
     UserSerializer,
@@ -31,7 +31,7 @@ def createUserUnauthorized(request):
             errors = user_serializer.errors
             return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
 
-# format of query param: filter=role:9f299ed6-caf0-4241-9265-7576af1d6426
+# format of query param: filter=role:9f299ed6-caf0-4241-9265-7576af1d6426,status=P
 @csrf_exempt
 @user_is_authorized
 def userList(request):
@@ -42,16 +42,16 @@ def userList(request):
             sort = request.GET.get('sort', None)
             page = request.GET.get('page', 1)
             pageSize = request.GET.get('pageSize', 10)
-            filter = request.GET.get('filter', None)
-            approvers = request.GET.get('approvers', False)  #param for getting approvers list; set it true for getting approvers list
-            if approvers:
-                users = users.filter(role__role_key='lead')
-                users_serializer_class = ApproverListSerializer
+            filters = request.GET.get('filters', None)
+            roles = request.GET.get('roles', None)  #param for getting users based on specific roles with different data format(diff serializer used). 
+            if roles:
+                roles = roles.split(',')
+                users = users.filter(role__role_key__in=roles)
+                users_serializer_class = RoleBasedListSerializer
             else:
                 users_serializer_class = UserListSerializer
-            if filter:
-                filter = filter.split(':')
-                users = users.filter(**{filter[0]: filter[1]})
+            if filters:
+                users = users.filter(Q(**{f.split(':')[0]: f.split(':')[1] for f in filters.split(',')})) 
             if search:
                 users = users.filter(first_name__icontains=search) | users.filter(last_name__icontains=search) | users.filter(email__icontains=search)
             if sort:
