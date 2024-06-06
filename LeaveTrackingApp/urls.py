@@ -7,7 +7,7 @@ urlpatterns = [
     re_path(r'^createLeaveRequest$', createLeaveRequest),
     re_path(r'^getLeaveTypes$', getLeaveTypes),
     re_path(r'^leavesForApprover$', leavesForApprover),
-    re_path(r'^getUserLeaves/([0-9a-f-]+)$', getUserLeaves),
+    re_path(r'^getUserLeaves$', getUserLeaves),
 
     # holiday urls
     re_path(r'^createHolidayCalendar$', createHolidayCalendar),

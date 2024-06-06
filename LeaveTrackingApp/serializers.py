@@ -12,7 +12,6 @@ class DayDetailSerializer(serializers.ModelSerializer):
         model = DayDetails
         fields = '__all__'
 
-
 #-----------------leave related serializers---------------------
 class LeaveTypeSerializer(serializers.ModelSerializer):
     rule_set = RuleSetSerializer(read_only=True)
@@ -46,11 +45,11 @@ class LeaveListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Leave
-        fields = [ 'requestedBy', 'leaveType', 'leaveStatus', 'startDate', 'endDate', 'modifiedOn', 'isEdited']
+        fields = [ 'requestedBy', 'leaveType', 'leaveStatus', 'startDate', 'endDate', 'modifiedOn', 'editStatus']
     
     def get_requestedBy(self, obj):
-        leave_user = obj.user
-        return leave_user.long_name()
+        leave_user = { "name": obj.user.long_name(), "profilePicture": obj.user.profile_image}
+        return leave_user
     
     def get_modifiedOn(self, obj):
         return obj.updatedAt.date()
@@ -70,7 +69,6 @@ class UserLeaveListSerializer(serializers.ModelSerializer):
         latest_status = obj.status_reasons.order_by('-createdAt').first()
         return latest_status.createdAt.date() if latest_status else obj.updatedAt.date()
     
-
 # ----------------calendar related serializers--------------------
 class HolidaySerializer(serializers.ModelSerializer):
 
@@ -99,7 +97,3 @@ class YearCalendarSerializer(serializers.ModelSerializer):
             holiday = Holiday.objects.create(**holiday)
             holiday_calendar.holidays.add(holiday)
         return holiday_calendar
-    
-
-
-        

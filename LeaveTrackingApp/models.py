@@ -140,7 +140,7 @@ class Leave(models.Model):
         ('Edited', 'Edited'),
         ('Requested-For-Edit', 'Requested-For-Edit'),
     ]
-    isEdited = models.CharField(max_length=100, null=True, choices=IS_EDITED_CHOICES)
+    editStatus = models.CharField(max_length=100, null=True, choices=IS_EDITED_CHOICES)
     createdAt = models.DateTimeField(default=now)
     updatedAt = models.DateTimeField(auto_now=True)
 

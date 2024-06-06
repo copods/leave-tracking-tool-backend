@@ -66,12 +66,13 @@ def leavesForApprover(request):
 
 @csrf_exempt
 @user_is_authorized
-def getUserLeaves(request, id):
+def getUserLeaves(request):
     if request.method=='GET':
         try:
+            user_email = getattr(request, 'user_email', None) #user_email is fetched from token while authorizing, then added to request object
             page = request.GET.get('page', 1)
             pageSize = request.GET.get('pageSize', 100)
-            user = User.objects.get(id=id)
+            user = User.objects.get(email=user_email)
             user_leaves = Leave.objects.filter(user_id=user.id)
             if page or pageSize:
                 user_leaves = user_leaves[(int(page)-1)*int(pageSize):int(page)*int(pageSize)]
