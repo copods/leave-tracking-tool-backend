@@ -1,6 +1,5 @@
 from django.urls import re_path
 from UserApp.views.user_views import (
-    getApproverList,
     userList, 
     createUser, 
     user,
@@ -28,7 +27,6 @@ urlpatterns = [
     re_path(r'^user/([0-9a-f-]+)$', user),
     re_path(r'^workTypeCounts$', workTypeCounts),
     re_path(r'^createFirstUser$', createUserUnauthorized),
-    re_path(r'^getApproverList$', getApproverList),
 
     # roles and department APIs URL
     re_path(r'^roles$', role),

@@ -17,15 +17,16 @@ class RoleSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ApproverListSerializer(serializers.ModelSerializer):
-    role = serializers.CharField(source='role.role_name')
     name = serializers.SerializerMethodField()
+    profilePicture = serializers.CharField(source='profile_image')
 
     class Meta:
         model = User
-        fields = ['id', 'name', 'role', 'profile_image']
+        fields = ['id', 'name', 'designation', 'profilePicture']
 
     def get_name(self, obj):
         return obj.long_name()
+    
 class UserRoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
