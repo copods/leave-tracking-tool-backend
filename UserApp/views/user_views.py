@@ -56,7 +56,7 @@ def userList(request):
                 users = users.filter(first_name__icontains=search) | users.filter(last_name__icontains=search) | users.filter(email__icontains=search)
             if sort:
                 users = users.order_by(sort)
-            if page and pageSize:
+            if page or pageSize:
                 users = users[(int(page)-1)*int(pageSize):int(page)*int(pageSize)]
             users_serializer = users_serializer_class(users, many=True)
             return JsonResponse(users_serializer.data, safe=False)
