@@ -136,6 +136,11 @@ class Leave(models.Model):
     end_date = models.DateField()
     day_details = models.ManyToManyField(DayDetails)
     assets_documents = models.FileField(blank=True, null=True)
+    IS_EDITED_CHOICES = [
+        ('Edited', 'Edited'),
+        ('Requested-For-Edit', 'Requested-For-Edit'),
+    ]
+    editStatus = models.CharField(max_length=100, null=True, choices=IS_EDITED_CHOICES)
     createdAt = models.DateTimeField(default=now)
     updatedAt = models.DateTimeField(auto_now=True)
 
