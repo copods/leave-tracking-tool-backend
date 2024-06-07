@@ -16,6 +16,20 @@ class RoleSerializer(serializers.ModelSerializer):
         model = Role
         fields = '__all__'
 
+class RoleBasedListSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+    profilePicture = serializers.CharField(source='profile_image')
+    role = serializers.SerializerMethodField('get_role')
+    class Meta:
+        model = User
+        fields = ['id', 'name', 'designation','role', 'profilePicture']
+
+    def get_name(self, obj):
+        return obj.long_name()
+    
+    def get_role(self, obj):
+        return obj.role.role_key
+    
 class UserRoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
