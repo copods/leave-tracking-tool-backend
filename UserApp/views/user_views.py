@@ -115,7 +115,7 @@ def workTypeCounts(request):
 
 
 @csrf_exempt
-# @user_is_authorized
+@user_is_authorized
 def bulkUserAdd(request):
     if request.method == 'POST':
         users_data = JSONParser().parse(request)
