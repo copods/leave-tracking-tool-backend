@@ -103,7 +103,7 @@ def user(request,id):
 @csrf_exempt
 @user_is_authorized
 def workTypeCounts(request):
-     if request.method == 'GET':
+    if request.method == 'GET':
         work_type_counts = User.objects.aggregate(
             in_office=Count('id', filter=Q(work_type="In-Office")),
             work_from_home=Count('id', filter=Q(work_type="Work-From-Home"))
@@ -112,3 +112,29 @@ def workTypeCounts(request):
             "In-Office": work_type_counts['in_office'],
             "Work-From-Home": work_type_counts['work_from_home']
         }, safe=False)
+
+
+@csrf_exempt
+@user_is_authorized
+def bulkUserAdd(request):
+    if request.method == 'POST':
+        users_data = JSONParser().parse(request)
+
+        for user in users_data:
+            role = Role.objects.get(role_key=user['role'])
+            department = Department.objects.get(department_key=user['department'])
+
+            role_serializer = RoleSerializer(role)
+            user['role'] = role_serializer.data['id']
+
+            department_serializer = DepartmentSerializer(department)
+            user['department'] = department_serializer.data['id']
+
+
+        users_serializer = UserSerializer(data=users_data, many=True)
+        if users_serializer.is_valid():
+            users_serializer.save()
+            return JsonResponse("Added Successfully!!", safe=False)
+        else:
+            errors = users_serializer.errors
+            return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
