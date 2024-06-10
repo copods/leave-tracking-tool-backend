@@ -52,7 +52,7 @@ class LeaveListSerializer(serializers.ModelSerializer):
         return leave_user
     
     def get_modifiedOn(self, obj):
-        return obj.updatedAt.date()
+        return obj.updated_at.date()
 
 class UserLeaveListSerializer(serializers.ModelSerializer):
     leaveType = serializers.CharField(source='leave_type.name')
@@ -66,8 +66,8 @@ class UserLeaveListSerializer(serializers.ModelSerializer):
         fields = ['leaveType', 'leaveStatus', 'startDate', 'endDate', 'updatedOn']
     
     def get_updatedOn(self, obj):
-        latest_status = obj.status_reasons.order_by('-createdAt').first()
-        return latest_status.createdAt.date() if latest_status else obj.updatedAt.date()
+        latest_status = obj.status_reasons.order_by('-created_at').first()
+        return latest_status.created_at.date() if latest_status else obj.updated_at.date()
     
 # ----------------calendar related serializers--------------------
 class HolidaySerializer(serializers.ModelSerializer):

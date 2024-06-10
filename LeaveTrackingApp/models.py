@@ -18,8 +18,8 @@ class Holiday(models.Model):
         choices=TYPE_CHOICES,
         default='Confirmed',
     )
-    createdAt = models.DateTimeField(default=now)
-    updatedAt = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(default=now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -38,8 +38,8 @@ class yearCalendar(models.Model):
         choices=STATUS_CHOICES,
         default='Draft',
     )
-    createdAt = models.DateTimeField(default=now)
-    updatedAt = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(default=now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.year
@@ -47,10 +47,10 @@ class yearCalendar(models.Model):
 class RuleSet(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     name = models.CharField(max_length=100)
-    max_days_allowed = models.FloatField()
+    max_days_allowed = models.FloatField(blank=True, null=True)
     duration = models.CharField(default=None, max_length=100)
-    createdAt = models.DateTimeField(default=now)
-    updatedAt = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(default=now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -59,8 +59,8 @@ class LeaveType(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     name = models.CharField(max_length=100)
     rule_set = models.ForeignKey(RuleSet, on_delete=models.CASCADE)
-    createdAt = models.DateTimeField(default=now)
-    updatedAt = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(default=now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -80,8 +80,8 @@ class StatusReason(models.Model):
     )    
     reason = models.CharField(max_length=100)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    createdAt = models.DateTimeField(default=now)
-    updatedAt = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(default=now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.status
@@ -101,8 +101,8 @@ class DayDetails(models.Model):
         blank=True, 
         null=True,
     )
-    createdAt = models.DateTimeField(default=now)
-    updatedAt = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(default=now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.date
@@ -141,8 +141,8 @@ class Leave(models.Model):
         ('Requested-For-Edit', 'Requested-For-Edit'),
     ]
     editStatus = models.CharField(max_length=100, null=True, choices=IS_EDITED_CHOICES)
-    createdAt = models.DateTimeField(default=now)
-    updatedAt = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(default=now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.leave_type

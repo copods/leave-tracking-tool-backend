@@ -15,8 +15,8 @@ class Department(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     department_key = models.CharField(max_length=100)
     department_name = models.CharField(max_length=100)
-    createdAt = models.DateTimeField(default=now)
-    updatedAt = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(default=now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.department_name
@@ -26,8 +26,8 @@ class Role(models.Model):
     role_key = models.CharField(max_length=100)
     role_name = models.CharField(max_length=100)
     permissions = models.JSONField(default=dict)
-    createdAt = models.DateTimeField(default=now)
-    updatedAt = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(default=now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.role_name
@@ -90,8 +90,8 @@ class User(models.Model):
     emergency_contact_email = models.EmailField(max_length=100, null=True)
     
     #Metadata
-    createdAt = models.DateTimeField(default=now)
-    updatedAt = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(default=now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.email
