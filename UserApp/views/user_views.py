@@ -4,11 +4,12 @@ from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
 from rest_framework import status
 from django.db.models import Count, Q
+from LeaveTrackingApp.utils import getYearLeaveStats
 from UserApp.models import Department, Role, User
 from UserApp.serializers import (
     RoleBasedListSerializer, 
     DepartmentSerializer, 
-    RoleSerializer, 
+    RoleSerializer,
     UserSerializer,
     UserListSerializer
 )
@@ -138,3 +139,18 @@ def bulkUserAdd(request):
         else:
             errors = users_serializer.errors
             return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+@csrf_exempt
+@user_is_authorized
+def getUserLeaveStats(request):
+    if request.method == 'GET':
+        try:
+            user_email = getattr(request, 'user_email', None)
+            year = request.GET.get('year', None)
+            user = User.objects.get(email=user_email)
+            leave_stats = getYearLeaveStats(user.id, year)
+            return JsonResponse(leave_stats, safe=False)
+        except ValueError as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
