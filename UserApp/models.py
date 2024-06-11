@@ -38,7 +38,7 @@ class User(models.Model):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=20)
     GENDER_CHOICES = [
         ('Male', 'Male'),
         ('Female', 'Female'),
@@ -49,7 +49,7 @@ class User(models.Model):
         choices=GENDER_CHOICES
     )
     date_of_birth = models.DateField()
-    profile_image = models.CharField(max_length=250)
+    profile_image = models.CharField(max_length=250, null=True, blank=True)
 
 
     # Work Information
@@ -85,7 +85,7 @@ class User(models.Model):
 
     # Emergency Contact Information
     emergency_contact_name = models.CharField(max_length=100, null=True)
-    emergency_contact_number = models.BigIntegerField(validators=[validate_phone_number],  null=True)
+    emergency_contact_number = models.CharField(max_length=20, null=True)
     emergency_contact_relation = models.CharField(max_length=100, null=True)
     emergency_contact_email = models.EmailField(max_length=100, null=True)
     

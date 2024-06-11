@@ -8,7 +8,7 @@ def add_initial_data(apps, schema_editor):
     RuleSet.objects.create(name='maternity_leave', max_days_allowed=180, duration='None')
     RuleSet.objects.create(name='paternity_leave', max_days_allowed=10, duration='None')
     RuleSet.objects.create(name='marriage_leave', max_days_allowed=5, duration='None')
-    RuleSet.objects.create(name='work_from_home', max_days_allowed=5, duration='None')
+    RuleSet.objects.create(name='work_from_home', max_days_allowed=5, duration='quarterly')
     RuleSet.objects.create(name='miscellaneous_leave', duration='None')
 
     LeaveType = apps.get_model('LeaveTrackingApp', 'LeaveType')
