@@ -11,7 +11,7 @@ from LeaveTrackingApp.serializers import YearCalendarSerializerList, YearCalenda
 from UserApp.decorators import user_is_authorized
 
 @csrf_exempt
-@user_is_authorized
+#@user_is_authorized
 def getHolidayCalendars(request):
     if request.method=='GET':
         # filter based on status in queryparam with default value Approved
@@ -25,7 +25,7 @@ def getHolidayCalendars(request):
         return JsonResponse(holiday_calendars_serializer.data, safe=False)
 
 @csrf_exempt
-@user_is_authorized
+#@user_is_authorized
 def createHolidayCalendar(request):
     if request.method=='POST':
         holiday_calendar_data = JSONParser().parse(request)

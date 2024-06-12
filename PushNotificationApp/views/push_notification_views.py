@@ -1,37 +1,94 @@
-import firebase_admin
-from firebase_admin import credentials, messaging
+from datetime import timedelta
+from dotenv import load_dotenv
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from PushNotificationApp.models import FCMToken
+from PushNotificationApp.serializers import FCMTokenSerializer
+from PushNotificationApp.utils import fcm_token_list, fcm_token_validate, multi_fcm_tokens_validate
+from UserApp.decorators import user_is_authorized
+from UserApp.models import User
+from rest_framework.parsers import JSONParser
+from rest_framework import status
+from django.http import JsonResponse
 
-server_key = 'PushNotificationApp/views/leave-tracking-f2849-firebase-adminsdk-dcmyh-8bd39fbecf.json'
+load_dotenv()
 
-# Initialize Firebase app
-firebase_cred = credentials.Certificate(server_key)
-firebase_app = firebase_admin.initialize_app(firebase_cred)
+@csrf_exempt
+# #@user_is_authorized
+def fcmTokenStore(request):
+    if request.method == 'POST':
+        try:
+            user_email = getattr(request, 'user_email', None) 
+            user_email = "chandani.mourya@copods.co"
+            user = User.objects.get(email=user_email)
+            fcm_token_data = JSONParser().parse(request)
+            # expires_at = timezone.now() + timedelta(days=60)
+            expires_at = timezone.now() + timedelta(seconds=2)
+            token = fcm_token_data.get('fcm_token')
+            fcm_token = FCMToken.objects.filter(fcm_token=token, user_id=user.id).first()
+
+            if fcm_token:
+                return JsonResponse({'message': 'FCM token already exists'}, status = status.HTTP_200_OK)
+            token_data = {
+                'fcm_token': token,
+                'expires_at': expires_at,
+                'user': user.id
+            }
+            fcm_token_serializer = FCMTokenSerializer(data=token_data)
+            if fcm_token_serializer.is_valid():
+                fcm_token_serializer.save()
+            else:
+                errors = fcm_token_serializer.errors
+                return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+
+            return JsonResponse({'message': 'Added FCM Tokens Successfully!!'}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+        
 
-
-print("Firebase app initialized")
-print("Firebase app name: ", firebase_app.name)
-print("Firebase app project_id: ", firebase_app.project_id)
-
-# Function to send push notification to multiple tokens
-
-def send_token_push(title, body, tokens):
-    message = messaging.MulticastMessage(
-        notification=messaging.Notification(
-            title=title,
-            body=body
-        ),
-        tokens=tokens
-    )
-    response = messaging.send_multicast(message)
-    if response.failure_count > 0:
-        print(f'Failed to send to {response.failure_count} tokens due to {list(map(lambda e: e.reason, response.responses))}')
+@csrf_exempt
+def fcmTokenValidate(request):
+    if request.method == 'POST':
+        try:
+            fcm_token_data = JSONParser().parse(request)
+            token = fcm_token_data.get('fcm_token')
+            print("token: ", token)
+            response = fcm_token_validate(token)
+            print("response: ", response)
+            if response['valid']:
+                return JsonResponse({'valid': True}, status=status.HTTP_200_OK)
+            else:
+                return JsonResponse({'valid': False, 'error': response['error']}, status=status.HTTP_200_OK if 'expired' in response['error'] else status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return JsonResponse({'valid': False, 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
-        print(f'Successfully sent message to all tokens.')
+        return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-# Example usage
-tokens = ["c5x_tmvYRw-NvPtH2Kb_eK:APA91bGLplNOMOspkLpz8jpV9YN2iHJ17RWmztv0B_9Sht3IUJVvDxE9hen5OhqZg_XM2FbBOkH890oBYIDiiRZEmKH9k01Mx75Bs7rZbhfrmisoOP7xH0Lil9-a1DragTcS3pPVgVn4"]
-# Replace with actual registration tokens
+@csrf_exempt
+def FCMTokenList(request):
+    if request.method=='GET':
+        response = fcm_token_list(request)
+        print("Response", response)
+        return response
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-send_token_push("Hello", "frontend", tokens)
+
+
+
+
+@csrf_exempt
+def MultiplefcmTokensValidate(request):
+    if request.method=='POST':
+        fcm_token_data = JSONParser().parse(request)
+        fcm_tokens = fcm_token_data.get('fcm_tokens', [])
+        response = multi_fcm_tokens_validate(fcm_tokens)
+        print("Response", response)
+        return response
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+

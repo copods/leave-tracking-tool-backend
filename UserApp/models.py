@@ -1,13 +1,14 @@
 from django.db import models
 import uuid
-from django.utils.timezone import now  # Import the now function
+from django.forms import ValidationError
+from django.utils.timezone import now
 
 
 # Create your models here.
 def validate_phone_number(value):
     if len(str(value)) != 10:
         raise ValidationError(
-            _('%(value)s is not a valid phone number.'),
+            ('%(value)s is not a valid phone number.'),
             params={'value': value},
         )
 
@@ -38,7 +39,7 @@ class User(models.Model):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=20)
+    phone_number = models.CharField(max_length=100)
     GENDER_CHOICES = [
         ('M', 'Male'),
         ('F', 'Female'),
@@ -49,7 +50,7 @@ class User(models.Model):
         choices=GENDER_CHOICES
     )
     date_of_birth = models.DateField()
-    profile_image = models.CharField(max_length=250, null=True, blank=True)
+    profile_image = models.CharField(max_length=250)
 
 
     # Work Information
@@ -85,7 +86,7 @@ class User(models.Model):
 
     # Emergency Contact Information
     emergency_contact_name = models.CharField(max_length=100, null=True)
-    emergency_contact_number = models.CharField(max_length=20, null=True)
+    emergency_contact_number = models.BigIntegerField(validators=[validate_phone_number],  null=True)
     emergency_contact_relation = models.CharField(max_length=100, null=True)
     emergency_contact_email = models.EmailField(max_length=100, null=True)
     
