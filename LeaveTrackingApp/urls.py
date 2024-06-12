@@ -4,7 +4,8 @@ from LeaveTrackingApp.views.holiday_calendar_views import createHolidayCalendar,
 from LeaveTrackingApp.views.leaves_views import (
     createLeaveRequest, 
     getLeaveDetails, 
-    getLeaveTypes, 
+    getLeaveTypes,
+    getUserLeaveStats, 
     leavesForApprover, 
     getUserLeaves
 )
@@ -16,6 +17,7 @@ urlpatterns = [
     re_path(r'^leavesForApprover$', leavesForApprover),
     re_path(r'^getUserLeaves$', getUserLeaves),
     re_path(r'^getLeaveDetails/([0-9a-f-]+)$', getLeaveDetails),
+    re_path(r'^getUserLeaveStats$', getUserLeaveStats),
 
     # holiday urls
     re_path(r'^createHolidayCalendar$', createHolidayCalendar),

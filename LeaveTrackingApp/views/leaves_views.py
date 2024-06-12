@@ -2,6 +2,7 @@
 
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
+from LeaveTrackingApp.utils import getYearLeaveStats
 from UserApp.models import User
 from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
@@ -93,11 +94,22 @@ def getLeaveDetails(request, id):
             return JsonResponse(leave_serializer.data, safe=False)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+@csrf_exempt
+@user_is_authorized
+def getUserLeaveStats(request):
+    if request.method == 'GET':
+        try:
+            user_email = getattr(request, 'user_email', None)
+            year = request.GET.get('year', None)
+            user = User.objects.get(email=user_email)
+            leave_stats = getYearLeaveStats(user.id, year)
+            return JsonResponse(leave_stats, safe=False)
+        except ValueError as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# get leaves left
-# get leave list for candidate
-# get leave list for approver
-# get leave details
+
 # change leave status with status message
-# unpaid leave count list etc
 # enable editing of leave request
