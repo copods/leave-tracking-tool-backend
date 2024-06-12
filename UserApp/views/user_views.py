@@ -87,7 +87,7 @@ def user(request,id):
     elif request.method=='DELETE':
         user = User.objects.get(id=id)
         user.delete()
-        return JsonResponse("Deleted Successfully!!", safe=False)
+        return JsonResponse({"id": id, "message": "Deleted Successfully!!"}, safe=False)
 
     elif request.method=='PUT':
         user_data = JSONParser().parse(request)
