@@ -5,15 +5,9 @@ from UserApp.models import User
 from datetime import date, datetime
 import calendar
 
-# get user leave statistics 
-######### IMP: need to handle the leave which was started in previous quarter and ended in current quarter,
-    #########      slice its date details while counting total leaves in quarter 
 
-
-##for one year
 def getYearLeaveStats(user_id, year_range):
     try:
-        # Get user's date of joining
         user = User.objects.get(id=user_id)
         doj = user.date_of_joining
         yearly_quarters = getYearlyQuarters(doj, year_range)
@@ -24,36 +18,46 @@ def getYearLeaveStats(user_id, year_range):
         user_leaves_for_year = Leave.objects.filter(
             Q(user__id=user_id) &
             (
-                Q(start_date__gte=start_date) &
-                Q(start_date__lt=end_date)
+                (Q(start_date__gte=start_date) & Q(start_date__lt=end_date)) | Q(end_date__gte=start_date)
             )
         )
 
-        quarterly_leave_types = LeaveType.objects.filter(~Q(rule_set__duration="None")).values_list('name', flat=True)
-        yearly_leave_types = RuleSet.objects.filter(Q(duration="None") & ~Q(name="miscellaneous_leave")).values_list('name', flat=True)
+        quarterly_leave_types = LeaveType.objects.exclude(rule_set__duration="None").values_list('name', flat=True)
+        yearly_leave_types = LeaveType.objects.filter(Q(rule_set__duration="None") & ~Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
 
         year_leave_stats = {
             'year': f'{year}-{int(year) + 1}',
             'yearly_leaves': [],
-            'quarterly_leaves': []
+            'quarterly_leaves': [],
         }
+        for leave_type in quarterly_leave_types:
+            year_leave_stats[f'{leave_type}_taken'] = 0
+            year_leave_stats[f'total_{leave_type}'] = 0
 
         # Calculate yearly leave statistics
         for leave_type in yearly_leave_types:
             yearly_leave_obj = {}
-            leave = user_leaves_for_year.filter(
+            leaves = user_leaves_for_year.filter(
                 Q(leave_type__name=leave_type) &
-                Q(start_date__gte=start_date) &
-                Q(start_date__lt=end_date)
-            ).first()  # taking first because there should be only one in a year
+                (
+                    (Q(start_date__gte=start_date) & Q(start_date__lt=end_date)) | Q(end_date__gte=start_date)
+                )
+            )
+            if leaves:
+                leaves_data = LeaveSerializer(leaves, many=True).data
+                leave_days = []
+                for leave in leaves_data:
+                    leave_days.extend(leave['day_details'])
+                leave_days.sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
+                #the case where leave overlapped two years, filter off day details array accordingly
+                leave_days = [
+                    day for day in leave_days
+                    if start_date <= datetime.strptime(day['date'], "%Y-%m-%d").date() < end_date
+                ]
 
-            if leave:
-                # Serialize the leave to get day details
-                leave = LeaveSerializer(leave).data
-                leave_days = leave['day_details']
                 yearly_leave_obj['leave_type'] = leave_type
                 yearly_leave_obj['daysTaken'] = len(leave_days)
-                yearly_leave_obj['totalDays'] = RuleSet.objects.get(name=leave_type).max_days_allowed
+                yearly_leave_obj['totalDays'] = LeaveType.objects.get(name=leave_type).rule_set.max_days_allowed
                 yearly_leave_obj['remaining'] = max(yearly_leave_obj['totalDays'] - yearly_leave_obj['daysTaken'], 0)
                 yearly_leave_obj['dayDetails'] = [
                     {
@@ -64,7 +68,7 @@ def getYearLeaveStats(user_id, year_range):
                     for day in leave_days
                 ]
             else:
-                max_days = RuleSet.objects.get(name=leave_type).max_days_allowed
+                max_days = LeaveType.objects.get(name=leave_type).rule_set.max_days_allowed
                 yearly_leave_obj = {
                     'leave_type': leave_type,
                     'daysTaken': 0,
@@ -75,25 +79,30 @@ def getYearLeaveStats(user_id, year_range):
 
             year_leave_stats['yearly_leaves'].append(yearly_leave_obj)
 
-
         # Organize quarterly leaves and day details
         quarterly_leaves_days_for_year = {leave_type: [] for leave_type in quarterly_leave_types}
 
         for leave_type in quarterly_leave_types:
             leave_requests = user_leaves_for_year.filter(
                 Q(leave_type__name=leave_type) &
-                Q(start_date__gte=start_date) &
-                Q(start_date__lt=end_date)
+                (
+                    (Q(start_date__gte=start_date) & Q(start_date__lt=end_date)) | Q(end_date__gte=start_date)
+                )
             ).order_by('start_date')
-            # Serialize each leave request to get day details
             leave_requests = LeaveSerializer(leave_requests, many=True).data
-            for leave_request in leave_requests:
-                days = leave_request['day_details']
-                for day in days:
-                    quarterly_leaves_days_for_year[leave_type].append({
-                        'date': day['date'],
-                        'status': leave_request['status']
-                    })
+            leave_days = []
+            for leave in leave_requests:
+                day_details = leave['day_details']
+                day_details.sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
+                for day in day_details:
+                    #case where quarterly leave overlapped two years, filter off their days accordingly
+                    if start_date <= datetime.strptime(day['date'], "%Y-%m-%d").date() < end_date:
+                        leave_days.append({
+                            'date': day['date'],
+                            'status': leave['status']
+                        })
+
+            quarterly_leaves_days_for_year[leave_type] = leave_days
         
         # Calculate quarterly statistics
         for i in range(4):
@@ -104,11 +113,13 @@ def getYearLeaveStats(user_id, year_range):
             }
             for leave_type in quarterly_leave_types:
                 days_in_quarter = []
+                # leaves overlapping quarters is handled here -> put days in respective quarter of days array accordingly
                 for day in quarterly_leaves_days_for_year[leave_type]:
                     if calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month] in yearly_quarters[year][i]['months']:
                         days_in_quarter.append(day)
 
-                max_days = RuleSet.objects.get(name=leave_type).max_days_allowed
+                max_days = LeaveType.objects.get(name=leave_type).rule_set.max_days_allowed
+                print(max_days, '\n\n\n')
                 quarter_obj[leave_type] = {
                     'daysTaken': len(days_in_quarter),
                     'totalDays': max_days,
@@ -124,6 +135,9 @@ def getYearLeaveStats(user_id, year_range):
 
                 quarter_obj['unpaid'] = [sum(x) for x in zip(quarter_obj['unpaid'], unpaid_for_leave_type)]
 
+                year_leave_stats[f'{leave_type}_taken'] += quarter_obj[leave_type]['daysTaken']
+                year_leave_stats[f'total_{leave_type}'] += quarter_obj[leave_type]['totalDays']
+            
             year_leave_stats['quarterly_leaves'].append(quarter_obj)
 
         return year_leave_stats
@@ -132,11 +146,7 @@ def getYearLeaveStats(user_id, year_range):
         raise e
 
 
-
-
-
 def getYearlyQuarters(user_doj, year_range):
-    print(user_doj, year_range)
     doj_year = user_doj.year
     doj_month = user_doj.month
     doj_date = user_doj.day
@@ -152,18 +162,16 @@ def getYearlyQuarters(user_doj, year_range):
         str(year) : getQuartersUtil(year,doj_date,doj_month)
         for year in range(start_year, last_year+1)
     }
-    print('here')
+    
     return years_quarters
 
 def getQuartersUtil(year, doj_date, doj_month):
-        print('here bhai here')
         quarter_start_dates = [
             date(year, doj_month, doj_date),
             add_months(date(year, doj_month, doj_date), 3),
             add_months(date(year, doj_month, doj_date), 6),
             add_months(date(year, doj_month, doj_date), 9),
         ]
-        print(quarter_start_dates, '\n\n\n')
 
         quarters = []
         for start_date in quarter_start_dates:
@@ -175,14 +183,11 @@ def getQuartersUtil(year, doj_date, doj_month):
                 'end_date': end_date,
                 'months': month_abbrs,
             }
-            print(f"Calculated quarter: {quarter}")
             quarters.append(quarter)
 
-        print('here in here')
         return quarters
 
 def add_months(original_date, months_to_add):
-    print('here in calculation')
     year, month = divmod(original_date.year*12 + original_date.month + months_to_add, 12)
     return original_date.replace(year=year, month=month % 12, day=original_date.day)
 
@@ -195,56 +200,3 @@ def calculateUnpaidLeaves(days, max_days_allowed, months):
         if(taken > max_days_allowed):
             unpaid[months.index(calendar.month_abbr[day.month])] += 1
     return unpaid
-
-
-
-
-
-#  object format:
-#
-# {
-#     year: 2023-2024,
-#     yearly_leaves_stats:[
-#         {
-#             leave_type: maternity_leave,
-#             daysTaken: 0,
-#             totalDays: 0,
-#             remaining: 0,
-#             dayDetails: []
-#         },
-#         ...
-#     ],
-#     quarterly_leaves_stats: [
-#         {
-#             title: Q1,
-#             months: [],
-#             unpaid : [int,int,int]
-#             leave_type1: {
-#                 daysTaken: 0,
-#                 totalDays: 0,
-#                 remaining: 0,
-#                 dayDetails: []
-#             },
-#             leave_type2: {
-#                 daysTaken: 0,
-#                 totalDays: 0,
-#                 remaining: 0,
-#                 dayDetails: []
-#             }
-#             ...
-#         },
-#         {
-#             title: Q2,
-#             months: [],
-#             unpaid : [int,int,int]
-#             leave_type1: {
-#                 daysTaken: 0,
-#                 totalDays: 0,
-#                 remaining: 0,
-#                 dayDetails: []
-#             },
-#             ...
-#         },
-#         ...
-#     ]
-# }
