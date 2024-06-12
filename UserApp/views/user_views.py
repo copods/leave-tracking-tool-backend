@@ -110,7 +110,8 @@ def workTypeCounts(request):
         )
         return JsonResponse({
             "In-Office": work_type_counts['in_office'],
-            "Work-From-Home": work_type_counts['work_from_home']
+            "Work-From-Home": work_type_counts['work_from_home'],
+            "Total": work_type_counts['in_office'] + work_type_counts['work_from_home']
         }, safe=False)
 
 
