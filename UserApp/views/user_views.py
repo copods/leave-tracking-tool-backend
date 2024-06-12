@@ -8,7 +8,7 @@ from UserApp.models import Department, Role, User
 from UserApp.serializers import (
     RoleBasedListSerializer, 
     DepartmentSerializer, 
-    RoleSerializer, 
+    RoleSerializer,
     UserSerializer,
     UserListSerializer
 )
@@ -139,3 +139,4 @@ def bulkUserAdd(request):
         else:
             errors = users_serializer.errors
             return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+        
