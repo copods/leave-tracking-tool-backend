@@ -37,12 +37,6 @@ def createLeaveRequest(request):
             leave_serializer.save()
             fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
             fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
-            
-            # # Get FCM tokens for the approver
-            fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
-            fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
-            
-            # Validate FCM tokens
             valid_tokens = multi_fcm_tokens_validate(fcm_tokens)
             if valid_tokens:
                 response = send_token_push("hello", "here message", valid_tokens)
