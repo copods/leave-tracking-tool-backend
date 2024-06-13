@@ -37,7 +37,7 @@ class User(models.Model):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=20)
     GENDER_CHOICES = [
         ('Male', 'Male'),
         ('Female', 'Female'),
