@@ -1,5 +1,6 @@
 from django.urls import re_path
 from UserApp.views.user_views import (
+    addUserPoints,
     userList, 
     createUser, 
     user,
@@ -29,6 +30,7 @@ urlpatterns = [
     re_path(r'^workTypeCounts$', workTypeCounts),
     re_path(r'^createFirstUser$', createUserUnauthorized),
     re_path(r'^bulkUserAdd$', bulkUserAdd),
+    re_path(r'^addUserPoints$', addUserPoints),
 
     # roles and department APIs URL
     re_path(r'^roles$', role),
