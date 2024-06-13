@@ -57,11 +57,11 @@ def fcmTokenValidate(request):
             token = fcm_token_data.get('fcm_token')
             response = fcm_token_validate(token, user_id)
             if response['valid']:
-                return JsonResponse({'valid': True}, status=status.HTTP_200_OK)
+                return JsonResponse({'isValid': True}, status=status.HTTP_200_OK)
             else:
-                return JsonResponse({'valid': False, 'error': response['error']}, status=status.HTTP_200_OK if 'expired' in response['error'] else status.HTTP_404_NOT_FOUND)
+                return JsonResponse({'isValid': False, 'error': response['error']}, status=status.HTTP_200_OK if 'expired' in response['error'] else status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return JsonResponse({'valid': False, 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return JsonResponse({'isValid': False, 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
