@@ -117,8 +117,8 @@ class DayDetails(models.Model):
 class Leave(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_of_leaves')
-    leave_type = models.ForeignKey(LeaveType, on_delete=models.SET_NULL, null=True)
-    approver = models.ForeignKey(User, on_delete=models.PROTECT, related_name='approver_of_leave')
+    leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
+    approver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='approver_of_leave')
     leave_reason = models.CharField(max_length=100)
     STATUS_CHOICES = [
         ('P', 'PENDING'),

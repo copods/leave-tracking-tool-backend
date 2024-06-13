@@ -37,7 +37,7 @@ def createUserUnauthorized(request):
 def userList(request):
     if request.method=='GET':
         try:
-            users = User.objects.all()  # OR User.objects.all_with_deleted() based on whether to show deleted users too
+            users = User.objects.all()
             search = request.GET.get('search', None)
             sort = request.GET.get('sort', None)
             page = request.GET.get('page', 1)
@@ -80,36 +80,25 @@ def createUser(request):
 @user_is_authorized
 def user(request,id):
     if request.method=='GET':
-        try:
-            user = User.objects.get(id=id)
-            user_serializer = UserSerializer(user)
-            return JsonResponse(user_serializer.data, safe=False)
-        except User.DoesNotExist as e:
-            return JsonResponse({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        user = User.objects.get(id=id)
+        user_serializer = UserSerializer(user)
+        return JsonResponse(user_serializer.data, safe=False)
 
     elif request.method=='DELETE':
-        try:
-            user = User.objects.get(id=id)
-            user.delete()
-            return JsonResponse({"id": id, "message": "Deleted Successfully!!"}, safe=False)
-        except ValueError as e:
-            return JsonResponse({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except User.DoesNotExist as e:
-            return JsonResponse({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        user = User.objects.get(id=id)
+        user.delete()
+        return JsonResponse({"id": id, "message": "Deleted Successfully!!"}, safe=False)
 
     elif request.method=='PUT':
-        try:
-            user_data = JSONParser().parse(request)
-            user = User.objects.get(id=user_data['id'])
-            user_serializer = UserSerializer(user, data=user_data)
-            if user_serializer.is_valid():
-                user_serializer.save()
-                return JsonResponse("Updated Successfully!!", safe=False)
-            else:
-                errors = user_serializer.errors
-                return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
-        except User.DoesNotExist as e:
-            return JsonResponse({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        user_data = JSONParser().parse(request)
+        user = User.objects.get(id=user_data['id'])
+        user_serializer = UserSerializer(user, data=user_data)
+        if user_serializer.is_valid():
+            user_serializer.save()
+            return JsonResponse("Updated Successfully!!", safe=False)
+        else:
+            errors = user_serializer.errors
+            return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
 
 @csrf_exempt
 @user_is_authorized
