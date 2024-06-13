@@ -44,10 +44,8 @@ def createLeaveRequest(request):
             
             # Validate FCM tokens
             valid_tokens = multi_fcm_tokens_validate(fcm_tokens)
-            # print("valid_tokens: ", valid_tokens)
             if valid_tokens:
                 response = send_token_push("hello", "here message", valid_tokens)
-                # print("response of send_token_push: ", response)
                 if 'success' in response:
                     return JsonResponse({"message": response['message']}, status=status.HTTP_201_CREATED)
                 else:
