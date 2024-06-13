@@ -46,7 +46,9 @@ def createLeaveRequest(request):
                 fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
                 valid_tokens = multi_fcm_tokens_validate(fcm_tokens)
                 if valid_tokens:
-                    response = send_token_push("hello", "here message", valid_tokens)
+                    title = "leave request from Anuj"
+                    subtitle = "Anuj has requested for sic leave"
+                    response = send_token_push(title, subtitle, valid_tokens)
                     if 'success' in response:
                         return JsonResponse({"message": response['message']}, status=status.HTTP_201_CREATED)
                     else:
