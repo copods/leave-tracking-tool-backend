@@ -57,7 +57,7 @@ def fcmTokenValidate(request):
             if response['valid']:
                 return JsonResponse({'isValid': True}, status=status.HTTP_200_OK)
             else:
-                return JsonResponse({'isValid': False, 'error': response['error']}, status=status.HTTP_410_GONE)
+                return JsonResponse({'isValid': False, 'error': response['error']}, status=status.HTTP_200_OK)
         except Exception as e:
             return JsonResponse({'isValid': False, 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
