@@ -8,11 +8,12 @@ from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
 from rest_framework import status
 from django.db.models import Q
-from LeaveTrackingApp.models import Leave, LeaveType
+from LeaveTrackingApp.models import Leave, LeaveType, StatusReason
 from LeaveTrackingApp.serializers import (
     LeaveSerializer,
     LeaveListSerializer,
     LeaveTypeSerializer,
+    StatusReasonSerializer,
     UserLeaveListSerializer
 )
 from UserApp.decorators import user_is_authorized
@@ -112,4 +113,56 @@ def getUserLeaveStats(request):
 
 
 # change leave status with status message
+@csrf_exempt
+@user_is_authorized
+def updateLeaveStatus(request):
+    if request.method == 'POST':
+        try:
+            status_data = JSONParser().parse(request)
+            # user_email = getattr(request, 'user_email', None)
+            user_email = "sonali2.sharan@copods.co"
+            
+            status_id = status_data.get('id')
+            status = status_data.get('status')
+            reason_value = status_data.get('reason')
+            leave_id = status_data.get('leave_id')
+
+            if not all([status, reason_value, user_email, leave_id]):
+                return JsonResponse({'error': 'Missing required fields'}, status=400)
+
+            user = User.objects.get(email=user_email)
+            leave = Leave.objects.get(id=leave_id)
+            
+            if status_id:
+                status_reason = StatusReason.objects.get(id=status_id)
+                status_reason.status = status
+                status_reason.reason = reason_value
+                status_reason.user = user
+                status_reason.save()
+                created = False
+                
+            else:
+                status_reason = StatusReason.objects.create(
+                    status=status,
+                    reason=reason_value,
+                    user=user
+                )
+                created = True
+                leave.status_reasons.add(status_reason)
+
+            leave.status = status
+            leave.save()
+            status_reason_serializer = StatusReasonSerializer(status_reason)
+            return JsonResponse(status_reason_serializer.data, status=201 if created else 200)
+        
+        except Leave.DoesNotExist:
+            return JsonResponse({'error': 'Leave not found'}, status=404)
+        except StatusReason.DoesNotExist:
+            return JsonResponse({'error': 'StatusReason not found'}, status=404)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+
 # enable editing of leave request
