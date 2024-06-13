@@ -2,10 +2,8 @@ from UserApp.models import User
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
-from rest_framework.response import Response
-from django.http import JsonResponse
 from rest_framework.parsers import JSONParser
-
+from django.http import JsonResponse
 
 def isJWTValid(token):
     try:
@@ -98,4 +96,3 @@ def sign_in_app(request):
     
     else:
         return JsonResponse({'error': 'Invalid token'}, status=498)
-    

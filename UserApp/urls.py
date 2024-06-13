@@ -5,7 +5,7 @@ from UserApp.views.user_views import (
     user,
     workTypeCounts,
     createUserUnauthorized,
-    bulkUserAdd
+    bulkUserAdd,
 )
 from UserApp.views.authentication_views import (
     googleSignIn, 

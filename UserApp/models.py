@@ -41,12 +41,12 @@ class User(models.Model):
     last_name = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=100)
     GENDER_CHOICES = [
-        ('M', 'Male'),
-        ('F', 'Female'),
-        ('O', 'Other'),
+        ('Male', 'Male'),
+        ('Female', 'Female'),
+        ('Other', 'Other'),
     ]
     gender = models.CharField(
-        max_length=1,
+        max_length=10,
         choices=GENDER_CHOICES
     )
     date_of_birth = models.DateField()

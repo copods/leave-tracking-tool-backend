@@ -8,7 +8,7 @@ from UserApp.models import Department, Role, User
 from UserApp.serializers import (
     RoleBasedListSerializer, 
     DepartmentSerializer, 
-    RoleSerializer, 
+    RoleSerializer,
     UserSerializer,
     UserListSerializer
 )
@@ -87,7 +87,7 @@ def user(request,id):
     elif request.method=='DELETE':
         user = User.objects.get(id=id)
         user.delete()
-        return JsonResponse("Deleted Successfully!!", safe=False)
+        return JsonResponse({"id": id, "message": "Deleted Successfully!!"}, safe=False)
 
     elif request.method=='PUT':
         user_data = JSONParser().parse(request)
@@ -110,7 +110,8 @@ def workTypeCounts(request):
         )
         return JsonResponse({
             "In-Office": work_type_counts['in_office'],
-            "Work-From-Home": work_type_counts['work_from_home']
+            "Work-From-Home": work_type_counts['work_from_home'],
+            "Total": work_type_counts['in_office'] + work_type_counts['work_from_home']
         }, safe=False)
 
 
@@ -138,3 +139,4 @@ def bulkUserAdd(request):
         else:
             errors = users_serializer.errors
             return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+        
