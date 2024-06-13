@@ -1,7 +1,8 @@
 # create CRUD views for Role model and Department model
-
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
+from PushNotificationApp.models import FCMToken
+from PushNotificationApp.utils import multi_fcm_tokens_validate, send_token_push
 from UserApp.models import User
 from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
@@ -29,11 +30,33 @@ def getLeaveTypes(request):
 def createLeaveRequest(request):
     if request.method=='POST':
         leave_data = JSONParser().parse(request)
+        approver_id = leave_data.get('approver')
         leave_serializer = LeaveSerializer(data=leave_data)
         if leave_serializer.is_valid():
             leave_serializer.save()
-            return JsonResponse(leave_serializer.data, status=status.HTTP_201_CREATED)
+            fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
+            fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
+            
+            # # Get FCM tokens for the approver
+            fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
+            fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
+            
+            # Validate FCM tokens
+            valid_tokens = multi_fcm_tokens_validate(fcm_tokens)
+            # print("valid_tokens: ", valid_tokens)
+            if valid_tokens:
+                response = send_token_push("hello", "here message", valid_tokens)
+                # print("response of send_token_push: ", response)
+                if 'success' in response:
+                    return JsonResponse({"message": response['message']}, status=status.HTTP_201_CREATED)
+                else:
+                    return JsonResponse({"error": response['error']}, status=status.HTTP_400_BAD_REQUEST)
+            
+            return JsonResponse({"error": "No valid FCM tokens found"}, status=status.HTTP_400_BAD_REQUEST)
+        
         return JsonResponse(leave_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        #     return JsonResponse(response,leave_serializer.data, status=status.HTTP_201_CREATED)
+        # return JsonResponse(leave_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # filter query param format=> filter=role:9f299ed6-caf0-4241-9265-7576af1d6426,status:P
 @csrf_exempt
@@ -91,3 +114,5 @@ def getUserLeaves(request):
 # change leave status with status message
 # unpaid leave count list etc
 # enable editing of leave request
+
+

@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from PushNotificationApp.models import FCMToken
 from PushNotificationApp.serializers import FCMTokenSerializer
-from PushNotificationApp.utils import fcm_token_list, fcm_token_validate, multi_fcm_tokens_validate
+from PushNotificationApp.utils import fcm_token_validate, multi_fcm_tokens_validate
 from UserApp.decorators import user_is_authorized
 from UserApp.models import User
 from rest_framework.parsers import JSONParser
@@ -22,8 +22,7 @@ def fcmTokenStore(request):
             user_email = "chandani.mourya@copods.co"
             user = User.objects.get(email=user_email)
             fcm_token_data = JSONParser().parse(request)
-            # expires_at = timezone.now() + timedelta(days=60)
-            expires_at = timezone.now() + timedelta(seconds=2)
+            expires_at = timezone.now() + timedelta(days=60)
             token = fcm_token_data.get('fcm_token')
             fcm_token = FCMToken.objects.filter(fcm_token=token, user_id=user.id).first()
 
@@ -53,10 +52,11 @@ def fcmTokenValidate(request):
     if request.method == 'POST':
         try:
             fcm_token_data = JSONParser().parse(request)
+            user_email="chandani.mourya@copods.co"
+            user = User.objects.get(email=user_email)
+            user_id = user.id 
             token = fcm_token_data.get('fcm_token')
-            print("token: ", token)
-            response = fcm_token_validate(token)
-            print("response: ", response)
+            response = fcm_token_validate(token, user_id)
             if response['valid']:
                 return JsonResponse({'valid': True}, status=status.HTTP_200_OK)
             else:
@@ -66,29 +66,6 @@ def fcmTokenValidate(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-@csrf_exempt
-def FCMTokenList(request):
-    if request.method=='GET':
-        response = fcm_token_list(request)
-        print("Response", response)
-        return response
-    else:
-        return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-
-
-
-
-@csrf_exempt
-def MultiplefcmTokensValidate(request):
-    if request.method=='POST':
-        fcm_token_data = JSONParser().parse(request)
-        fcm_tokens = fcm_token_data.get('fcm_tokens', [])
-        response = multi_fcm_tokens_validate(fcm_tokens)
-        print("Response", response)
-        return response
-    else:
-        return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 

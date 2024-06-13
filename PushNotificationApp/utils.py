@@ -1,19 +1,22 @@
 from django.utils import timezone
 from PushNotificationApp.models import FCMToken
-# from UserApp.decorators import user_is_authorized
 from UserApp.models import User
-from rest_framework.parsers import JSONParser
-from rest_framework import status
-from django.http import JsonResponse
+from UserApp.decorators import user_is_authorized
+import firebase_admin
+from firebase_admin import credentials, messaging
+
+server_key = 'PushNotificationApp/views/leave-tracking-f2849-firebase-adminsdk-dcmyh-8bd39fbecf.json'
+
+# Initialize Firebase app
+firebase_cred = credentials.Certificate(server_key)
+firebase_app = firebase_admin.initialize_app(firebase_cred)
+
+# print("Firebase app initialized")
+# print("Firebase app name: ", firebase_app.name)
+# print("Firebase app project_id: ", firebase_app.project_id)
 
 # #@user_is_authorized
-def fcm_token_validate(request):
-    user_email="chandani.mourya@copods.co"
-    user = User.objects.get(email=user_email)
-    user_id = user.id 
-    print("validate : ",request)
-    token = request
-    print(token)
+def fcm_token_validate(token, user_id):
     fcm_token = FCMToken.objects.filter(fcm_token=token, user_id=user_id).first()
     try:
         if fcm_token:
@@ -29,22 +32,40 @@ def fcm_token_validate(request):
     except Exception as e:
         return {'valid': False, 'error': str(e)}
 
-def fcm_token_list(user_id):
-    try:
-        user_fcm_tokens = FCMToken.objects.filter(user_id=user_id).values_list('fcm_token', flat=True)
-        print(list(user_fcm_tokens))
-    except Exception as e:
-        raise e
-
 def multi_fcm_tokens_validate(fcm_tokens):
     try:
+        # user_email = getattr(request, 'user_email', None) 
+        user_email = "chandani.mourya@copods.co"
+        user = User.objects.get(email=user_email)
         valid_fcm_tokens = []
+        user_id = user.id
         for fcm_token in fcm_tokens:
-            response = fcm_token_validate(fcm_token)
+            response = fcm_token_validate(fcm_token, user_id)
             if response['valid']:
                 valid_fcm_tokens.append(fcm_token)   
         return valid_fcm_tokens
-        # return JsonResponse({'valid_fcm_tokens': valid_fcm_tokens}, status = status.HTTP_200_OK)
     except Exception as e:
         raise e
     
+def send_token_push(title, body, tokens):
+    message = messaging.MulticastMessage(
+        notification=messaging.Notification(
+            title=title,
+            body=body
+        ),
+        tokens=tokens
+    )
+    response = messaging.send_multicast(message)
+    print("message:", response)
+    try:
+        if response.failure_count > 0:
+            error_reasons = [str(res.exception) for res in response.responses if not res.success]
+            return {
+                'error': f'Failed to send to {response.failure_count} tokens due to: {", ".join(error_reasons)}'
+            }
+        else:
+            return {
+                'success': True,
+                'message': 'Notification sent successfully to all tokens'}
+    except Exception as e:
+        return {'error': str(e)}
