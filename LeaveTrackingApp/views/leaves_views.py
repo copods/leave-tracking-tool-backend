@@ -119,9 +119,7 @@ def updateLeaveStatus(request):
     if request.method == 'POST':
         try:
             status_data = JSONParser().parse(request)
-            # user_email = getattr(request, 'user_email', None)
-            user_email = "sonali2.sharan@copods.co"
-            
+            user_email = getattr(request, 'user_email', None)
             status_id = status_data.get('id')
             status = status_data.get('status')
             reason_value = status_data.get('reason')
@@ -140,7 +138,6 @@ def updateLeaveStatus(request):
                 status_reason.user = user
                 status_reason.save()
                 created = False
-                
             else:
                 status_reason = StatusReason.objects.create(
                     status=status,
