@@ -87,6 +87,9 @@ class User(models.Model):
     emergency_contact_number = models.CharField(max_length=20, null=True)
     emergency_contact_relation = models.CharField(max_length=100, null=True)
     emergency_contact_email = models.EmailField(max_length=100, null=True)
+
+    #user points
+    points = models.IntegerField(default=0)
     
     #Metadata
     created_at = models.DateTimeField(default=now)
