@@ -1,16 +1,14 @@
 from django.db import models
 import uuid
-from django.forms import ValidationError
 from django.utils.timezone import now
+from UserApp.managers import UserManager
+from UserApp.signals import user_pre_soft_delete_signal
 
 
 # Create your models here.
 def validate_phone_number(value):
-    if len(str(value)) != 10:
-        raise ValidationError(
-            ('%(value)s is not a valid phone number.'),
-            params={'value': value},
-        )
+    # custom validation later
+    return
 
 class Department(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
@@ -39,7 +37,7 @@ class User(models.Model):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=20)
     GENDER_CHOICES = [
         ('Male', 'Male'),
         ('Female', 'Female'),
@@ -89,11 +87,25 @@ class User(models.Model):
     emergency_contact_number = models.BigIntegerField(validators=[validate_phone_number],  null=True)
     emergency_contact_relation = models.CharField(max_length=100, null=True)
     emergency_contact_email = models.EmailField(max_length=100, null=True)
+
+    #user points
+    points = models.IntegerField(default=0)
     
     #Metadata
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
+    isDeleted = models.BooleanField(default=False)
 
+    objects = UserManager()
+
+    def delete(self):
+        try:
+            user_pre_soft_delete_signal.send(sender=self.__class__, instance=self)
+            self.isDeleted = True
+            self.save()
+        except ValueError as e:
+            raise e
+        
     def __str__(self):
         return self.email
     def short_name(self):

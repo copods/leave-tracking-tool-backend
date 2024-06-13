@@ -43,9 +43,6 @@ def fcmTokenStore(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-        
-
 @csrf_exempt
 def fcmTokenValidate(request):
     if request.method == 'POST':

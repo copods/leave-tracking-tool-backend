@@ -33,11 +33,11 @@ def createUserUnauthorized(request):
 
 # format of query param: filter=role:9f299ed6-caf0-4241-9265-7576af1d6426,status=P
 @csrf_exempt
-@user_is_authorized
+#@user_is_authorized
 def userList(request):
     if request.method=='GET':
         try:
-            users = User.objects.all()
+            users = User.objects.all()  # OR User.objects.all_with_deleted() based on whether to show deleted users too
             search = request.GET.get('search', None)
             sort = request.GET.get('sort', None)
             page = request.GET.get('page', 1)
@@ -64,7 +64,7 @@ def userList(request):
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt
-@user_is_authorized
+#@user_is_authorized
 def createUser(request):
     if request.method=='POST':
         user_data = JSONParser().parse(request)
@@ -77,31 +77,42 @@ def createUser(request):
             return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
     
 @csrf_exempt
-@user_is_authorized
+#@user_is_authorized
 def user(request,id):
     if request.method=='GET':
-        user = User.objects.get(id=id)
-        user_serializer = UserSerializer(user)
-        return JsonResponse(user_serializer.data, safe=False)
+        try:
+            user = User.objects.get(id=id)
+            user_serializer = UserSerializer(user)
+            return JsonResponse(user_serializer.data, safe=False)
+        except User.DoesNotExist as e:
+            return JsonResponse({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
     elif request.method=='DELETE':
-        user = User.objects.get(id=id)
-        user.delete()
-        return JsonResponse({"id": id, "message": "Deleted Successfully!!"}, safe=False)
+        try:
+            user = User.objects.get(id=id)
+            user.delete()
+            return JsonResponse({"id": id, "message": "Deleted Successfully!!"}, safe=False)
+        except ValueError as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist as e:
+            return JsonResponse({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
     elif request.method=='PUT':
-        user_data = JSONParser().parse(request)
-        user = User.objects.get(id=user_data['id'])
-        user_serializer = UserSerializer(user, data=user_data)
-        if user_serializer.is_valid():
-            user_serializer.save()
-            return JsonResponse("Updated Successfully!!", safe=False)
-        else:
-            errors = user_serializer.errors
-            return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user_data = JSONParser().parse(request)
+            user = User.objects.get(id=user_data['id'])
+            user_serializer = UserSerializer(user, data=user_data)
+            if user_serializer.is_valid():
+                user_serializer.save()
+                return JsonResponse("Updated Successfully!!", safe=False)
+            else:
+                errors = user_serializer.errors
+                return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
 
 @csrf_exempt
-@user_is_authorized
+#@user_is_authorized
 def workTypeCounts(request):
     if request.method == 'GET':
         work_type_counts = User.objects.aggregate(
@@ -116,7 +127,7 @@ def workTypeCounts(request):
 
 
 @csrf_exempt
-@user_is_authorized
+#@user_is_authorized
 def bulkUserAdd(request):
     if request.method == 'POST':
         users_data = JSONParser().parse(request)
@@ -139,4 +150,19 @@ def bulkUserAdd(request):
         else:
             errors = users_serializer.errors
             return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+@csrf_exempt
+#@user_is_authorized
+def addInitialUserPoints(request):
+    if request.method == 'POST':
+        try:
+            points_data = JSONParser().parse(request)
+            user_email = getattr(request, 'user_email', None)
+            user = User.objects.get(email=user_email)
+            user.points += points_data['correct_questions']
+            user.save()
+            return JsonResponse(f"The user has been awarded with {points_data['correct_questions']} points", safe=False)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         

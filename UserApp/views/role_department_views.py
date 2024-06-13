@@ -11,7 +11,7 @@ from UserApp.serializers import DepartmentSerializer, RoleSerializer
 from UserApp.decorators import user_is_authorized
 
 @csrf_exempt
-@user_is_authorized
+#@user_is_authorized
 def role(request):
     if request.method=='GET':
         roles = Role.objects.all()
@@ -20,7 +20,7 @@ def role(request):
 
 
 @csrf_exempt
-@user_is_authorized
+#@user_is_authorized
 def department(request):
     if request.method=='GET':
         departments = Department.objects.all()

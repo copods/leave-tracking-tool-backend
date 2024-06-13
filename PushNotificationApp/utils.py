@@ -11,10 +11,6 @@ server_key = 'PushNotificationApp/views/leave-tracking-f2849-firebase-adminsdk-d
 firebase_cred = credentials.Certificate(server_key)
 firebase_app = firebase_admin.initialize_app(firebase_cred)
 
-# print("Firebase app initialized")
-# print("Firebase app name: ", firebase_app.name)
-# print("Firebase app project_id: ", firebase_app.project_id)
-
 @user_is_authorized
 def fcm_token_validate(token, user_id):
     fcm_token = FCMToken.objects.filter(fcm_token=token, user_id=user_id).first()
@@ -55,7 +51,6 @@ def send_token_push(title, body, tokens):
         tokens=tokens
     )
     response = messaging.send_multicast(message)
-    print("message:", response)
     try:
         if response.failure_count > 0:
             error_reasons = [str(res.exception) for res in response.responses if not res.success]
