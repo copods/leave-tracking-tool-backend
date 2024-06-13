@@ -118,6 +118,7 @@ def getUserLeaveStats(request):
 def updateLeaveStatus(request):
     if request.method == 'POST':
         try:
+            # future aspect: based on the deadline to get leave accepted, withdrawn or rejected, status reason updation/creation can be done
             status_data = JSONParser().parse(request)
             user_email = getattr(request, 'user_email', None)
             status_id = status_data.get('id')
@@ -128,36 +129,29 @@ def updateLeaveStatus(request):
             if not all([status, reason_value, user_email, leave_id]):
                 return JsonResponse({'error': 'Missing required fields'}, status=400)
 
-            user = User.objects.get(email=user_email)
-            leave = Leave.objects.get(id=leave_id)
+            user = User.objects.only('id').get(email=user_email)
+            leave = Leave.objects.only('id').get(id=leave_id)
             
-            if status_id:
-                status_reason = StatusReason.objects.get(id=status_id)
-                status_reason.status = status
-                status_reason.reason = reason_value
-                status_reason.user = user
-                status_reason.save()
-                created = False
-            else:
-                status_reason = StatusReason.objects.create(
-                    status=status,
-                    reason=reason_value,
-                    user=user
-                )
-                created = True
-                leave.status_reasons.add(status_reason)
+            status_reason, created = StatusReason.objects.get_or_create(
+                id=status_id if status_id else None,
+                user=user,
+            )
+            status_reason.status = status
+            status_reason.reason = reason_value
+            status_reason.save()
+            leave.status_reasons.add(status_reason)
 
             leave.status = status
             leave.save()
-            status_reason_serializer = StatusReasonSerializer(status_reason)
-            return JsonResponse(status_reason_serializer.data, status=201 if created else 200)
+
+            return JsonResponse(StatusReasonSerializer(status_reason).data, status=201 if created else 200)
         
+        except  User.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
         except Leave.DoesNotExist:
             return JsonResponse({'error': 'Leave not found'}, status=404)
         except StatusReason.DoesNotExist:
-            return JsonResponse({'error': 'StatusReason not found'}, status=404)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'User not found'}, status=404)
+            return JsonResponse({'error': 'Status reason not found'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
 
