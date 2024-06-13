@@ -8,11 +8,12 @@ from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
 from rest_framework import status
 from django.db.models import Q
-from LeaveTrackingApp.models import Leave, LeaveType
+from LeaveTrackingApp.models import Leave, LeaveType, StatusReason
 from LeaveTrackingApp.serializers import (
     LeaveSerializer,
     LeaveListSerializer,
     LeaveTypeSerializer,
+    StatusReasonSerializer,
     UserLeaveListSerializer
 )
 from UserApp.decorators import user_is_authorized
@@ -122,4 +123,40 @@ def getUserLeaveStats(request):
 
 
 # change leave status with status message
+@csrf_exempt
+@user_is_authorized
+def addLeaveStatus(request):
+    if request.method == 'POST':
+        try:
+            # future aspect: based on the deadline to get leave accepted, withdrawn or rejected, status reason creation can be done
+            status_data = JSONParser().parse(request)
+            user_email = getattr(request, 'user_email', None)
+            status = status_data.get('status')
+            reason_value = status_data.get('reason')
+            leave_id = status_data.get('leave_id')
+
+            if not all([status, reason_value, user_email, leave_id]):
+                return JsonResponse({'error': 'Missing required fields'}, status=400)
+
+            user = User.objects.only('id').get(email=user_email)
+            leave = Leave.objects.only('id').get(id=leave_id)
+            
+            status_reason = StatusReason.objects.create(user=user, status=status, reason=reason_value)
+            status_reason.save()
+            leave.status_reasons.add(status_reason)
+            leave.status = status
+            leave.save()
+
+            return JsonResponse(StatusReasonSerializer(status_reason).data, status=201)
+        
+        except  User.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
+        except Leave.DoesNotExist:
+            return JsonResponse({'error': 'Leave not found'}, status=404)
+        except StatusReason.DoesNotExist:
+            return JsonResponse({'error': 'Status reason not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+
 # enable editing of leave request
