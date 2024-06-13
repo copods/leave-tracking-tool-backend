@@ -11,7 +11,6 @@ server_key = 'PushNotificationApp/views/leave-tracking-f2849-firebase-adminsdk-d
 firebase_cred = credentials.Certificate(server_key)
 firebase_app = firebase_admin.initialize_app(firebase_cred)
 
-@user_is_authorized
 def fcm_token_validate(token, user_id):
     fcm_token = FCMToken.objects.filter(fcm_token=token, user_id=user_id).first()
     try:
