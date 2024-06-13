@@ -27,7 +27,7 @@ def getLeaveTypes(request):
         return JsonResponse(leave_types_serializer.data, safe=False)
 
 @csrf_exempt
-@user_is_authorized
+# @user_is_authorized
 def createLeaveRequest(request):
     if request.method=='POST':
         leave_data = JSONParser().parse(request)
@@ -56,8 +56,6 @@ def createLeaveRequest(request):
             return JsonResponse({"error": "No valid FCM tokens found"}, status=status.HTTP_400_BAD_REQUEST)
         
         return JsonResponse(leave_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        #     return JsonResponse(response,leave_serializer.data, status=status.HTTP_201_CREATED)
-        # return JsonResponse(leave_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # filter query param format=> filter=role:9f299ed6-caf0-4241-9265-7576af1d6426,status:P
 @csrf_exempt
