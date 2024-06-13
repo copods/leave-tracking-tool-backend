@@ -154,7 +154,7 @@ def bulkUserAdd(request):
 
 @csrf_exempt
 @user_is_authorized
-def addUserPoints(request):
+def addInitialUserPoints(request):
     if request.method == 'POST':
         try:
             points_data = JSONParser().parse(request)
