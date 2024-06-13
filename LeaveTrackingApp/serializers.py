@@ -28,15 +28,17 @@ class LeaveTypeSerializer(serializers.ModelSerializer):
 
 class LeaveSerializer(serializers.ModelSerializer):
     day_details = DayDetailSerializer(many=True)
-    status_reasons = StatusReasonSerializer(many=True)
+    status_reasons = StatusReasonSerializer(many=True, required=False)
 
     class Meta:
         model = Leave
         fields = '__all__'
 
     def create(self, validated_data):
-        day_details_data = validated_data.pop('day_details')
+        day_details_data = validated_data.pop('day_details', [])
+        status_reasons_data = validated_data.pop('status_reasons', [])
         leave = Leave.objects.create(**validated_data)
+        leave.status_reasons.set(status_reasons_data)
         for day_detail_data in day_details_data:
             day_detail = DayDetails.objects.create(**day_detail_data)
             leave.day_details.add(day_detail)

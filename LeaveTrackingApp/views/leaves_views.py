@@ -160,3 +160,42 @@ def addLeaveStatus(request):
 
 
 # enable editing of leave request
+@csrf_exempt
+@user_is_authorized
+def enableEditLeave(request):
+    if request.method == 'POST':
+        try:
+            leave_data = JSONParser().parse(request)
+            leave = Leave.objects.get(id=leave_data['id'])
+            if not leave.editStatus:
+                leave.editStatus = 'Requested-For-Edit'
+                leave.save()
+                return JsonResponse({'message': 'Leave request sent to Edit'}, status=200)   
+            else:
+                return JsonResponse({'message': 'Leave request already sent to Edit'}, status=400)
+
+        except Leave.DoesNotExist:
+            return JsonResponse({'error': 'Leave not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+        
+@csrf_exempt
+@user_is_authorized
+def editLeave(request, id):
+    if(request.method == 'PUT'):
+        try:
+            leave_data = JSONParser().parse(request)
+            leave = Leave.objects.get(id=id)
+            if leave.editStatus == 'Requested-For-Edit':
+                #update leave logic
+
+                #after update
+                # leave.editStatus = 'Edited'
+                pass
+            else:
+                return JsonResponse({'error': 'Leave request is not editable'}, status=400)
+        
+        except Leave.DoesNotExist:
+            return JsonResponse({'error': 'Leave not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
