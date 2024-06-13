@@ -115,13 +115,12 @@ def getUserLeaveStats(request):
 # change leave status with status message
 @csrf_exempt
 @user_is_authorized
-def updateLeaveStatus(request):
+def addLeaveStatus(request):
     if request.method == 'POST':
         try:
-            # future aspect: based on the deadline to get leave accepted, withdrawn or rejected, status reason updation/creation can be done
+            # future aspect: based on the deadline to get leave accepted, withdrawn or rejected, status reason creation can be done
             status_data = JSONParser().parse(request)
             user_email = getattr(request, 'user_email', None)
-            status_id = status_data.get('id')
             status = status_data.get('status')
             reason_value = status_data.get('reason')
             leave_id = status_data.get('leave_id')
@@ -132,19 +131,13 @@ def updateLeaveStatus(request):
             user = User.objects.only('id').get(email=user_email)
             leave = Leave.objects.only('id').get(id=leave_id)
             
-            status_reason, created = StatusReason.objects.get_or_create(
-                id=status_id if status_id else None,
-                user=user,
-            )
-            status_reason.status = status
-            status_reason.reason = reason_value
+            status_reason = StatusReason.objects.create(user=user, status=status, reason=reason_value)
             status_reason.save()
             leave.status_reasons.add(status_reason)
-
             leave.status = status
             leave.save()
 
-            return JsonResponse(StatusReasonSerializer(status_reason).data, status=201 if created else 200)
+            return JsonResponse(StatusReasonSerializer(status_reason).data, status=201)
         
         except  User.DoesNotExist:
             return JsonResponse({'error': 'User not found'}, status=404)

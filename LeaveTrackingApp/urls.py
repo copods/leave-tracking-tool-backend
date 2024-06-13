@@ -7,7 +7,7 @@ from LeaveTrackingApp.views.leaves_views import (
     getUserLeaveStats, 
     leavesForApprover, 
     getUserLeaves,
-    updateLeaveStatus
+    addLeaveStatus
 )
 
 
@@ -18,7 +18,7 @@ urlpatterns = [
     re_path(r'^getUserLeaves$', getUserLeaves),
     re_path(r'^getLeaveDetails/([0-9a-f-]+)$', getLeaveDetails),
     re_path(r'^getUserLeaveStats$', getUserLeaveStats),
-    re_path(r'^updateLeaveStatus$', updateLeaveStatus),
+    re_path(r'^addLeaveStatus$', addLeaveStatus),
 
     # holiday urls
     re_path(r'^createHolidayCalendar$', createHolidayCalendar),
