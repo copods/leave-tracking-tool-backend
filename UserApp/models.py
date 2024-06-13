@@ -1,15 +1,14 @@
 from django.db import models
 import uuid
-from django.utils.timezone import now  # Import the now function
+from django.utils.timezone import now
+from UserApp.managers import UserManager
+from UserApp.signals import user_pre_soft_delete_signal
 
 
 # Create your models here.
 def validate_phone_number(value):
-    if len(str(value)) != 10:
-        raise ValidationError(
-            _('%(value)s is not a valid phone number.'),
-            params={'value': value},
-        )
+    # custom validation later
+    return
 
 class Department(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
@@ -92,7 +91,18 @@ class User(models.Model):
     #Metadata
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
+    isDeleted = models.BooleanField(default=False)
 
+    objects = UserManager()
+
+    def delete(self):
+        try:
+            user_pre_soft_delete_signal.send(sender=self.__class__, instance=self)
+            self.isDeleted = True
+            self.save()
+        except ValueError as e:
+            raise e
+        
     def __str__(self):
         return self.email
     def short_name(self):
