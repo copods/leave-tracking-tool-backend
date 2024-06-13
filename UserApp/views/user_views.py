@@ -33,7 +33,7 @@ def createUserUnauthorized(request):
 
 # format of query param: filter=role:9f299ed6-caf0-4241-9265-7576af1d6426,status=P
 @csrf_exempt
-#@user_is_authorized
+@user_is_authorized
 def userList(request):
     if request.method=='GET':
         try:
@@ -64,7 +64,7 @@ def userList(request):
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt
-#@user_is_authorized
+@user_is_authorized
 def createUser(request):
     if request.method=='POST':
         user_data = JSONParser().parse(request)
@@ -77,7 +77,7 @@ def createUser(request):
             return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
     
 @csrf_exempt
-#@user_is_authorized
+@user_is_authorized
 def user(request,id):
     if request.method=='GET':
         user = User.objects.get(id=id)
@@ -101,7 +101,7 @@ def user(request,id):
             return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
 
 @csrf_exempt
-#@user_is_authorized
+@user_is_authorized
 def workTypeCounts(request):
     if request.method == 'GET':
         work_type_counts = User.objects.aggregate(
@@ -115,7 +115,7 @@ def workTypeCounts(request):
 
 
 @csrf_exempt
-#@user_is_authorized
+@user_is_authorized
 def bulkUserAdd(request):
     if request.method == 'POST':
         users_data = JSONParser().parse(request)

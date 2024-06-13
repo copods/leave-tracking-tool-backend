@@ -15,7 +15,7 @@ firebase_app = firebase_admin.initialize_app(firebase_cred)
 # print("Firebase app name: ", firebase_app.name)
 # print("Firebase app project_id: ", firebase_app.project_id)
 
-# #@user_is_authorized
+@user_is_authorized
 def fcm_token_validate(token, user_id):
     fcm_token = FCMToken.objects.filter(fcm_token=token, user_id=user_id).first()
     try:
@@ -34,8 +34,7 @@ def fcm_token_validate(token, user_id):
 
 def multi_fcm_tokens_validate(fcm_tokens):
     try:
-        # user_email = getattr(request, 'user_email', None) 
-        user_email = "chandani.mourya@copods.co"
+        user_email = getattr(fcm_tokens, 'user_email', None) 
         user = User.objects.get(email=user_email)
         valid_fcm_tokens = []
         user_id = user.id

@@ -18,7 +18,7 @@ from LeaveTrackingApp.serializers import (
 from UserApp.decorators import user_is_authorized
 
 @csrf_exempt
-#@user_is_authorized
+@user_is_authorized
 def getLeaveTypes(request):
     if request.method=='GET':
         leave_types = LeaveType.objects.all()
@@ -26,7 +26,7 @@ def getLeaveTypes(request):
         return JsonResponse(leave_types_serializer.data, safe=False)
 
 @csrf_exempt
-#@user_is_authorized
+@user_is_authorized
 def createLeaveRequest(request):
     if request.method=='POST':
         leave_data = JSONParser().parse(request)
@@ -60,7 +60,7 @@ def createLeaveRequest(request):
 
 # filter query param format=> filter=role:9f299ed6-caf0-4241-9265-7576af1d6426,status:P
 @csrf_exempt
-#@user_is_authorized
+@user_is_authorized
 def leavesForApprover(request):
     if request.method=='GET':
         try:
@@ -88,7 +88,7 @@ def leavesForApprover(request):
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt
-#@user_is_authorized
+@user_is_authorized
 def getUserLeaves(request):
     if request.method=='GET':
         try:
