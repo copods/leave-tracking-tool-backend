@@ -2,6 +2,7 @@
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from PushNotificationApp.models import FCMToken
+from PushNotificationApp.serializers import NotificationSerializer
 from PushNotificationApp.utils import multi_fcm_tokens_validate, send_token_push
 from LeaveTrackingApp.utils import getYearLeaveStats
 from UserApp.models import User
@@ -33,20 +34,39 @@ def createLeaveRequest(request):
     if request.method=='POST':
         try:
             leave_data = JSONParser().parse(request)
+            # to check if user exists or not
             user = User.objects.get(id=leave_data['user'])
+            user_id = user.id
             try:
+                # to check if user exists or not
                 approver = User.objects.get(id=leave_data['approver'])
                 approver_id = approver.id
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Approver not found'}, status=status.HTTP_404_NOT_FOUND)
-            leave_serializer = LeaveSerializer(data=leave_data)
+            leave_serializer = LeaveSerializer(data=leave_data)  # to save leave data
             if leave_serializer.is_valid():
-                leave_serializer.save()
+                leave_instance = leave_serializer.save()
+
+                # create notification
+                notification_data = {
+                    'types': 'Leave Request',
+                    'leave_application_id': leave_instance.id,
+                    'receivers': [approver_id],  # Assuming receivers is a list of user IDs
+                    'title': f"Leave Request by {user.first_name}",
+                    'subtitle': f"{user.first_name} has requested leave.",
+                    'created_by': user_id,
+                }
+                notification_serializer = NotificationSerializer(data=notification_data)
+                if notification_serializer.is_valid():
+                    notification_instance = notification_serializer.save()
+
+                #To send push notification
                 fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
                 fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
-                valid_tokens = multi_fcm_tokens_validate(fcm_tokens)
+                valid_tokens = multi_fcm_tokens_validate(fcm_tokens) #validate tokens
                 if valid_tokens:
-                    response = send_token_push("hello", "here message", valid_tokens)
+                    #send push notification
+                    response = send_token_push(notification_instance.title, notification_instance.subtitle, valid_tokens)
                     if 'success' in response:
                         return JsonResponse({"message": response['message']}, status=status.HTTP_201_CREATED)
                     else:
@@ -173,5 +193,3 @@ def addLeaveStatus(request):
 
 
 # enable editing of leave request
-
-

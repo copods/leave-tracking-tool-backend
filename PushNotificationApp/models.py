@@ -27,9 +27,12 @@ class Notification(models.Model):
     types = models.CharField(max_length=100,unique=True, verbose_name="notification types", choices=TYPES_CHOICES)
     isRead = models.BooleanField(default=False)
     leaveApplicationId = models.ForeignKey(Leave, on_delete=models.CASCADE, null=True, related_name='leave_request')
-    receivers = ArrayField(models.ForeignKey(User, on_delete=models.CASCADE))
+    receivers = ArrayField(models.UUIDField())
     title = models.CharField(max_length=100, verbose_name='title')
     subtitle = models.CharField(max_length=300, verbose_name="subtitle")
     redireactionUrl = models.CharField(max_length=250, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='request_created_by')
     created_at = models.DateTimeField(default=now)
+
+    def __str__(self):
+        return f"{self.title} - {self.subtitle}"
