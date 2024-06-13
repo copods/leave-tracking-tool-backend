@@ -140,3 +140,18 @@ def bulkUserAdd(request):
             errors = users_serializer.errors
             return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
         
+
+@csrf_exempt
+@user_is_authorized
+def addInitialUserPoints(request):
+    if request.method == 'POST':
+        try:
+            points_data = JSONParser().parse(request)
+            user_email = getattr(request, 'user_email', None)
+            user = User.objects.get(email=user_email)
+            user.points += points_data['correct_questions']
+            user.save()
+            return JsonResponse(f"The user has been awarded with {points_data['correct_questions']} points", safe=False)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        

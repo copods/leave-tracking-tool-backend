@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from LeaveTrackingApp.models import Leave, LeaveType, RuleSet, DayDetails, Holiday, yearCalendar
+from LeaveTrackingApp.models import Leave, LeaveType, RuleSet, DayDetails, Holiday, StatusReason, yearCalendar
 
 #------------other serializers---------------
 class RuleSetSerializer(serializers.ModelSerializer):
@@ -12,6 +12,12 @@ class DayDetailSerializer(serializers.ModelSerializer):
         model = DayDetails
         fields = '__all__'
 
+class StatusReasonSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = StatusReason
+        fields = '__all__'
+
 #-----------------leave related serializers---------------------
 class LeaveTypeSerializer(serializers.ModelSerializer):
     rule_set = RuleSetSerializer(read_only=True)
@@ -22,6 +28,7 @@ class LeaveTypeSerializer(serializers.ModelSerializer):
 
 class LeaveSerializer(serializers.ModelSerializer):
     day_details = DayDetailSerializer(many=True)
+    status_reasons = StatusReasonSerializer(many=True)
 
     class Meta:
         model = Leave
@@ -68,6 +75,7 @@ class UserLeaveListSerializer(serializers.ModelSerializer):
     def get_updatedOn(self, obj):
         latest_status = obj.status_reasons.order_by('-created_at').first()
         return latest_status.created_at.date() if latest_status else obj.updated_at.date()
+    
     
 # ----------------calendar related serializers--------------------
 class HolidaySerializer(serializers.ModelSerializer):
