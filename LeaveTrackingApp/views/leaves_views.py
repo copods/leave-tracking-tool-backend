@@ -186,14 +186,23 @@ def getOnLeaveAndWFH(request):
             wfh_leaves_data = LeaveUtilSerializer(wfh_leaves, many=True).data
             on_leave_data = LeaveUtilSerializer(on_leave, many=True).data
             
-            response_obj = []
+            data_obj = []
             while current_date <= last_date:
                 if current_date.weekday()==5 or current_date.weekday()==6:
                     current_date += timedelta(days=1)
                     continue
-                response_obj.append(get_onleave_wfh_details(wfh_leaves_data, on_leave_data, current_date))
+                data_obj.append(get_onleave_wfh_details(wfh_leaves_data, on_leave_data, current_date))
                 current_date += timedelta(days=1)
-                
+            
+            total_users = User.objects.all().count()
+            in_office_users = total_users - (data_obj[0]['on_leave_count'] + data_obj[0]['wfh_count'])
+
+            response_obj = {
+                'total_users': total_users,
+                'in_office_users': in_office_users,
+                'data': data_obj
+            }
+            
             return JsonResponse(response_obj, safe=False)
         
         except Exception as e:
