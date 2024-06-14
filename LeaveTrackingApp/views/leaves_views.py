@@ -34,16 +34,20 @@ def createLeaveRequest(request):
     if request.method=='POST':
         try:
             leave_data = JSONParser().parse(request)
-            # to check if user exists or not
-            user = User.objects.get(id=leave_data['user'])
-            user_id = user.id
+            try:
+                user = User.objects.get(id=leave_data['user'])
+                user_id = user.id
+                print(user)
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
             try:
                 # to check if user exists or not
                 approver = User.objects.get(id=leave_data['approver'])
                 approver_id = approver.id
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Approver not found'}, status=status.HTTP_404_NOT_FOUND)
-            leave_serializer = LeaveSerializer(data=leave_data)  # to save leave data
+            
+            leave_serializer = LeaveSerializer(data=leave_data)
             if leave_serializer.is_valid():
                 leave_instance = leave_serializer.save()
 
@@ -63,10 +67,12 @@ def createLeaveRequest(request):
                 #To send push notification
                 fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
                 fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
-                valid_tokens = multi_fcm_tokens_validate(fcm_tokens) #validate tokens
+                valid_tokens = multi_fcm_tokens_validate(fcm_tokens)
+                print(valid_tokens)
                 if valid_tokens:
-                    #send push notification
-                    response = send_token_push(notification_instance.title, notification_instance.subtitle, valid_tokens)
+                    title = "leave request from Anuj"
+                    subtitle = "Anuj has requested for sic leave"
+                    response = send_token_push(title, subtitle, valid_tokens)
                     if 'success' in response:
                         return JsonResponse({"message": response['message']}, status=status.HTTP_201_CREATED)
                     else:
@@ -75,8 +81,7 @@ def createLeaveRequest(request):
                 return JsonResponse({"error": "No valid FCM tokens found"}, status=status.HTTP_400_BAD_REQUEST)
             
             return JsonResponse(leave_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -193,3 +198,43 @@ def addLeaveStatus(request):
 
 
 # enable editing of leave request
+@csrf_exempt
+@user_is_authorized
+def enableEditLeave(request):
+    if request.method == 'POST':
+        try:
+            leave_data = JSONParser().parse(request)
+            leave = Leave.objects.get(id=leave_data['id'])
+            if not leave.editStatus:
+                leave.editStatus = 'Requested-For-Edit'
+                leave.save()
+                return JsonResponse({'message': 'Leave request sent to Edit'}, status=200)   
+            else:
+                return JsonResponse({'message': 'Leave request already sent to Edit'}, status=400)
+
+        except Leave.DoesNotExist:
+            return JsonResponse({'error': 'Leave not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+        
+@csrf_exempt
+@user_is_authorized
+def editLeave(request, id):
+    if(request.method == 'PUT'):
+        try:
+            leave_data = JSONParser().parse(request)
+            leave = Leave.objects.get(id=id)
+            if leave.editStatus == 'Requested-For-Edit':
+                #update leave logic
+
+                #after update
+                # leave.editStatus = 'Edited'
+                pass
+            else:
+                return JsonResponse({'error': 'Leave request is not editable'}, status=400)
+        
+        except Leave.DoesNotExist:
+            return JsonResponse({'error': 'Leave not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+        

@@ -44,11 +44,12 @@ def fcmTokenStore(request):
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt
+@user_is_authorized
 def fcmTokenValidate(request):
     if request.method == 'POST':
         try:
             fcm_token_data = JSONParser().parse(request)
-            user_email = getattr(request, 'user_email', None)
+            user_email = getattr(request, 'user_email', None) 
             user = User.objects.get(email=user_email)
             user_id = user.id 
             token = fcm_token_data.get('fcm_token')
@@ -56,12 +57,8 @@ def fcmTokenValidate(request):
             if response['valid']:
                 return JsonResponse({'isValid': True}, status=status.HTTP_200_OK)
             else:
-                return JsonResponse({'isValid': False, 'error': response['error']}, status=status.HTTP_200_OK if 'expired' in response['error'] else status.HTTP_404_NOT_FOUND)
+                return JsonResponse({'isValid': False, 'error': response['error']}, status=status.HTTP_200_OK)
         except Exception as e:
             return JsonResponse({'isValid': False, 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-
-
-

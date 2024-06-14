@@ -5,13 +5,12 @@ from UserApp.decorators import user_is_authorized
 import firebase_admin
 from firebase_admin import credentials, messaging
 
-server_key = 'PushNotificationApp/views/leave-tracking-f2849-firebase-adminsdk-dcmyh-8bd39fbecf.json'
+server_key = 'PushNotificationApp/views/firebase.json'
 
 # Initialize Firebase app
 firebase_cred = credentials.Certificate(server_key)
 firebase_app = firebase_admin.initialize_app(firebase_cred)
 
-@user_is_authorized
 def fcm_token_validate(token, user_id):
     fcm_token = FCMToken.objects.filter(fcm_token=token, user_id=user_id).first()
     try:
@@ -63,3 +62,4 @@ def send_token_push(title, body, tokens):
                 'message': 'Notification sent successfully to all tokens'}
     except Exception as e:
         return {'error': str(e)}
+    
