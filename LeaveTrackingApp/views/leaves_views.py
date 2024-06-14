@@ -35,7 +35,6 @@ def createLeaveRequest(request):
             leave_data = JSONParser().parse(request)
             try:
                 user = User.objects.get(id=leave_data['user'])
-                print(user)
             except User.DoesNotExist:
                 return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
             try:
@@ -50,7 +49,6 @@ def createLeaveRequest(request):
                 fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
                 fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
                 valid_tokens = multi_fcm_tokens_validate(fcm_tokens)
-                print(valid_tokens)
                 if valid_tokens:
                     title = "leave request from Anuj"
                     subtitle = "Anuj has requested for sic leave"

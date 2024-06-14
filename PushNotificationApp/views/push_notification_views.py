@@ -24,7 +24,6 @@ def fcmTokenStore(request):
             expires_at = timezone.now() + timedelta(days=60)
             token = fcm_token_data.get('fcm_token')
             fcm_token = FCMToken.objects.filter(fcm_token=token, user_id=user.id).first()
-
             if fcm_token:
                 return JsonResponse({'message': 'FCM token already exists'}, status = status.HTTP_200_OK)
             token_data = {
