@@ -20,8 +20,8 @@ class FCMToken(models.Model):
 class Notification(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     TYPES_CHOICES = [
-        ('Leave Request', 'Leave Request'),
-        ('Upcoming Holidays','Upcoming Holidays')
+        ('Leave-Request', 'Leave Request'),
+        ('Upcoming-Holidays','Upcoming Holidays')
         
     ]
     types = models.CharField(max_length=100,unique=True, verbose_name="notification types", choices=TYPES_CHOICES)
