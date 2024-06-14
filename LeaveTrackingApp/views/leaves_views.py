@@ -33,18 +33,24 @@ def createLeaveRequest(request):
     if request.method=='POST':
         try:
             leave_data = JSONParser().parse(request)
-            user = User.objects.get(id=leave_data['user'])
+            try:
+                user = User.objects.get(id=leave_data['user'])
+                print(user)
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
             try:
                 approver = User.objects.get(id=leave_data['approver'])
                 approver_id = approver.id
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Approver not found'}, status=status.HTTP_404_NOT_FOUND)
+            
             leave_serializer = LeaveSerializer(data=leave_data)
             if leave_serializer.is_valid():
                 leave_serializer.save()
                 fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
                 fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
                 valid_tokens = multi_fcm_tokens_validate(fcm_tokens)
+                print(valid_tokens)
                 if valid_tokens:
                     title = "leave request from Anuj"
                     subtitle = "Anuj has requested for sic leave"
@@ -57,8 +63,7 @@ def createLeaveRequest(request):
                 return JsonResponse({"error": "No valid FCM tokens found"}, status=status.HTTP_400_BAD_REQUEST)
             
             return JsonResponse(leave_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -214,3 +219,4 @@ def editLeave(request, id):
             return JsonResponse({'error': 'Leave not found'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
+        
