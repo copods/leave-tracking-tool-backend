@@ -18,7 +18,7 @@ load_dotenv()
 def fcmTokenStore(request):
     if request.method == 'POST':
         try:
-            user_email = getattr(request, 'user_email', None) 
+            user_email = getattr(request, 'user_email', None)  
             user = User.objects.get(email=user_email)
             fcm_token_data = JSONParser().parse(request)
             expires_at = timezone.now() + timedelta(days=60)
@@ -49,7 +49,7 @@ def fcmTokenValidate(request):
     if request.method == 'POST':
         try:
             fcm_token_data = JSONParser().parse(request)
-            user_email = getattr(request, 'user_email', None) 
+            user_email = getattr(request, 'user_email', None)  
             user = User.objects.get(email=user_email)
             user_id = user.id 
             token = fcm_token_data.get('fcm_token')
