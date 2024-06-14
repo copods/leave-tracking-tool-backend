@@ -2,8 +2,7 @@ from rest_framework import serializers
 from UserApp.models import User, Department, Role
 
 class UserSerializer(serializers.ModelSerializer):
-    role = serializers.CharField(source='role.role_name')
-    department = serializers.CharField(source='department.department_name')
+    
     class Meta:
         model = User
         fields = '__all__'
