@@ -51,7 +51,7 @@ def createLeaveRequest(request):
                 notification_data = {
                     'types': 'Leave Request',
                     'leave_application_id': leave_instance.id,
-                    'receivers': [approver_id],  # Assuming receivers is a list of user IDs
+                    'receivers': [approver_id],  # receivers is a list of user IDs
                     'title': f"Leave Request by {user.first_name}",
                     'subtitle': f"{user.first_name} has requested leave.",
                     'created_by': user_id,
