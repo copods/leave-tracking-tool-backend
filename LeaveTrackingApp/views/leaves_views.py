@@ -14,6 +14,7 @@ from LeaveTrackingApp.serializers import (
     LeaveSerializer,
     LeaveListSerializer,
     LeaveTypeSerializer,
+    LeaveUtilSerializer,
     StatusReasonSerializer,
     UserLeaveListSerializer
 )
@@ -165,22 +166,31 @@ def addLeaveStatus(request):
 def getOnLeaveAndWFH(request):
     if request.method == 'GET':
         try:
-            # current_date = datetime.now().date()
-            current_date = date(2024, 8, 1)
-            last_date = current_date + timedelta(days=7)
+            current_date = request.GET.get('date', None)
+            current_date = datetime.strptime(current_date, "%Y-%m-%d").date() if current_date else datetime.now().date()
+            last_date = current_date 
+            #exclude saturday and sunday
+            i=1
+            while i<=7:
+                last_date += timedelta(days=1)
+                if not (last_date.weekday()==5 or last_date.weekday()==6):
+                    i+=1
+            
             leaves = Leave.objects.filter(
                 Q(status='A') &
                 (Q(start_date__gte=current_date) & Q(start_date__lte=last_date)) | 
                 (Q(end_date__gte=current_date) & Q(end_date__lte=last_date))
             )
-            # print(leaves.count())
             wfh_leaves = leaves.filter(leave_type__name='wfh')
             on_leave = leaves.exclude(leave_type__name='wfh')
-            # print(wfh_leaves.count(), on_leave.count())
-            wfh_leaves_data = LeaveSerializer(wfh_leaves, many=True).data
-            on_leave_data = LeaveSerializer(on_leave, many=True).data
+            wfh_leaves_data = LeaveUtilSerializer(wfh_leaves, many=True).data
+            on_leave_data = LeaveUtilSerializer(on_leave, many=True).data
+            
             response_obj = []
             while current_date <= last_date:
+                if current_date.weekday()==5 or current_date.weekday()==6:
+                    current_date += timedelta(days=1)
+                    continue
                 response_obj.append(get_onleave_wfh_details(wfh_leaves_data, on_leave_data, current_date))
                 current_date += timedelta(days=1)
                 

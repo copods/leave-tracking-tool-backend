@@ -119,7 +119,6 @@ def getYearLeaveStats(user_id, year_range):
                         days_in_quarter.append(day)
 
                 max_days = LeaveType.objects.get(name=leave_type).rule_set.max_days_allowed
-                print(max_days, '\n\n\n')
                 quarter_obj[leave_type] = {
                     'daysTaken': len(days_in_quarter),
                     'totalDays': max_days,
@@ -203,35 +202,20 @@ def calculateUnpaidLeaves(days, max_days_allowed, months):
 
 
 def get_onleave_wfh_details(wfh_leaves_data, on_leave_data, curr_date):
-    print('current date',curr_date, '\n\n')
     wfh_users = []
     on_leave_users = []
     for leave in wfh_leaves_data:
         for day in leave['day_details']:
-            if datetime.strptime(day['date'], "%Y-%m-%d") == curr_date:
-                print(day['date'])
-                user = User.objects.get(id=leave['user'])
-                user_info = {
-                    'name': user.long_name(),
-                    'profile_pic': user.profile_image
-                }
-                wfh_users.append(user_info)
+            if datetime.strptime(day['date'], "%Y-%m-%d").date() == curr_date:
+                wfh_users.append(leave['user'])
                 break
-        print('\n next wfh leave\n')
 
     for leave in on_leave_data:
         for day in leave['day_details']:
-            print(day['date'], '-> ', datetime.strptime(day['date'], "%Y-%m-%d").date(), ' == ', curr_date)
             if datetime.strptime(day['date'], "%Y-%m-%d").date() == curr_date:
-                user = User.objects.get(id=leave['user'])
-                user_info = {
-                    'name': user.long_name(),
-                    'profile_pic': user.profile_image
-                }
-                on_leave_users.append(user_info)
+                on_leave_users.append(leave['user'])
                 break
-        print('\n next on leave\n')
-    print('\n\n', '-----------------------------------------------------')
+
     return {
         'date': curr_date,
         'on_leave_count': len(on_leave_users),
