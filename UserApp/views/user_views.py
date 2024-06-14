@@ -158,7 +158,7 @@ def addInitialUserPoints(request):
     if request.method == 'POST':
         try:
             points_data = JSONParser().parse(request)
-            user_email = getattr(request, 'user_email', None)
+            user_email = getattr(request, 'user_email', None) 
             user = User.objects.get(email=user_email)
             user.points += points_data['correct_questions']
             user.save()

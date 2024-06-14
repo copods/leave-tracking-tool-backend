@@ -10,6 +10,9 @@ urlpatterns = [
 
     # leave crud operations
     path("api/v1/", include("LeaveTrackingApp.urls")),
+
+    # notification related operations
+    path("api/v1/", include("PushNotificationApp.urls")),
     
     #DEBUGGER
     path("__debug__/", include("debug_toolbar.urls")),

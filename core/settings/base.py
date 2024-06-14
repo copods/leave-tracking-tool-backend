@@ -30,6 +30,7 @@ EXTERNAL_APPS = [
     'rest_framework',
     'LeaveTrackingApp.apps.LeavetrackingappConfig',
     'UserApp.apps.UserappConfig',
+    'PushNotificationApp.apps.PushnotificationappConfig'
 ]
 
 INSTALLED_APPS += EXTERNAL_APPS
