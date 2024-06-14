@@ -200,3 +200,42 @@ def calculateUnpaidLeaves(days, max_days_allowed, months):
         if(taken > max_days_allowed):
             unpaid[months.index(calendar.month_abbr[day.month])] += 1
     return unpaid
+
+
+def get_onleave_wfh_details(wfh_leaves_data, on_leave_data, curr_date):
+    print('current date',curr_date, '\n\n')
+    wfh_users = []
+    on_leave_users = []
+    for leave in wfh_leaves_data:
+        for day in leave['day_details']:
+            if datetime.strptime(day['date'], "%Y-%m-%d") == curr_date:
+                print(day['date'])
+                user = User.objects.get(id=leave['user'])
+                user_info = {
+                    'name': user.long_name(),
+                    'profile_pic': user.profile_image
+                }
+                wfh_users.append(user_info)
+                break
+        print('\n next wfh leave\n')
+
+    for leave in on_leave_data:
+        for day in leave['day_details']:
+            print(day['date'], '-> ', datetime.strptime(day['date'], "%Y-%m-%d").date(), ' == ', curr_date)
+            if datetime.strptime(day['date'], "%Y-%m-%d").date() == curr_date:
+                user = User.objects.get(id=leave['user'])
+                user_info = {
+                    'name': user.long_name(),
+                    'profile_pic': user.profile_image
+                }
+                on_leave_users.append(user_info)
+                break
+        print('\n next on leave\n')
+    print('\n\n', '-----------------------------------------------------')
+    return {
+        'date': curr_date,
+        'on_leave_count': len(on_leave_users),
+        'wfh_count': len(wfh_users),
+        'wfh_users': wfh_users,
+        'on_leave_users': on_leave_users
+    }

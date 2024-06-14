@@ -1,8 +1,9 @@
 # create CRUD views for Role model and Department model
 
+from datetime import date, datetime, timedelta
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-from LeaveTrackingApp.utils import getYearLeaveStats
+from LeaveTrackingApp.utils import get_onleave_wfh_details, getYearLeaveStats
 from UserApp.models import User
 from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
@@ -158,5 +159,34 @@ def addLeaveStatus(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
 
+
+@csrf_exempt
+@user_is_authorized
+def getOnLeaveAndWFH(request):
+    if request.method == 'GET':
+        try:
+            # current_date = datetime.now().date()
+            current_date = date(2024, 8, 1)
+            last_date = current_date + timedelta(days=7)
+            leaves = Leave.objects.filter(
+                Q(status='A') &
+                (Q(start_date__gte=current_date) & Q(start_date__lte=last_date)) | 
+                (Q(end_date__gte=current_date) & Q(end_date__lte=last_date))
+            )
+            # print(leaves.count())
+            wfh_leaves = leaves.filter(leave_type__name='wfh')
+            on_leave = leaves.exclude(leave_type__name='wfh')
+            # print(wfh_leaves.count(), on_leave.count())
+            wfh_leaves_data = LeaveSerializer(wfh_leaves, many=True).data
+            on_leave_data = LeaveSerializer(on_leave, many=True).data
+            response_obj = []
+            while current_date <= last_date:
+                response_obj.append(get_onleave_wfh_details(wfh_leaves_data, on_leave_data, current_date))
+                current_date += timedelta(days=1)
+                
+            return JsonResponse(response_obj, safe=False)
+        
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # enable editing of leave request
