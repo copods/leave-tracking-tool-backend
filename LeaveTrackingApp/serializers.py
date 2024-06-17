@@ -64,7 +64,7 @@ class LeaveListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Leave
-        fields = [ 'requestedBy', 'leaveType', 'leaveStatus', 'startDate', 'endDate', 'modifiedOn', 'editStatus']
+        fields = [ 'id', 'requestedBy', 'leaveType', 'leaveStatus', 'startDate', 'endDate', 'modifiedOn', 'editStatus']
     
     def get_requestedBy(self, obj):
         leave_user = { "name": obj.user.long_name(), "profilePicture": obj.user.profile_image}
@@ -82,7 +82,7 @@ class UserLeaveListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Leave
-        fields = ['leaveType', 'leaveStatus', 'startDate', 'endDate', 'updatedOn']
+        fields = ['id', 'leaveType', 'leaveStatus', 'startDate', 'endDate', 'updatedOn']
     
     def get_updatedOn(self, obj):
         latest_status = obj.status_reasons.order_by('-created_at').first()
