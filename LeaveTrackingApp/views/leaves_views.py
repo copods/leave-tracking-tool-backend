@@ -1,9 +1,11 @@
 # create CRUD views for Role model and Department model
 
 from datetime import date, datetime, timedelta
-from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
 from LeaveTrackingApp.utils import get_onleave_wfh_details, getYearLeaveStats
+from django.views.decorators.csrf import csrf_exempt
+from PushNotificationApp.models import FCMToken
+from PushNotificationApp.utils import multi_fcm_tokens_validate, send_token_push
+from LeaveTrackingApp.utils import getYearLeaveStats
 from UserApp.models import User
 from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
@@ -34,18 +36,35 @@ def createLeaveRequest(request):
     if request.method=='POST':
         try:
             leave_data = JSONParser().parse(request)
-            user = User.objects.get(id=leave_data['user'])
+            try:
+                user = User.objects.get(id=leave_data['user'])
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
             try:
                 approver = User.objects.get(id=leave_data['approver'])
+                approver_id = approver.id
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Approver not found'}, status=status.HTTP_404_NOT_FOUND)
+            
             leave_serializer = LeaveSerializer(data=leave_data)
             if leave_serializer.is_valid():
                 leave_serializer.save()
-                return JsonResponse(leave_serializer.data, status=status.HTTP_201_CREATED)
+                fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
+                fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
+                valid_tokens = multi_fcm_tokens_validate(fcm_tokens)
+                if valid_tokens:
+                    title = "leave request from Anuj"
+                    subtitle = "Anuj has requested for sic leave"
+                    response = send_token_push(title, subtitle, valid_tokens)
+                    if 'success' in response:
+                        return JsonResponse({"message": response['message']}, status=status.HTTP_201_CREATED)
+                    else:
+                        return JsonResponse({"error": response['error']}, status=status.HTTP_400_BAD_REQUEST)
+                
+                return JsonResponse({"error": "No valid FCM tokens found"}, status=status.HTTP_400_BAD_REQUEST)
+            
             return JsonResponse(leave_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -248,3 +267,4 @@ def editLeave(request, id):
             return JsonResponse({'error': 'Leave not found'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
+        

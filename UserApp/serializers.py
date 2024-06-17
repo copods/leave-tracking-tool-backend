@@ -2,9 +2,11 @@ from rest_framework import serializers
 from UserApp.models import User, Department, Role
 
 class UserSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = User
         fields = '__all__'
+
 
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -46,4 +48,4 @@ class UserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'role', 'department','id','work_location','date_of_joining']
+        fields = ['first_name', 'last_name', 'email', 'designation', 'role', 'department','id','work_location','date_of_joining']
