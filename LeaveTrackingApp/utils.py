@@ -17,6 +17,7 @@ def getYearLeaveStats(user_id, year_range):
 
         user_leaves_for_year = Leave.objects.filter(
             Q(user__id=user_id) &
+            ~Q(status="W") &
             (
                 (Q(start_date__gte=start_date) & Q(start_date__lt=end_date)) | Q(end_date__gte=start_date)
             )
@@ -99,7 +100,8 @@ def getYearLeaveStats(user_id, year_range):
                     if start_date <= datetime.strptime(day['date'], "%Y-%m-%d").date() < end_date:
                         leave_days.append({
                             'date': day['date'],
-                            'status': leave['status']
+                            'status': leave['status'],
+                            'isHalfDay': day['is_half_day']
                         })
 
             quarterly_leaves_days_for_year[leave_type] = leave_days
@@ -128,7 +130,7 @@ def getYearLeaveStats(user_id, year_range):
                 }
 
                 unpaid_for_leave_type = calculateUnpaidLeaves(
-                    [datetime.strptime(day['date'], "%Y-%m-%d") for day in days_in_quarter],
+                    days_in_quarter,
                     quarter_obj[leave_type]['totalDays'],
                     yearly_quarters[year][i]['months']
                 )
@@ -144,7 +146,6 @@ def getYearLeaveStats(user_id, year_range):
 
     except Exception as e:
         raise e
-
 
 def getYearlyQuarters(user_doj, year_range):
     doj_year = user_doj.year
@@ -192,11 +193,13 @@ def add_months(original_date, months_to_add):
     return original_date.replace(year=year, month=month % 12, day=original_date.day)
 
 def calculateUnpaidLeaves(days, max_days_allowed, months):
-    days.sort()
     taken = 0
     unpaid = [0,0,0]
     for day in days:
-        taken += 1
+        if day['is_half_day']:
+            taken += 0.5
+        else:
+            taken += 1
         if(taken > max_days_allowed):
-            unpaid[months.index(calendar.month_abbr[day.month])] += 1
+            unpaid[months.index(calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month])] += 1
     return unpaid
