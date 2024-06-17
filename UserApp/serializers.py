@@ -48,4 +48,4 @@ class UserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'designation', 'role', 'department','id','work_location','date_of_joining']
+        fields = ['first_name', 'last_name', 'email', 'profile_image', 'designation', 'role', 'department','id','work_location','date_of_joining']

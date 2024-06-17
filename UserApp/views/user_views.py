@@ -51,7 +51,12 @@ def userList(request):
             else:
                 users_serializer_class = UserListSerializer
             if filters:
-                users = users.filter(Q(**{f.split(':')[0]: f.split(':')[1] for f in filters.split(',')})) 
+                filters = {f.split(':')[0]: f.split(':')[1] for f in filters.split(',')}
+                filters = {
+                    'role__role_key' if k == 'role' else ('department__department_key' if k == 'department' else k): v
+                    for k, v in filters.items()
+                }   
+                users = users.filter(**filters) 
             if search:
                 users = users.filter(first_name__icontains=search) | users.filter(last_name__icontains=search) | users.filter(email__icontains=search)
             if sort:
