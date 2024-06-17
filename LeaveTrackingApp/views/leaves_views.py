@@ -52,21 +52,23 @@ def createLeaveRequest(request):
 
                 # create notification
                 notification_data = {
-                    'types': 'Leave Request',
-                    'leave_application_id': leave_instance.id,
-                    'receivers': [approver_id],  # receivers is a list of user IDs
+                    'types': 'Leave-Request',  # Ensure it matches one of the choices
+                    'leaveApplicationId': leave_instance.id,
+                    'receivers': [approver.id],  # receivers is a list of user UUIDs, converted to string
                     'title': f"Leave Request by {user.first_name}",
                     'subtitle': f"{user.first_name} has requested leave.",
-                    'created_by': user_id,
+                    'created_by': user.id,
                 }
                 notification_serializer = NotificationSerializer(data=notification_data)
                 if notification_serializer.is_valid():
                     notification_serializer.save()
+                else:
+                    return JsonResponse(notification_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
                 #To send push notification
                 fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
                 fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
-                valid_tokens = multi_fcm_tokens_validate(fcm_tokens)
+                valid_tokens = multi_fcm_tokens_validate(fcm_tokens, approver_id)
                 if valid_tokens:
                     response = send_token_push(notification_data['title'], notification_data['subtitle'], valid_tokens)
                     if 'success' in response:
