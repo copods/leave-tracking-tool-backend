@@ -2,7 +2,6 @@
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from PushNotificationApp.models import FCMToken
-from PushNotificationApp.serializers import NotificationSerializer
 from PushNotificationApp.utils import multi_fcm_tokens_validate, send_token_push
 from LeaveTrackingApp.utils import getYearLeaveStats
 from UserApp.models import User
@@ -36,11 +35,9 @@ def createLeaveRequest(request):
             leave_data = JSONParser().parse(request)
             try:
                 user = User.objects.get(id=leave_data['user'])
-                user_id = user.id
             except User.DoesNotExist:
                 return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
             try:
-                # to check if user exists or not
                 approver = User.objects.get(id=leave_data['approver'])
                 approver_id = approver.id
             except User.DoesNotExist:
@@ -48,27 +45,14 @@ def createLeaveRequest(request):
             
             leave_serializer = LeaveSerializer(data=leave_data)
             if leave_serializer.is_valid():
-                leave_instance = leave_serializer.save()
-
-                # create notification
-                notification_data = {
-                    'types': 'Leave Request',
-                    'leave_application_id': leave_instance.id,
-                    'receivers': [approver_id],  # receivers is a list of user IDs
-                    'title': f"Leave Request by {user.first_name}",
-                    'subtitle': f"{user.first_name} has requested leave.",
-                    'created_by': user_id,
-                }
-                notification_serializer = NotificationSerializer(data=notification_data)
-                if notification_serializer.is_valid():
-                    notification_serializer.save()
-
-                #To send push notification
+                leave_serializer.save()
                 fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
                 fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
                 valid_tokens = multi_fcm_tokens_validate(fcm_tokens)
                 if valid_tokens:
-                    response = send_token_push(notification_data['title'], notification_data['subtitle'], valid_tokens)
+                    title = "leave request from Anuj"
+                    subtitle = "Anuj has requested for sic leave"
+                    response = send_token_push(title, subtitle, valid_tokens)
                     if 'success' in response:
                         return JsonResponse({"message": response['message']}, status=status.HTTP_201_CREATED)
                     else:
@@ -87,7 +71,7 @@ def createLeaveRequest(request):
 def leavesForApprover(request):
     if request.method=='GET':
         try:
-            user_email = getattr(request, 'user_email', None)  #user_email is fetched from token while authorizing, then added to request object
+            user_email = getattr(request, 'user_email', None) #user_email is fetched from token while authorizing, then added to request object
             filters = request.GET.get('filter', None)
             search = request.GET.get('search', None)
             sort = request.GET.get('sort', None)
@@ -115,7 +99,7 @@ def leavesForApprover(request):
 def getUserLeaves(request):
     if request.method=='GET':
         try:
-            user_email = getattr(request, 'user_email', None)  #user_email is fetched from token while authorizing, then added to request object
+            user_email = getattr(request, 'user_email', None) #user_email is fetched from token while authorizing, then added to request object
             page = request.GET.get('page', 1)
             pageSize = request.GET.get('pageSize', 100)
             user = User.objects.get(email=user_email)
@@ -145,7 +129,7 @@ def getLeaveDetails(request, id):
 def getUserLeaveStats(request):
     if request.method == 'GET':
         try:
-            user_email = getattr(request, 'user_email', None) 
+            user_email = getattr(request, 'user_email', None)
             year = request.GET.get('year', None)
             user = User.objects.get(email=user_email)
             leave_stats = getYearLeaveStats(user.id, year)
@@ -164,7 +148,7 @@ def addLeaveStatus(request):
         try:
             # future aspect: based on the deadline to get leave accepted, withdrawn or rejected, status reason creation can be done
             status_data = JSONParser().parse(request)
-            user_email = getattr(request, 'user_email', None) 
+            user_email = getattr(request, 'user_email', None)
             status = status_data.get('status')
             reason_value = status_data.get('reason')
             leave_id = status_data.get('leave_id')
