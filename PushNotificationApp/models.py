@@ -1,8 +1,6 @@
 from django.db import models
 import uuid
 from django.utils.timezone import now
-from django.contrib.postgres.fields import ArrayField
-from LeaveTrackingApp.models import Leave
 from UserApp.models import User  
 
 # Create your models here.

@@ -56,6 +56,8 @@ def userList(request):
                 users = users.filter(first_name__icontains=search) | users.filter(last_name__icontains=search) | users.filter(email__icontains=search)
             if sort:
                 users = users.order_by(sort)
+            else: 
+                users = users.order_by('-created_at')
             if page or pageSize:
                 users = users[(int(page)-1)*int(pageSize):int(page)*int(pageSize)]
             users_serializer = users_serializer_class(users, many=True)
@@ -158,7 +160,7 @@ def addInitialUserPoints(request):
     if request.method == 'POST':
         try:
             points_data = JSONParser().parse(request)
-            user_email = getattr(request, 'user_email', None) 
+            user_email = getattr(request, 'user_email', None)
             user = User.objects.get(email=user_email)
             user.points += points_data['correct_questions']
             user.save()
