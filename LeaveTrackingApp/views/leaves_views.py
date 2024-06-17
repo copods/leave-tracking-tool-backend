@@ -1,5 +1,7 @@
 # create CRUD views for Role model and Department model
-from django.shortcuts import render
+
+from datetime import date, datetime, timedelta
+from LeaveTrackingApp.utils import get_onleave_wfh_details, getYearLeaveStats
 from django.views.decorators.csrf import csrf_exempt
 from PushNotificationApp.models import FCMToken
 from PushNotificationApp.serializers import NotificationSerializer
@@ -15,6 +17,7 @@ from LeaveTrackingApp.serializers import (
     LeaveSerializer,
     LeaveListSerializer,
     LeaveTypeSerializer,
+    LeaveUtilSerializer,
     StatusReasonSerializer,
     UserLeaveListSerializer
 )
@@ -194,6 +197,53 @@ def addLeaveStatus(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
 
+
+@csrf_exempt
+@user_is_authorized
+def getOnLeaveAndWFH(request):
+    if request.method == 'GET':
+        try:
+            current_date = request.GET.get('date', None)
+            current_date = datetime.strptime(current_date, "%Y-%m-%d").date() if current_date else datetime.now().date()
+            last_date = current_date 
+            #exclude saturday and sunday
+            i=1
+            while i<=7:
+                last_date += timedelta(days=1)
+                if not (last_date.weekday()==5 or last_date.weekday()==6):
+                    i+=1
+            
+            leaves = Leave.objects.filter(
+                Q(status='A') &
+                (Q(start_date__gte=current_date) & Q(start_date__lte=last_date)) | 
+                (Q(end_date__gte=current_date) & Q(end_date__lte=last_date))
+            )
+            wfh_leaves = leaves.filter(leave_type__name='wfh')
+            on_leave = leaves.exclude(leave_type__name='wfh')
+            wfh_leaves_data = LeaveUtilSerializer(wfh_leaves, many=True).data
+            on_leave_data = LeaveUtilSerializer(on_leave, many=True).data
+            
+            data_obj = []
+            while current_date <= last_date:
+                if current_date.weekday()==5 or current_date.weekday()==6:
+                    current_date += timedelta(days=1)
+                    continue
+                data_obj.append(get_onleave_wfh_details(wfh_leaves_data, on_leave_data, current_date))
+                current_date += timedelta(days=1)
+            
+            total_users = User.objects.all().count()
+            in_office_users = total_users - (data_obj[0]['on_leave_count'] + data_obj[0]['wfh_count'])
+
+            response_obj = {
+                'total_users': total_users,
+                'in_office_users': in_office_users,
+                'data': data_obj
+            }
+            
+            return JsonResponse(response_obj, safe=False)
+        
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # enable editing of leave request
 @csrf_exempt

@@ -119,7 +119,6 @@ def getYearLeaveStats(user_id, year_range):
                         days_in_quarter.append(day)
 
                 max_days = LeaveType.objects.get(name=leave_type).rule_set.max_days_allowed
-                print(max_days, '\n\n\n')
                 quarter_obj[leave_type] = {
                     'daysTaken': len(days_in_quarter),
                     'totalDays': max_days,
@@ -200,3 +199,27 @@ def calculateUnpaidLeaves(days, max_days_allowed, months):
         if(taken > max_days_allowed):
             unpaid[months.index(calendar.month_abbr[day.month])] += 1
     return unpaid
+
+
+def get_onleave_wfh_details(wfh_leaves_data, on_leave_data, curr_date):
+    wfh_users = []
+    on_leave_users = []
+    for leave in wfh_leaves_data:
+        for day in leave['day_details']:
+            if datetime.strptime(day['date'], "%Y-%m-%d").date() == curr_date:
+                wfh_users.append(leave['user'])
+                break
+
+    for leave in on_leave_data:
+        for day in leave['day_details']:
+            if datetime.strptime(day['date'], "%Y-%m-%d").date() == curr_date:
+                on_leave_users.append(leave['user'])
+                break
+
+    return {
+        'date': curr_date,
+        'on_leave_count': len(on_leave_users),
+        'wfh_count': len(wfh_users),
+        'wfh_users': wfh_users,
+        'on_leave_users': on_leave_users
+    }
