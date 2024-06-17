@@ -1,5 +1,4 @@
-# create CRUD views for Role model and Department model
-
+from django.db import transaction
 from datetime import date, datetime, timedelta
 from LeaveTrackingApp.utils import get_onleave_wfh_details, getYearLeaveStats
 from django.views.decorators.csrf import csrf_exempt
@@ -34,55 +33,56 @@ def getLeaveTypes(request):
 @csrf_exempt
 @user_is_authorized
 def createLeaveRequest(request):
-    if request.method=='POST':
+    if request.method == 'POST':
         try:
             leave_data = JSONParser().parse(request)
+
             try:
-                # to check if user exists or not
                 user = User.objects.get(id=leave_data['user'])
             except User.DoesNotExist:
                 return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+            
             try:
-                # to check if approver exists or not
                 approver = User.objects.get(id=leave_data['approver'])
                 approver_id = approver.id
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Approver not found'}, status=status.HTTP_404_NOT_FOUND)
-            
-            leave_serializer = LeaveSerializer(data=leave_data)
-            if leave_serializer.is_valid():
-                leave_instance = leave_serializer.save()
 
-                # create notification
-                notification_data = {
-                    'types': 'Leave-Request',  
-                    'leaveApplicationId': leave_instance.id,
-                    'receivers': [approver.id],  
-                    'title': f"Leave Request by {user.first_name}",
-                    'subtitle': f"{user.first_name} has requested leave.",
-                    'created_by': user.id,
-                }
-                notification_serializer = NotificationSerializer(data=notification_data)
-                if notification_serializer.is_valid():
-                    notification_serializer.save()
-                else:
-                    return JsonResponse(notification_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                leave_serializer = LeaveSerializer(data=leave_data)
+                if leave_serializer.is_valid():
+                    leave_instance = leave_serializer.save()
 
-                #To send push notification
-                fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
-                fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
-                valid_tokens = multi_fcm_tokens_validate(fcm_tokens, approver_id)
-                if valid_tokens:
-                    response = send_token_push(notification_data['title'], notification_data['subtitle'], valid_tokens)
-                    if 'success' in response:
-                        return JsonResponse({"message": response['message']}, status=status.HTTP_201_CREATED)
+                    notification_data = {
+                        'types': 'Leave-Request',  
+                        'leaveApplicationId': leave_instance.id,
+                        'receivers': [approver.id],  
+                        'title': f"Leave Request by {user.long_name()}",
+                        'subtitle': f"{user.long_name()} has requested leave.",
+                        'created_by': user.id,
+                    }
+                    notification_serializer = NotificationSerializer(data=notification_data)
+                    if notification_serializer.is_valid():
+                        notification_serializer.save()
                     else:
-                        return JsonResponse({"error": response['error']}, status=status.HTTP_400_BAD_REQUEST)
-                
-                return JsonResponse({"error": "No valid FCM tokens found"}, status=status.HTTP_400_BAD_REQUEST)
+                        return JsonResponse(notification_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+                else:
+                    return JsonResponse(leave_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
+            fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
+            valid_tokens = multi_fcm_tokens_validate(fcm_tokens, approver_id)
+
+            if valid_tokens:
+                response = send_token_push(notification_data['title'], notification_data['subtitle'], valid_tokens)
+                if 'success' in response:
+                    return JsonResponse({"message": response['message']}, status=status.HTTP_201_CREATED)
+                else:
+                    return JsonResponse({"error": response['error']}, status=status.HTTP_400_BAD_REQUEST)
             
-            return JsonResponse(leave_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+            return JsonResponse({"error": "No valid FCM tokens found"}, status=status.HTTP_400_BAD_REQUEST)
+
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
