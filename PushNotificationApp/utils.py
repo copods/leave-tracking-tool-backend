@@ -27,12 +27,9 @@ def fcm_token_validate(token, user_id):
     except Exception as e:
         return {'valid': False, 'error': str(e)}
 
-def multi_fcm_tokens_validate(fcm_tokens):
+def multi_fcm_tokens_validate(fcm_tokens, user_id):
     try:
-        user_email = getattr(fcm_tokens, 'user_email', None) 
-        user = User.objects.get(email=user_email)
         valid_fcm_tokens = []
-        user_id = user.id
         for fcm_token in fcm_tokens:
             response = fcm_token_validate(fcm_token, user_id)
             if response['valid']:

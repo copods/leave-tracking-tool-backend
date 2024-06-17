@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 from LeaveTrackingApp.utils import get_onleave_wfh_details, getYearLeaveStats
 from django.views.decorators.csrf import csrf_exempt
 from PushNotificationApp.models import FCMToken
+from PushNotificationApp.serializers import NotificationSerializer
 from PushNotificationApp.utils import multi_fcm_tokens_validate, send_token_push
 from LeaveTrackingApp.utils import getYearLeaveStats
 from UserApp.models import User
@@ -48,10 +49,27 @@ def createLeaveRequest(request):
             
             leave_serializer = LeaveSerializer(data=leave_data)
             if leave_serializer.is_valid():
-                leave_serializer.save()
+                leave_instance = leave_serializer.save()
+
+                # create notification
+                notification_data = {
+                    'types': 'Leave-Request',  
+                    'leaveApplicationId': leave_instance.id,
+                    'receivers': [approver.id],  
+                    'title': f"Leave Request by {user.first_name}",
+                    'subtitle': f"{user.first_name} has requested leave.",
+                    'created_by': user.id,
+                }
+                notification_serializer = NotificationSerializer(data=notification_data)
+                if notification_serializer.is_valid():
+                    notification_serializer.save()
+                else:
+                    return JsonResponse(notification_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+                #To send push notification
                 fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
                 fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
-                valid_tokens = multi_fcm_tokens_validate(fcm_tokens)
+                valid_tokens = multi_fcm_tokens_validate(fcm_tokens, approver_id)
                 if valid_tokens:
                     title = "leave request from Anuj"
                     subtitle = "Anuj has requested for sic leave"
