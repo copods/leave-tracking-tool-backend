@@ -32,9 +32,6 @@ class LeaveTypeSerializer(serializers.ModelSerializer):
 class LeaveSerializer(serializers.ModelSerializer):
     day_details = DayDetailSerializer(many=True)
     status_reasons = StatusReasonSerializer(many=True, required=False)
-    user = serializers.SerializerMethodField('get_user')
-    approver = serializers.SerializerMethodField('get_approver')
-    leave_type = serializers.CharField(source='leave_type.name')
 
     class Meta:
         model = Leave
@@ -50,11 +47,33 @@ class LeaveSerializer(serializers.ModelSerializer):
             leave.day_details.add(day_detail)
         return leave
 
+
+class LeaveDetailSerializer(serializers.ModelSerializer):
+    day_details = DayDetailSerializer(many=True)
+    status_reasons = StatusReasonSerializer(many=True, required=False)
+    user = serializers.SerializerMethodField('get_user')
+    approver = serializers.SerializerMethodField('get_approver')
+    leave_type = serializers.CharField(source='leave_type.name')
+
+    class Meta:
+        model = Leave
+        fields = '__all__'
+
     def get_user(self, obj):
-        return {'id': obj.user.id, 'name': obj.user.long_name(), 'designation': obj.user.designation, 'profilePicture': obj.user.profile_image}
+        return {
+            'id': obj.user.id, 
+            'name': obj.user.long_name(), 
+            'designation': obj.user.designation, 
+            'profilePicture': obj.user.profile_image
+        }
 
     def get_approver(self, obj):
-        return {'id': obj.approver.id, 'name': obj.approver.long_name(), 'designation': obj.approver.designation, 'profilePicture': obj.approver.profile_image}
+        return {
+            'id': obj.approver.id, 
+            'name': obj.approver.long_name(), 
+            'designation': obj.approver.designation, 
+            'profilePicture': obj.approver.profile_image
+        }
 
 
 class LeaveUtilSerializer(serializers.ModelSerializer):

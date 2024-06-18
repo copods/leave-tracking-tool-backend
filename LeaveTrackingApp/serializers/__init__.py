@@ -5,7 +5,8 @@ from .holiday_calendar_serializers import (
 )
 
 from .leave_serializers import (
-    DayDetailSerializer,    
+    DayDetailSerializer,  
+    LeaveDetailSerializer,  
     LeaveListSerializer,
     LeaveSerializer,          
     LeaveTypeSerializer, 
@@ -19,6 +20,7 @@ from .leave_serializers import (
 __all__ = [
     'DayDetailSerializer',
     'HolidaySerializer',
+    'LeaveDetailSerializer',
     'LeaveListSerializer',
     'LeaveSerializer',
     'LeaveTypeSerializer',

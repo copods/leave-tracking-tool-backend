@@ -139,7 +139,7 @@ def getLeaveDetails(request, id):
     if request.method=='GET':
         try:
             leave = Leave.objects.get(id=id)
-            leave_serializer = LeaveSerializer(leave)
+            leave_serializer = LeaveDetailSerializer(leave)
             return JsonResponse(leave_serializer.data, safe=False)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
