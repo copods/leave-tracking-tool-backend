@@ -1,19 +1,19 @@
 import math
-from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.parsers import JSONParser
-from django.http.response import JsonResponse
-from rest_framework import status
 from django.db.models import Count, Q
+from django.http.response import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework import status
+from rest_framework.parsers import JSONParser
+from UserApp.decorators import user_is_authorized
 from UserApp.models import Department, Role, User
 from UserApp.serializers import (
-    ApproverListSerializer, 
-    DepartmentSerializer, 
+    ApproverListSerializer,
+    DepartmentSerializer,
     RoleSerializer,
-    UserSerializer,
-    UserListSerializer
+    UserListSerializer,
+    UserSerializer
 )
-from UserApp.decorators import user_is_authorized
+
 
 # create user unauthorized
 @csrf_exempt

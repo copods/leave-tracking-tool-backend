@@ -1,12 +1,8 @@
-# create CRUD views for Role model and Department model
-
-from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
 from rest_framework import status
-
-from UserApp.models import Department, Role, User
+from rest_framework.parsers import JSONParser
+from UserApp.models import Department, Role
 from UserApp.serializers import DepartmentSerializer, RoleSerializer
 from UserApp.decorators import user_is_authorized
 

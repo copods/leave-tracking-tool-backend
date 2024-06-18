@@ -1,20 +1,5 @@
 from django.urls import re_path
-from UserApp.views.user_views import (
-    addInitialUserPoints,
-    userList, 
-    createUser, 
-    user,
-    workTypeCounts,
-    createUserUnauthorized,
-    bulkUserAdd,
-)
-from UserApp.views.authentication_views import (
-    googleSignIn, 
-    adminPanelGoogleSignIn, 
-    accessTokenValidate, 
-    refreshToken
-)
-from UserApp.views.role_department_views import role, department
+from UserApp.views import *
 
 urlpatterns = [
     # Authentication APIs URL
