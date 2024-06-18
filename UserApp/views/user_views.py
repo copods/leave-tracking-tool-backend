@@ -7,7 +7,7 @@ from rest_framework import status
 from django.db.models import Count, Q
 from UserApp.models import Department, Role, User
 from UserApp.serializers import (
-    ShortUserListSerializer, 
+    ApproverListSerializer, 
     DepartmentSerializer, 
     RoleSerializer,
     UserSerializer,
@@ -43,11 +43,11 @@ def userList(request):
             sort = query_params.get('sort', [None])[0]
             page = query_params.get('page', [1])[0]
             pageSize = query_params.get('pageSize', [10])[0]
-            serializer_class = ShortUserListSerializer if query_params.get('getShortList', [None])[0] else UserListSerializer
+            serializer_class = UserListSerializer if query_params.get('admin', [False])[0] else ApproverListSerializer
             
             filters = {}
             for key, value in query_params.items():
-                if not key in ['search', 'sort', 'page', 'pageSize', 'getShortList']:
+                if not key in ['search', 'sort', 'page', 'pageSize', 'admin']:
                     if key == 'department':
                         filters['department__department_key__in'] = value
                     elif key == 'role':
