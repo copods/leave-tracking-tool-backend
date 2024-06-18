@@ -255,6 +255,7 @@ def enableEditLeave(request):
             leave = Leave.objects.get(id=leave_data['id'])
             if not leave.editStatus:
                 leave.editStatus = 'Requested-For-Edit'
+                leave.editReason = leave_data['edit_reason']
                 leave.save()
                 return JsonResponse({'message': 'Leave request sent to Edit'}, status=200)   
             else:
