@@ -1,5 +1,5 @@
+from PushNotificationApp.models import FCMToken, Notification
 from rest_framework import serializers
-from .models import FCMToken, Notification
 
 class FCMTokenSerializer(serializers.ModelSerializer):
     class Meta:

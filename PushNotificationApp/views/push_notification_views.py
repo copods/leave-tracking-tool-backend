@@ -1,15 +1,15 @@
 from datetime import timedelta
-from dotenv import load_dotenv
-from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from dotenv import load_dotenv
 from PushNotificationApp.models import FCMToken
 from PushNotificationApp.serializers import FCMTokenSerializer
 from PushNotificationApp.utils import fcm_token_validate, multi_fcm_tokens_validate
+from rest_framework import status
+from rest_framework.parsers import JSONParser
 from UserApp.decorators import user_is_authorized
 from UserApp.models import User
-from rest_framework.parsers import JSONParser
-from rest_framework import status
-from django.http import JsonResponse
 
 load_dotenv()
 
