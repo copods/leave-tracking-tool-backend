@@ -94,14 +94,15 @@ class User(models.Model):
     #Metadata
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
-    isDeleted = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    app_registration_status = models.BooleanField(default=False)
 
     objects = UserManager()
 
     def delete(self):
         try:
             user_pre_soft_delete_signal.send(sender=self.__class__, instance=self)
-            self.isDeleted = True
+            self.is_deleted = True
             self.save()
         except ValueError as e:
             raise e
