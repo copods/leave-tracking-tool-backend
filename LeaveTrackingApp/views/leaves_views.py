@@ -1,26 +1,25 @@
-from django.db import transaction
 from datetime import date, datetime, timedelta
-from LeaveTrackingApp.utils import get_onleave_wfh_details, getYearLeaveStats
+from django.db import transaction
+from django.db.models import Q
+from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from LeaveTrackingApp.models import Leave, LeaveType, StatusReason
+from LeaveTrackingApp.serializers import *
+from LeaveTrackingApp.utils import (
+    get_onleave_wfh_details,
+    getYearLeaveStats
+)
 from PushNotificationApp.models import FCMToken
 from PushNotificationApp.serializers import NotificationSerializer
-from PushNotificationApp.utils import multi_fcm_tokens_validate, send_token_push
-from LeaveTrackingApp.utils import getYearLeaveStats
-from UserApp.models import User
-from rest_framework.parsers import JSONParser
-from django.http.response import JsonResponse
-from rest_framework import status
-from django.db.models import Q
-from LeaveTrackingApp.models import Leave, LeaveType, StatusReason
-from LeaveTrackingApp.serializers import (
-    LeaveSerializer,
-    LeaveListSerializer,
-    LeaveTypeSerializer,
-    LeaveUtilSerializer,
-    StatusReasonSerializer,
-    UserLeaveListSerializer
+from PushNotificationApp.utils import (
+    multi_fcm_tokens_validate,
+    send_token_push
 )
+from rest_framework import status
+from rest_framework.parsers import JSONParser
 from UserApp.decorators import user_is_authorized
+from UserApp.models import User
+
 
 @csrf_exempt
 @user_is_authorized

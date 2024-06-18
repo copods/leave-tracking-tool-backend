@@ -1,16 +1,18 @@
+from LeaveTrackingApp.models import Leave, LeaveType, RuleSet, DayDetails, StatusReason
 from rest_framework import serializers
-from LeaveTrackingApp.models import Leave, LeaveType, RuleSet, DayDetails, Holiday, StatusReason, yearCalendar
 
-#------------other serializers---------------
+
 class RuleSetSerializer(serializers.ModelSerializer):
     class Meta:
         model = RuleSet
         fields = '__all__'
 
+
 class DayDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = DayDetails
         fields = '__all__'
+
 
 class StatusReasonSerializer(serializers.ModelSerializer):
 
@@ -18,13 +20,14 @@ class StatusReasonSerializer(serializers.ModelSerializer):
         model = StatusReason
         fields = '__all__'
 
-#-----------------leave related serializers---------------------
+
 class LeaveTypeSerializer(serializers.ModelSerializer):
     rule_set = RuleSetSerializer(read_only=True)
 
     class Meta:
         model = LeaveType
         fields = '__all__'
+
 
 class LeaveSerializer(serializers.ModelSerializer):
     day_details = DayDetailSerializer(many=True)
@@ -53,6 +56,7 @@ class LeaveSerializer(serializers.ModelSerializer):
     def get_approver(self, obj):
         return {'id': obj.approver.id, 'name': obj.approver.long_name(), 'designation': obj.approver.designation, 'profilePicture': obj.approver.profile_image}
 
+
 class LeaveUtilSerializer(serializers.ModelSerializer):
     day_details = DayDetailSerializer(many=True)
     user = serializers.SerializerMethodField('get_user')
@@ -63,6 +67,7 @@ class LeaveUtilSerializer(serializers.ModelSerializer):
     def get_user(self, obj):
         return {'name': obj.user.long_name(), 'profilePicture': obj.user.profile_image}
     
+
 class LeaveListSerializer(serializers.ModelSerializer):
     requestedBy = serializers.SerializerMethodField('get_requestedBy')
     leaveType = serializers.CharField(source='leave_type.name')
@@ -82,6 +87,7 @@ class LeaveListSerializer(serializers.ModelSerializer):
     def get_modifiedOn(self, obj):
         return obj.updated_at.date()
 
+
 class UserLeaveListSerializer(serializers.ModelSerializer):
     leaveType = serializers.CharField(source='leave_type.name')
     leaveStatus = serializers.CharField(source='status')
@@ -98,31 +104,3 @@ class UserLeaveListSerializer(serializers.ModelSerializer):
         return latest_status.created_at.date() if latest_status else obj.updated_at.date()
     
     
-# ----------------calendar related serializers--------------------
-class HolidaySerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Holiday
-        fields = '__all__'
-
-class YearCalendarSerializerList(serializers.ModelSerializer):
-    holidays = HolidaySerializer(many=True)
-
-    class Meta:
-        model = yearCalendar
-        fields = '__all__'
-
-class YearCalendarSerializer(serializers.ModelSerializer):
-    holidays = HolidaySerializer(many=True)
-
-    class Meta:
-        model = yearCalendar
-        fields = '__all__'
-
-    def create(self, validated_data):
-        holiday_data = validated_data.pop('holidays')
-        holiday_calendar = yearCalendar.objects.create(**validated_data)
-        for holiday in holiday_data:
-            holiday = Holiday.objects.create(**holiday)
-            holiday_calendar.holidays.add(holiday)
-        return holiday_calendar
