@@ -1,3 +1,4 @@
+import math
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
@@ -6,7 +7,7 @@ from rest_framework import status
 from django.db.models import Count, Q
 from UserApp.models import Department, Role, User
 from UserApp.serializers import (
-    RoleBasedListSerializer, 
+    ApproverListSerializer, 
     DepartmentSerializer, 
     RoleSerializer,
     UserSerializer,
@@ -31,42 +32,54 @@ def createUserUnauthorized(request):
             errors = user_serializer.errors
             return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
 
-# format of query param: filter=role:9f299ed6-caf0-4241-9265-7576af1d6426,status=P
 @csrf_exempt
 @user_is_authorized
 def userList(request):
     if request.method=='GET':
         try:
             users = User.objects.all()  # OR User.objects.all_with_deleted() based on whether to show deleted users too
-            search = request.GET.get('search', None)
-            sort = request.GET.get('sort', None)
-            page = request.GET.get('page', 1)
-            pageSize = request.GET.get('pageSize', 10)
-            filters = request.GET.get('filters', None)
-            roles = request.GET.get('roles', None)  #param for getting users based on specific roles with different data format(diff serializer used). 
-            if roles:
-                roles = roles.split(',')
-                users = users.filter(role__role_key__in=roles)
-                users_serializer_class = RoleBasedListSerializer
-            else:
-                users_serializer_class = UserListSerializer
-            if filters:
-                filters = {f.split(':')[0]: f.split(':')[1] for f in filters.split(',')}
-                filters = {
-                    'role__role_key' if k == 'role' else ('department__department_key' if k == 'department' else k): v
-                    for k, v in filters.items()
-                }   
-                users = users.filter(**filters) 
+            query_params = {key: request.GET.getlist(key) for key in request.GET.keys()}
+            search = query_params.get('search', [None])[0] 
+            sort = query_params.get('sort', [None])[0]
+            page = query_params.get('page', [1])[0]
+            pageSize = query_params.get('pageSize', [10])[0]
+            serializer_class = UserListSerializer if query_params.get('admin', [False])[0] else ApproverListSerializer
+            
+            filters = {}
+            for key, value in query_params.items():
+                if not key in ['search', 'sort', 'page', 'pageSize', 'admin']:
+                    if key == 'department':
+                        filters['department__department_key__in'] = value
+                    elif key == 'role':
+                        filters['role__role_key__in'] = value
+                    else:
+                        filters[f'{key}__in'] = value
+            
+            users = users.filter(**filters) 
+
             if search:
-                users = users.filter(first_name__icontains=search) | users.filter(last_name__icontains=search) | users.filter(email__icontains=search)
-            if sort:
-                users = users.order_by(sort)
-            else: 
-                users = users.order_by('-created_at')
+                users = users.filter(
+                    Q(first_name__icontains=search) | 
+                    Q(last_name__icontains=search) |
+                    Q(role__role_name__icontains=search) |
+                    Q(department__department_name__icontains=search)
+                )
+            
+            users = users.order_by(sort) if sort else users.order_by('-updated_at')
+            total_users = users.count()
+
             if page or pageSize:
                 users = users[(int(page)-1)*int(pageSize):int(page)*int(pageSize)]
-            users_serializer = users_serializer_class(users, many=True)
-            return JsonResponse(users_serializer.data, safe=False)
+
+            users_serializer = serializer_class(users, many=True)
+            return JsonResponse({
+                'total_results': total_users, 
+                'total_pages': math.ceil(total_users/int(pageSize)),
+                'current_page': int(page),
+                'page_size': int(pageSize),
+                'data': users_serializer.data,
+
+            }, safe=False)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

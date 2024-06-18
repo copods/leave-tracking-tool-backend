@@ -18,7 +18,7 @@ class RoleSerializer(serializers.ModelSerializer):
         model = Role
         fields = '__all__'
 
-class RoleBasedListSerializer(serializers.ModelSerializer):
+class ApproverListSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     profilePicture = serializers.CharField(source='profile_image')
     role = serializers.SerializerMethodField('get_role')
