@@ -77,6 +77,7 @@ def sign_in_app(request):
         try:
             user = User.objects.get(email=user_info['email'])
             user.profile_image = user_info['picture']
+            user.app_registration_status = True
             user.save()
             access_token, refresh_token = generate_tokens(user)
             return JsonResponse({
