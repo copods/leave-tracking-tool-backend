@@ -1,6 +1,5 @@
 from django.urls import path, re_path
-
-from PushNotificationApp.views.push_notification_views import (fcmTokenStore, fcmTokenValidate)
+from PushNotificationApp.views import *
 
 urlpatterns = [
     re_path(r'^fcmTokenStore$', fcmTokenStore),

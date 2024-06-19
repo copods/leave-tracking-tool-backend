@@ -1,5 +1,7 @@
 from rest_framework import serializers
-from UserApp.models import User, Department, Role
+from UserApp.serializers import UserRoleSerializer, UserDepartmentSerializer
+from UserApp.models import User
+
 
 class UserSerializer(serializers.ModelSerializer):
     
@@ -7,16 +9,6 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = '__all__'
 
-
-class DepartmentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Department
-        fields = '__all__'
-
-class RoleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Role
-        fields = '__all__'
 
 class ApproverListSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
@@ -32,15 +24,6 @@ class ApproverListSerializer(serializers.ModelSerializer):
     def get_role(self, obj):
         return obj.role.role_key
     
-class UserRoleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Role
-        fields = ['role_name','role_key']
-
-class UserDepartmentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Department
-        fields = ['department_name','department_key']
 
 class UserListSerializer(serializers.ModelSerializer):
     role= UserRoleSerializer(read_only=True)

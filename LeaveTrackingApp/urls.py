@@ -1,16 +1,5 @@
 from django.urls import path, re_path
-from LeaveTrackingApp.views.holiday_calendar_views import createHolidayCalendar, getHolidayCalendars
-from LeaveTrackingApp.views.leaves_views import (
-    createLeaveRequest,
-    enableEditLeave, 
-    getLeaveDetails, 
-    getLeaveTypes,
-    getOnLeaveAndWFH,
-    getUserLeaveStats, 
-    leavesForApprover, 
-    getUserLeaves,
-    addLeaveStatus
-)
+from LeaveTrackingApp.views import *
 
 
 urlpatterns = [

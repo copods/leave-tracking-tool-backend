@@ -1,6 +1,4 @@
 from datetime import datetime
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from dotenv import load_dotenv
 from django.views.decorators.csrf import csrf_exempt
@@ -8,7 +6,6 @@ from django.utils import timezone
 from UserApp.utils import sign_in_app, sign_in_web
 from rest_framework.parsers import JSONParser
 from django.http import JsonResponse
-
 
 load_dotenv()
 
