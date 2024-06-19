@@ -78,9 +78,11 @@ def createLeaveRequest(request):
                 if 'success' in response:
                     return JsonResponse({"message": response['message']}, status=status.HTTP_201_CREATED)
                 else:
-                    return JsonResponse({"error": response['error']}, status=status.HTTP_400_BAD_REQUEST)
+                    # return JsonResponse({"error": response['error']}, status=status.HTTP_400_BAD_REQUEST)
+                    pass
             
-            return JsonResponse({"error": "No valid FCM tokens found"}, status=status.HTTP_400_BAD_REQUEST)
+            # return JsonResponse({"error": "No valid FCM tokens found"}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({"message": "Leave request created successfully"}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
