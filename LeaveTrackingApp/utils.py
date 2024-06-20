@@ -223,3 +223,16 @@ def get_onleave_wfh_details(wfh_leaves_data, on_leave_data, curr_date):
         'wfh_users': wfh_users,
         'on_leave_users': on_leave_users
     }
+
+def check_leave_overlap(leave_data):
+    overlap = False
+    start_date = leave_data['start_date']
+    end_date = leave_data['end_date']
+    # (x>=st and y<=ed) or (x<=st and (y>=st or y<=ed)) or (x>=st and y>=ed) or (x<=st and y>=ed) => x<=ed and y>=st
+    earlier_leave = Leave.objects.filter(
+        Q(user=leave_data['user']) &
+        (Q(start_date__lte=end_date ) & Q(end_date__gte=start_date)) 
+    )
+    if earlier_leave.exists():
+        overlap = True
+    return overlap

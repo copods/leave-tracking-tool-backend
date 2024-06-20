@@ -6,6 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from LeaveTrackingApp.models import Leave, LeaveType, StatusReason
 from LeaveTrackingApp.serializers import *
 from LeaveTrackingApp.utils import (
+    check_leave_overlap,
     get_onleave_wfh_details,
     getYearLeaveStats
 )
@@ -48,6 +49,10 @@ def createLeaveRequest(request):
                 approver_id = approver.id
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Approver not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+            #validations
+            if check_leave_overlap(leave_data):
+                return JsonResponse({'error': 'You have already applied leave for some of these days'}, status=status.HTTP_400_BAD_REQUEST)
 
             with transaction.atomic():
                 leave_serializer = LeaveSerializer(data=leave_data)
