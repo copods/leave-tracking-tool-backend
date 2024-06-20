@@ -20,6 +20,8 @@ from rest_framework import status
 from rest_framework.parsers import JSONParser
 from UserApp.decorators import user_is_authorized
 from UserApp.models import User
+from UserApp.serializers import UserSerializer
+from common.utils import send_email
 
 
 @csrf_exempt
@@ -56,6 +58,22 @@ def createLeaveRequest(request):
                 leave_serializer = LeaveSerializer(data=leave_data)
                 if leave_serializer.is_valid():
                     leave_instance = leave_serializer.save()
+
+                    leave_data = leave_serializer.data
+                    approver_data = UserSerializer(approver).data
+                    user_data = UserSerializer(user).data
+                    leave_text = f'''Your Team member {user_data['first_name']} {user_data['last_name']} has requested 
+                                 a leave request from {leave_data['start_date']} to {leave_data['end_date']}.
+                                 Reason: {leave_data['leave_reason']}. Take action now on the app! '''
+                    subject = f'Leave Request by {user_data['first_name']} {user_data['last_name']}'
+
+                    send_email(
+                        recipients=[approver_data],
+                        subject=subject,
+                        template_name='leave_notification_template.html',
+                        context={'leave_text': leave_text},
+                        app_name='LeaveTrackingApp'
+                    )
 
                     notification_data = {
                         'types': 'Leave-Request',  
@@ -191,6 +209,19 @@ def addLeaveStatus(request):
             leave.status_reasons.add(status_reason)
             leave.status = status
             leave.save()
+
+            approver_data = UserSerializer(user).data
+            user_data = UserSerializer(leave.user).data
+            subject = f'Leave Status Updated by {approver_data["first_name"]} {approver_data["last_name"]}'
+            leave_text = f'''Your leave request from {leave.start_date} to {leave.end_date} has been {leave.status}!.
+                             For more details, check out on the app.''' 
+            send_email(
+                recipients=[user_data],
+                subject=subject,
+                template_name='leave_notification_template.html',
+                context={'leave_text': leave_text},
+                app_name='LeaveTrackingApp'
+            )
 
             return JsonResponse(StatusReasonSerializer(status_reason).data, status=201)
         

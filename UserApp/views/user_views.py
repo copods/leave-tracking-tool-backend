@@ -13,6 +13,7 @@ from UserApp.serializers import (
     UserListSerializer,
     UserSerializer
 )
+from common.utils import send_email
 
 
 # create user unauthorized
@@ -87,14 +88,30 @@ def userList(request):
 @user_is_authorized
 def createUser(request):
     if request.method=='POST':
-        user_data = JSONParser().parse(request)
-        user_serializer = UserSerializer(data=user_data)
-        if user_serializer.is_valid():
-            user_serializer.save()
-            return JsonResponse("Added Successfully!!", safe=False)
-        else:
-            errors = user_serializer.errors
-            return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user_data = JSONParser().parse(request)
+            user_serializer = UserSerializer(data=user_data)
+            if user_serializer.is_valid():
+                user_serializer.save()
+                #send email to user
+                data = user_serializer.data
+                if not isinstance(data, list):
+                    data = [data]
+
+                send_email(
+                    recipients=data,
+                    subject='Your Leave Management Platform Awaits!',
+                    template_name='onboarding_template.html',
+                    context={},
+                    app_name='UserApp'
+                )
+
+                return JsonResponse("Added Successfully!!", safe=False)
+            else:
+                errors = user_serializer.errors
+                return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 @csrf_exempt
 @user_is_authorized
@@ -166,6 +183,10 @@ def bulkUserAdd(request):
         users_serializer = UserSerializer(data=users_data, many=True)
         if users_serializer.is_valid():
             users_serializer.save()
+            #send email to users
+            data = users_serializer.data
+            send_email(data)
+
             return JsonResponse("Added Successfully!!", safe=False)
         else:
             errors = users_serializer.errors

@@ -30,7 +30,8 @@ EXTERNAL_APPS = [
     'rest_framework',
     'LeaveTrackingApp.apps.LeavetrackingappConfig',
     'UserApp.apps.UserappConfig',
-    'PushNotificationApp.apps.PushnotificationappConfig'
+    'PushNotificationApp.apps.PushnotificationappConfig',
+    'common.apps.CommonConfig',
 ]
 
 INSTALLED_APPS += EXTERNAL_APPS
@@ -130,3 +131,32 @@ CORS_ORIGIN_ALLOW_ALL = True
 CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_SECURE = True
+
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SES_REGION_NAME = 'ap-south-1'
+
+### Email config with AWS SES
+EMAIL_BACKEND = 'django_ses.SESBackend'
+
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            os.path.join(BASE_DIR, 'LeaveTrackingApp', 'templates'),
+            os.path.join(BASE_DIR, 'UserApp', 'templates'),
+            os.path.join(BASE_DIR, 'common', 'templates'),
+            #... other apps templates
+        ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
