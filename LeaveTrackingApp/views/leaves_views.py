@@ -282,15 +282,6 @@ def enableEditLeave(request):
                 leave.editStatus = 'Requested-For-Edit'
                 leave.editReason = leave_data['edit_reason']
                 leave.save()
-
-                approver_data = UserSerializer(leave.approver).data
-                user_data = UserSerializer(leave.user).data
-                subject = f'Edit Request Sent by {approver_data["first_name"]} {approver_data["last_name"]}'
-                leave_text = f'''Your leave approver has requested you to edit your leave request from {leave.start_date} to {leave.end_date}!.
-                                Take action on the app.''' 
-                send_email(recipients=[user_data], leave_email_info={'subject': subject, 'leave_text': leave_text})
-
-
                 return JsonResponse({'message': 'Leave request sent to Edit'}, status=200)   
             else:
                 return JsonResponse({'message': 'Leave request already sent to Edit'}, status=400)
