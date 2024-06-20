@@ -50,7 +50,7 @@ def createLeaveRequest(request):
             
             #validations
             if check_leave_overlap(leave_data):
-                return JsonResponse({'error': 'Leave overlaps with existing leave'}, status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse({'error': 'You have already applied leave for some of these days'}, status=status.HTTP_400_BAD_REQUEST)
 
             with transaction.atomic():
                 leave_serializer = LeaveSerializer(data=leave_data)
