@@ -97,7 +97,15 @@ def createUser(request):
                 data = user_serializer.data
                 if not isinstance(data, list):
                     data = [data]
-                send_email(data)
+
+                send_email(
+                    recipients=data,
+                    subject='Your Leave Management Platform Awaits!',
+                    template_name='onboarding_template.html',
+                    context={},
+                    app_name='UserApp'
+                )
+
                 return JsonResponse("Added Successfully!!", safe=False)
             else:
                 errors = user_serializer.errors
