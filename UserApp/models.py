@@ -96,6 +96,7 @@ class User(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
     app_registration_status = models.BooleanField(default=False)
+    onboarding_status = models.JSONField(null=True)
 
     objects = UserManager()
 

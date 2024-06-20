@@ -180,9 +180,13 @@ def addInitialUserPoints(request):
             points_data = JSONParser().parse(request)
             user_email = getattr(request, 'user_email', None)
             user = User.objects.get(email=user_email)
-            user.points += points_data['correct_questions']
+            user.points += points_data['points']
+            if points_data['user_onboarded']:
+                if not user.onboarding_status:
+                    user.onboarding_status = {}
+                user.onboarding_status['LeaveTrackingApp'] = True
             user.save()
-            return JsonResponse(f"The user has been awarded with {points_data['correct_questions']} points", safe=False)
+            return JsonResponse(f"Successfully onboarded", safe=False)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
