@@ -69,8 +69,16 @@ def fetchNotifications(request):
     if request.method == 'GET':
         try:
             user_email = getattr(request, 'user_email', None)
+            query_params = request.GET.dict()
             user = User.objects.get(email=user_email)
-            notifications = Notification.objects.filter( receivers__contains=[user.id] ).order_by('-created_at')
+            notifications = Notification.objects.filter( receivers__contains=[user.id] )
+
+            if query_params.get('my_requests'):
+                notifications = notifications.filter(leaveApplicationId__user=user.id)
+            if query_params.get('unread'):
+                notifications = notifications.filter(isRead=False)
+            
+            notifications = notifications.order_by('-created_at')
             notifications_serializer = FetchNotificationsSerializer(notifications, many=True)
             return JsonResponse(notifications_serializer.data, safe=False)
         except Exception as e:
