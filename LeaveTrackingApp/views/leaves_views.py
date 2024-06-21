@@ -3,7 +3,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from LeaveTrackingApp.models import Leave, LeaveType, StatusReason
+from LeaveTrackingApp.models import DayDetails, Leave, LeaveType, StatusReason
 from LeaveTrackingApp.serializers import *
 from LeaveTrackingApp.utils import (
     check_leave_overlap,
@@ -33,7 +33,7 @@ def getLeaveTypes(request):
         return JsonResponse(leave_types_serializer.data, safe=False)
 
 @csrf_exempt
-@user_is_authorized
+# @user_is_authorized
 def createLeaveRequest(request):
     if request.method == 'POST':
         try:
@@ -236,8 +236,8 @@ def addLeaveStatus(request):
 
 
 @csrf_exempt
-# @user_is_authorized
-def getOnLeaveAndWFH(request):
+@user_is_authorized
+def getEmployeeAttendance(request):
     if request.method == 'GET':
         try:
             current_date = request.GET.get('date', None)
@@ -305,7 +305,11 @@ def getOnLeaveAndWFH(request):
             resp_obj['users_on_wfh']['today'] = today_data.get('users')
             resp_obj['users_on_wfh']['next_seven_days'] = [dict(data) for data in next_seven_day_data]
             
-            
+            on_leave_wfh_count = DayDetails.objects.filter(date=current_date).count()
+            users = User.objects.all().count()
+
+            resp_obj['users_present'] = users - on_leave_wfh_count
+            resp_obj['total_users'] = users
             return JsonResponse(resp_obj, safe=False)
         
         except Exception as e:

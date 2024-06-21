@@ -218,7 +218,8 @@ def get_users_for_day(leaves_data, curr_date, wfh=False):
                     if day['type']==wfh_id:
                         users.append(user)
                 else:
-                    users.append(user)
+                    if not day['type']==wfh_id:
+                        users.append(user)
                 break
     data = {
         'date': curr_date,
