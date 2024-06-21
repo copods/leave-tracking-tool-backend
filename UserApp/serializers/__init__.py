@@ -8,6 +8,7 @@ from .user_serializers import (
     ApproverListSerializer,
     UserListSerializer,
     UserSerializer,
+    UserAppProfileSerializer
 )
 
 
@@ -19,4 +20,5 @@ __all__ = [
     'UserRoleSerializer',
     'UserListSerializer',
     'UserSerializer',
+    'UserAppProfileSerializer'
 ]
