@@ -77,14 +77,16 @@ class LeaveDetailSerializer(serializers.ModelSerializer):
 
 
 class LeaveUtilSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField('get_name')
+    profilePicture = serializers.CharField(source='user.profile_image')
+    leave_type = serializers.CharField(source='leave_type.name')
     day_details = DayDetailSerializer(many=True)
-    user = serializers.SerializerMethodField('get_user')
     class Meta:
         model = Leave
-        fields = ['user','day_details']
+        fields = ['name','profilePicture', 'leave_type', 'start_date', 'end_date','day_details']
     
-    def get_user(self, obj):
-        return {'name': obj.user.long_name(), 'profilePicture': obj.user.profile_image}
+    def get_name(self, obj):
+        return obj.user.long_name()
     
 
 class LeaveListSerializer(serializers.ModelSerializer):

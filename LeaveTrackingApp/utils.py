@@ -201,34 +201,37 @@ def calculateUnpaidLeaves(days, max_days_allowed, months):
     return unpaid
 
 
-def get_onleave_wfh_details(wfh_leaves_data, on_leave_data, curr_date):
-    wfh_users = []
-    on_leave_users = []
-    for leave in wfh_leaves_data:
+def get_users_for_day(leaves_data, curr_date, wfh=False):
+    users = []
+    wfh_id = LeaveType.objects.get(name='wfh').id
+
+    for leave in leaves_data:
         for day in leave['day_details']:
             if datetime.strptime(day['date'], "%Y-%m-%d").date() == curr_date:
-                wfh_users.append(leave['user'])
+                user = {
+                    'name': leave['name'], 
+                    'profile_pic': leave['profilePicture'], 
+                    'leave_type': leave['leave_type'],
+                    'date_range': f'{leave["start_date"]} - {leave["end_date"]}'
+                }
+                if wfh :
+                    if day['type']==wfh_id:
+                        users.append(user)
+                else:
+                    if not day['type']==wfh_id:
+                        users.append(user)
                 break
-
-    for leave in on_leave_data:
-        for day in leave['day_details']:
-            if datetime.strptime(day['date'], "%Y-%m-%d").date() == curr_date:
-                on_leave_users.append(leave['user'])
-                break
-
-    return {
+    data = {
         'date': curr_date,
-        'on_leave_count': len(on_leave_users),
-        'wfh_count': len(wfh_users),
-        'wfh_users': wfh_users,
-        'on_leave_users': on_leave_users
+        'users_count': len(users),
+        'users': users
     }
+    return data
 
 def check_leave_overlap(leave_data):
     overlap = False
     start_date = leave_data['start_date']
     end_date = leave_data['end_date']
-    # (x>=st and y<=ed) or (x<=st and (y>=st or y<=ed)) or (x>=st and y>=ed) or (x<=st and y>=ed) => x<=ed and y>=st
     earlier_leave = Leave.objects.filter(
         Q(user=leave_data['user']) &
         (Q(start_date__lte=end_date ) & Q(end_date__gte=start_date)) 
