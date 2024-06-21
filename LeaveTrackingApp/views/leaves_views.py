@@ -7,7 +7,7 @@ from LeaveTrackingApp.models import Leave, LeaveType, StatusReason
 from LeaveTrackingApp.serializers import *
 from LeaveTrackingApp.utils import (
     check_leave_overlap,
-    get_onleave_wfh_details,
+    get_users_for_day,
     getYearLeaveStats
 )
 from PushNotificationApp.models import FCMToken
@@ -236,7 +236,7 @@ def addLeaveStatus(request):
 
 
 @csrf_exempt
-@user_is_authorized
+# @user_is_authorized
 def getOnLeaveAndWFH(request):
     if request.method == 'GET':
         try:
@@ -255,29 +255,58 @@ def getOnLeaveAndWFH(request):
                 (Q(start_date__gte=current_date) & Q(start_date__lte=last_date)) | 
                 (Q(end_date__gte=current_date) & Q(end_date__lte=last_date))
             )
-            wfh_leaves = leaves.filter(leave_type__name='wfh')
-            on_leave = leaves.exclude(leave_type__name='wfh')
-            wfh_leaves_data = LeaveUtilSerializer(wfh_leaves, many=True).data
-            on_leave_data = LeaveUtilSerializer(on_leave, many=True).data
             
-            data_obj = []
-            while current_date <= last_date:
-                if current_date.weekday()==5 or current_date.weekday()==6:
-                    current_date += timedelta(days=1)
-                    continue
-                data_obj.append(get_onleave_wfh_details(wfh_leaves_data, on_leave_data, current_date))
-                current_date += timedelta(days=1)
+            leaves = LeaveUtilSerializer(leaves, many=True).data
             
-            total_users = User.objects.all().count()
-            in_office_users = total_users - (data_obj[0]['on_leave_count'] + data_obj[0]['wfh_count'])
-
-            response_obj = {
-                'total_users': total_users,
-                'in_office_users': in_office_users,
-                'data': data_obj
+            resp_obj = {}
+            resp_obj['users_on_leave'] = {
+                'today': [],
+                'next_seven_days': []
             }
+            resp_obj['users_on_wfh'] = {
+                'today': [],
+                'next_seven_days': []
+            }
+
+            #calculate for on_leave
+            today_data = get_users_for_day(leaves, current_date)
+            temp_curr_date = current_date + timedelta(days=1)
+            next_seven_day_data = set({})
+            while temp_curr_date <= last_date:
+                if temp_curr_date.weekday()==5 or temp_curr_date.weekday()==6:
+                    temp_curr_date += timedelta(days=1)
+                    continue
+                
+                x = get_users_for_day(leaves, temp_curr_date).get('users')
+                for user in x:
+                    next_seven_day_data.add(frozenset(user.items()))
+
+                temp_curr_date += timedelta(days=1)
             
-            return JsonResponse(response_obj, safe=False)
+            resp_obj['users_on_leave']['today'] = today_data.get('users')
+            resp_obj['users_on_leave']['next_seven_days'] = [dict(data) for data in next_seven_day_data]
+            
+
+            #calculate for on_wfh
+            today_data = get_users_for_day(leaves, current_date, wfh=True)
+            temp_curr_date = current_date + timedelta(days=1)
+            next_seven_day_data = set({})
+            while temp_curr_date <= last_date:
+                if temp_curr_date.weekday()==5 or temp_curr_date.weekday()==6:
+                    temp_curr_date += timedelta(days=1)
+                    continue
+                
+                x = get_users_for_day(leaves, temp_curr_date, wfh=True).get('users')
+                for user in x:
+                    next_seven_day_data.add(frozenset(user.items()))
+
+                temp_curr_date += timedelta(days=1)
+
+            resp_obj['users_on_wfh']['today'] = today_data.get('users')
+            resp_obj['users_on_wfh']['next_seven_days'] = [dict(data) for data in next_seven_day_data]
+            
+            
+            return JsonResponse(resp_obj, safe=False)
         
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -324,3 +353,31 @@ def editLeave(request, id):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
         
+
+
+
+# {
+    
+#     users_on_leave_: {
+#         today: [
+#             {
+#                 name:
+#                 leave_type:
+#                 profile_pic:
+#             },
+#             ...
+#         ],
+#         next_seven_days:[
+#             {
+#                 name:
+#                 leave_type:
+#                 profile_pic:
+#                 leave_days_range:
+#             },
+#             ...
+#         ]
+#     },
+#     users_on_wfh: [
+#         ...
+#     ]
+# }
