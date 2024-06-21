@@ -356,32 +356,3 @@ def editLeave(request, id):
             return JsonResponse({'error': 'Leave not found'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-        
-
-
-
-# {
-    
-#     users_on_leave_: {
-#         today: [
-#             {
-#                 name:
-#                 leave_type:
-#                 profile_pic:
-#             },
-#             ...
-#         ],
-#         next_seven_days:[
-#             {
-#                 name:
-#                 leave_type:
-#                 profile_pic:
-#                 leave_days_range:
-#             },
-#             ...
-#         ]
-#     },
-#     users_on_wfh: [
-#         ...
-#     ]
-# }
