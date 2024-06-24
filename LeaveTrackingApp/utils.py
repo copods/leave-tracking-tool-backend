@@ -25,7 +25,7 @@ def getYearLeaveStats(user_id, year_range):
 
         year_leave_stats = {
             'year': f'{year}-{int(year) + 1}',
-            'data': {}
+            'data': []
         }
         
         # Calculate quarterly statistics
@@ -33,38 +33,50 @@ def getYearLeaveStats(user_id, year_range):
             quarter_obj = {
                 'title': f'Q{i + 1}',
                 'months': yearly_quarters[year][i]['months'],
-                'unpaid_count': [0, 0, 0]  #  unpaid days per month -> corresponds to each month for that quarter
+                'total_unpaid': 0,
+                'leaves': []
             }
 
-            leaves_for_curr_quarter = user_leaves_for_year.filter(
-                ( Q(start_date__gte=yearly_quarters[year][i]['start_date']) & Q(start_date__lt=yearly_quarters[year][i]['end_date']) ) |
-                Q(end_date__gte=yearly_quarters[year][i]['start_date'])
-            )
-                
-            days_taken = 0
-            unpaid=0
-            for leave in leaves_for_curr_quarter:
-                days_taken += (leave.end_date - leave.start_date).days
-                unpaid += leave['unpaid_count']
+            leaves_for_curr_quarter = LeaveUtilSerializer(
+                user_leaves_for_year.filter(
+                    ( Q(start_date__gte=yearly_quarters[year][i]['start_date']) & Q(start_date__lt=yearly_quarters[year][i]['end_date']) ) |
+                    Q(end_date__gte=yearly_quarters[year][i]['start_date'])
+                ), many=True
+            ).data
             
+            leave_types = user_leaves_for_year.values_list('leave_type__name', flat=True).distinct()
+            taken_unpaid_obj = {
+                type: {
+                    'leaves_taken' : 0,
+                    'unpaid' : 0
+                }
+                for type in leave_types
+            }
+            for leave in leaves_for_curr_quarter:
+                max_days_allowed = LeaveType.objects.get(name=leave['leave_type']).rule_set.max_days_allowed
+                # leaves overlapping quarters is handled here -> put days in respective quarter accordingly in respective leave
+                days_in_quarter = [
+                    day
+                    for day in leave['day_details']
+                    if calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month] in yearly_quarters[year][i]['months']
+                ]
+                days_in_quarter, unpaid_count = find_unpaid_days(days_in_quarter, taken_unpaid_obj[leave['leave_type']]['leaves_taken'], max_days_allowed)
+                taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += len(days_in_quarter)
+                taken_unpaid_obj[leave['leave_type']]['unpaid'] += unpaid_count
+                leave['day_details'] = days_in_quarter
 
-            quarter_obj['leaves'] = [
-                {
+                temp = {
                     'id': leave['id'],
                     'start_date': leave['start_date'],
                     'end_date': leave['end_date'],
-                    'type': leave['type'],
-                    'status': leave['status']
-                    'unpaid_count': 
+                    'type': leave['leave_type'],
+                    'status': leave['status'],
+                    'unpaid_count': unpaid_count
                 }
-            ]
-            year_leave_stats[f'{leave_type}_taken'] = quarter_obj[leave_type]['daysTaken']
-            year_leave_stats[f'total_{leave_type}'] = quarter_obj[leave_type]['totalDays']
-        
-            print('here3')
-            year_leave_stats['quarterly_leaves'].append(quarter_obj)
-        
-        print('5*********')
+                quarter_obj['total_unpaid'] += unpaid_count       
+                quarter_obj['leaves'].append(temp)
+
+            year_leave_stats['data'].append(quarter_obj)
 
         return year_leave_stats
 
@@ -117,7 +129,7 @@ def add_months(original_date, months_to_add):
     year, month = divmod(original_date.year*12 + original_date.month + months_to_add, 12)
     return original_date.replace(year=year, month=month % 12, day=original_date.day)
 
-def calculateUnpaidLeaves(days, max_days_allowed, months):
+def get_monthwise_unpaid(days, max_days_allowed, months):
     days.sort()
     taken = 0
     unpaid = [0,0,0]
@@ -126,6 +138,19 @@ def calculateUnpaidLeaves(days, max_days_allowed, months):
         if(taken > max_days_allowed):
             unpaid[months.index(calendar.month_abbr[day.month])] += 1
     return unpaid
+
+def find_unpaid_days(days, days_taken, max_days_allowed):
+    unpaid = 0
+    modified_days = days
+    count= 0
+    for day in modified_days:
+        count += 0.5 if day['is_half_day'] else 1
+        if days_taken+count > max_days_allowed:
+            unpaid += 1
+            day['unpaid'] = True
+        else:
+            day['unpaid'] = False
+    return modified_days, unpaid
 
 
 def get_users_for_day(leaves_data, curr_date, wfh=False):
