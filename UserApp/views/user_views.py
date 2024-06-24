@@ -11,7 +11,8 @@ from UserApp.serializers import (
     DepartmentSerializer,
     RoleSerializer,
     UserListSerializer,
-    UserSerializer
+    UserSerializer,
+    UserAppProfileSerializer
 )
 from common.utils import send_email
 
@@ -119,10 +120,14 @@ def user(request,id):
     if request.method=='GET':
         try:
             user = User.objects.get(id=id)
-            user_serializer = UserSerializer(user)
+            app_profile = request.GET.get('app_profile', False)
+            serializer_class = UserAppProfileSerializer if app_profile else UserSerializer
+            user_serializer = serializer_class(user)
             return JsonResponse(user_serializer.data, safe=False)
         except User.DoesNotExist as e:
             return JsonResponse({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     elif request.method=='DELETE':
         try:
@@ -137,8 +142,8 @@ def user(request,id):
     elif request.method=='PUT':
         try:
             user_data = JSONParser().parse(request)
-            user = User.objects.get(id=user_data['id'])
-            user_serializer = UserSerializer(user, data=user_data)
+            user = User.objects.get(id=id)
+            user_serializer = UserSerializer(user, data=user_data, partial=True)
             if user_serializer.is_valid():
                 user_serializer.save()
                 return JsonResponse("Updated Successfully!!", safe=False)
@@ -147,6 +152,8 @@ def user(request,id):
                 return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
         except User.DoesNotExist as e:
             return JsonResponse({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt
 @user_is_authorized

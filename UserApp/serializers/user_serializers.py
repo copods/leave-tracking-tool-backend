@@ -9,6 +9,34 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = '__all__'
 
+class UserAppProfileSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+    emergency_contact = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'name', 
+            'profile_image', 
+            'designation',
+            'work_type',
+            'date_of_joining', 
+            'phone_number', 
+            'emergency_contact',
+            'current_address_line',
+            'permanent_address_line',
+            'points'
+        ]
+
+    def get_name(self, obj):
+        return obj.long_name()
+    
+    def get_emergency_contact(self, obj):
+        return {
+            'name': obj.emergency_contact_name,
+            'relation': obj.emergency_contact_relation,
+            'contact_no': obj.emergency_contact_number
+        }
 
 class ApproverListSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
