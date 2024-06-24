@@ -121,7 +121,6 @@ def getYearLeaveStats(user_id, year_range):
                         days_in_quarter.append(day)
 
                 max_days = LeaveType.objects.get(name=leave_type).rule_set.max_days_allowed
-                print(max_days, '\n\n\n')
                 quarter_obj[leave_type] = {
                     'daysTaken': len(days_in_quarter),
                     'totalDays': max_days,
@@ -203,3 +202,43 @@ def calculateUnpaidLeaves(days, max_days_allowed, months):
         if(taken > max_days_allowed):
             unpaid[months.index(calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month])] += 1
     return unpaid
+
+
+def get_users_for_day(leaves_data, curr_date, wfh=False):
+    users = []
+    wfh_id = LeaveType.objects.get(name='wfh').id
+
+    for leave in leaves_data:
+        for day in leave['day_details']:
+            if datetime.strptime(day['date'], "%Y-%m-%d").date() == curr_date:
+                user = {
+                    'name': leave['name'], 
+                    'profile_pic': leave['profilePicture'], 
+                    'leave_type': leave['leave_type'],
+                    'date_range': f'{leave["start_date"]} - {leave["end_date"]}'
+                }
+                if wfh :
+                    if day['type']==wfh_id:
+                        users.append(user)
+                else:
+                    if not day['type']==wfh_id:
+                        users.append(user)
+                break
+    data = {
+        'date': curr_date,
+        'users_count': len(users),
+        'users': users
+    }
+    return data
+
+def check_leave_overlap(leave_data):
+    overlap = False
+    start_date = leave_data['start_date']
+    end_date = leave_data['end_date']
+    earlier_leave = Leave.objects.filter(
+        Q(user=leave_data['user']) &
+        (Q(start_date__lte=end_date ) & Q(end_date__gte=start_date)) 
+    )
+    if earlier_leave.exists():
+        overlap = True
+    return overlap

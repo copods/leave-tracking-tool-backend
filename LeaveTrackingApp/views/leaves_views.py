@@ -1,24 +1,28 @@
-# create CRUD views for Role model and Department model
-from django.shortcuts import render
+from datetime import date, datetime, timedelta
+from django.db import transaction
+from django.db.models import Q
+from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from LeaveTrackingApp.models import DayDetails, Leave, LeaveType, StatusReason
+from LeaveTrackingApp.serializers import *
+from LeaveTrackingApp.utils import (
+    check_leave_overlap,
+    get_users_for_day,
+    getYearLeaveStats
+)
 from PushNotificationApp.models import FCMToken
 from PushNotificationApp.serializers import NotificationSerializer
-from PushNotificationApp.utils import multi_fcm_tokens_validate, send_token_push
-from LeaveTrackingApp.utils import getYearLeaveStats
-from UserApp.models import User
-from rest_framework.parsers import JSONParser
-from django.http.response import JsonResponse
-from rest_framework import status
-from django.db.models import Q
-from LeaveTrackingApp.models import Leave, LeaveType, StatusReason
-from LeaveTrackingApp.serializers import (
-    LeaveSerializer,
-    LeaveListSerializer,
-    LeaveTypeSerializer,
-    StatusReasonSerializer,
-    UserLeaveListSerializer
+from PushNotificationApp.utils import (
+    multi_fcm_tokens_validate,
+    send_token_push
 )
+from rest_framework import status
+from rest_framework.parsers import JSONParser
 from UserApp.decorators import user_is_authorized
+from UserApp.models import User
+from UserApp.serializers import UserSerializer
+from common.utils import send_email
+
 
 @csrf_exempt
 @user_is_authorized
@@ -29,55 +33,80 @@ def getLeaveTypes(request):
         return JsonResponse(leave_types_serializer.data, safe=False)
 
 @csrf_exempt
-@user_is_authorized
+# @user_is_authorized
 def createLeaveRequest(request):
-    if request.method=='POST':
+    if request.method == 'POST':
         try:
             leave_data = JSONParser().parse(request)
+
             try:
                 user = User.objects.get(id=leave_data['user'])
-                user_id = user.id
             except User.DoesNotExist:
                 return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+            
             try:
-                # to check if user exists or not
                 approver = User.objects.get(id=leave_data['approver'])
                 approver_id = approver.id
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Approver not found'}, status=status.HTTP_404_NOT_FOUND)
             
-            leave_serializer = LeaveSerializer(data=leave_data)
-            if leave_serializer.is_valid():
-                leave_instance = leave_serializer.save()
+            #validations
+            if check_leave_overlap(leave_data):
+                return JsonResponse({'error': 'You have already applied leave for some of these days'}, status=status.HTTP_400_BAD_REQUEST)
 
-                # create notification
-                notification_data = {
-                    'types': 'Leave Request',
-                    'leave_application_id': leave_instance.id,
-                    'receivers': [approver_id],  # receivers is a list of user IDs
-                    'title': f"Leave Request by {user.first_name}",
-                    'subtitle': f"{user.first_name} has requested leave.",
-                    'created_by': user_id,
-                }
-                notification_serializer = NotificationSerializer(data=notification_data)
-                if notification_serializer.is_valid():
-                    notification_serializer.save()
+            with transaction.atomic():
+                leave_serializer = LeaveSerializer(data=leave_data)
+                if leave_serializer.is_valid():
+                    leave_instance = leave_serializer.save()
 
-                #To send push notification
-                fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
-                fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
-                valid_tokens = multi_fcm_tokens_validate(fcm_tokens)
-                if valid_tokens:
-                    response = send_token_push(notification_data['title'], notification_data['subtitle'], valid_tokens)
-                    if 'success' in response:
-                        return JsonResponse({"message": response['message']}, status=status.HTTP_201_CREATED)
+                    leave_data = leave_serializer.data
+                    approver_data = UserSerializer(approver).data
+                    user_data = UserSerializer(user).data
+                    leave_text = f'''Your Team member {user_data['first_name']} {user_data['last_name']} has requested 
+                                 a leave request from {leave_data['start_date']} to {leave_data['end_date']}.
+                                 Reason: {leave_data['leave_reason']}. Take action now on the app! '''
+                    subject = f'Leave Request by {user_data['first_name']} {user_data['last_name']}'
+
+                    send_email(
+                        recipients=[approver_data],
+                        subject=subject,
+                        template_name='leave_notification_template.html',
+                        context={'leave_text': leave_text},
+                        app_name='LeaveTrackingApp'
+                    )
+
+                    notification_data = {
+                        'types': 'Leave-Request',  
+                        'leaveApplicationId': leave_instance.id,
+                        'receivers': [approver.id],  
+                        'title': f"Leave Request by {user.long_name()}",
+                        'subtitle': f"{user.long_name()} has requested leave.",
+                        'created_by': user.id,
+                    }
+                    notification_serializer = NotificationSerializer(data=notification_data)
+                    if notification_serializer.is_valid():
+                        notification_serializer.save()
                     else:
-                        return JsonResponse({"error": response['error']}, status=status.HTTP_400_BAD_REQUEST)
-                
-                return JsonResponse({"error": "No valid FCM tokens found"}, status=status.HTTP_400_BAD_REQUEST)
+                        return JsonResponse(notification_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+                else:
+                    return JsonResponse(leave_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
+            fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
+            valid_tokens = multi_fcm_tokens_validate(fcm_tokens, approver_id)
+
+            if valid_tokens:
+                response = send_token_push(notification_data['title'], notification_data['subtitle'], valid_tokens)
+                if 'success' in response:
+                    return JsonResponse({"message": response['message']}, status=status.HTTP_201_CREATED)
+                else:
+                    # return JsonResponse({"error": response['error']}, status=status.HTTP_400_BAD_REQUEST)
+                    pass
             
-            return JsonResponse(leave_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+            # return JsonResponse({"error": "No valid FCM tokens found"}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({"message": "Leave request created successfully"}, status=status.HTTP_201_CREATED)
+
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -135,7 +164,7 @@ def getLeaveDetails(request, id):
     if request.method=='GET':
         try:
             leave = Leave.objects.get(id=id)
-            leave_serializer = LeaveSerializer(leave)
+            leave_serializer = LeaveDetailSerializer(leave)
             return JsonResponse(leave_serializer.data, safe=False)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -181,6 +210,19 @@ def addLeaveStatus(request):
             leave.status = status
             leave.save()
 
+            approver_data = UserSerializer(user).data
+            user_data = UserSerializer(leave.user).data
+            subject = f'Leave Status Updated by {approver_data["first_name"]} {approver_data["last_name"]}'
+            leave_text = f'''Your leave request from {leave.start_date} to {leave.end_date} has been {leave.status}!.
+                             For more details, check out on the app.''' 
+            send_email(
+                recipients=[user_data],
+                subject=subject,
+                template_name='leave_notification_template.html',
+                context={'leave_text': leave_text},
+                app_name='LeaveTrackingApp'
+            )
+
             return JsonResponse(StatusReasonSerializer(status_reason).data, status=201)
         
         except  User.DoesNotExist:
@@ -193,6 +235,86 @@ def addLeaveStatus(request):
             return JsonResponse({'error': str(e)}, status=500)
 
 
+@csrf_exempt
+@user_is_authorized
+def getEmployeeAttendance(request):
+    if request.method == 'GET':
+        try:
+            current_date = request.GET.get('date', None)
+            current_date = datetime.strptime(current_date, "%Y-%m-%d").date() if current_date else datetime.now().date()
+            last_date = current_date 
+            #exclude saturday and sunday
+            i=1
+            while i<=7:
+                last_date += timedelta(days=1)
+                if not (last_date.weekday()==5 or last_date.weekday()==6):
+                    i+=1
+            
+            leaves = Leave.objects.filter(
+                Q(status='A') &
+                (Q(start_date__gte=current_date) & Q(start_date__lte=last_date)) | 
+                (Q(end_date__gte=current_date) & Q(end_date__lte=last_date))
+            )
+            
+            leaves = LeaveUtilSerializer(leaves, many=True).data
+            
+            resp_obj = {}
+            resp_obj['users_on_leave'] = {
+                'today': [],
+                'next_seven_days': []
+            }
+            resp_obj['users_on_wfh'] = {
+                'today': [],
+                'next_seven_days': []
+            }
+
+            #calculate for on_leave
+            today_data = get_users_for_day(leaves, current_date)
+            temp_curr_date = current_date + timedelta(days=1)
+            next_seven_day_data = set({})
+            while temp_curr_date <= last_date:
+                if temp_curr_date.weekday()==5 or temp_curr_date.weekday()==6:
+                    temp_curr_date += timedelta(days=1)
+                    continue
+                
+                x = get_users_for_day(leaves, temp_curr_date).get('users')
+                for user in x:
+                    next_seven_day_data.add(frozenset(user.items()))
+
+                temp_curr_date += timedelta(days=1)
+            
+            resp_obj['users_on_leave']['today'] = today_data.get('users')
+            resp_obj['users_on_leave']['next_seven_days'] = [dict(data) for data in next_seven_day_data]
+            
+
+            #calculate for on_wfh
+            today_data = get_users_for_day(leaves, current_date, wfh=True)
+            temp_curr_date = current_date + timedelta(days=1)
+            next_seven_day_data = set({})
+            while temp_curr_date <= last_date:
+                if temp_curr_date.weekday()==5 or temp_curr_date.weekday()==6:
+                    temp_curr_date += timedelta(days=1)
+                    continue
+                
+                x = get_users_for_day(leaves, temp_curr_date, wfh=True).get('users')
+                for user in x:
+                    next_seven_day_data.add(frozenset(user.items()))
+
+                temp_curr_date += timedelta(days=1)
+
+            resp_obj['users_on_wfh']['today'] = today_data.get('users')
+            resp_obj['users_on_wfh']['next_seven_days'] = [dict(data) for data in next_seven_day_data]
+            
+            on_leave_wfh_count = DayDetails.objects.filter(date=current_date).count()
+            users = User.objects.all().count()
+
+            resp_obj['users_present'] = users - on_leave_wfh_count
+            resp_obj['total_users'] = users
+            return JsonResponse(resp_obj, safe=False)
+        
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 # enable editing of leave request
 @csrf_exempt
 @user_is_authorized
@@ -203,6 +325,7 @@ def enableEditLeave(request):
             leave = Leave.objects.get(id=leave_data['id'])
             if not leave.editStatus:
                 leave.editStatus = 'Requested-For-Edit'
+                leave.editReason = leave_data['edit_reason']
                 leave.save()
                 return JsonResponse({'message': 'Leave request sent to Edit'}, status=200)   
             else:
@@ -233,4 +356,3 @@ def editLeave(request, id):
             return JsonResponse({'error': 'Leave not found'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-        

@@ -1,15 +1,5 @@
 from django.urls import path, re_path
-from LeaveTrackingApp.views.holiday_calendar_views import createHolidayCalendar, getHolidayCalendars
-from LeaveTrackingApp.views.leaves_views import (
-    createLeaveRequest,
-    enableEditLeave, 
-    getLeaveDetails, 
-    getLeaveTypes,
-    getUserLeaveStats, 
-    leavesForApprover, 
-    getUserLeaves,
-    addLeaveStatus
-)
+from LeaveTrackingApp.views import *
 
 
 urlpatterns = [
@@ -20,6 +10,7 @@ urlpatterns = [
     re_path(r'^getLeaveDetails/([0-9a-f-]+)$', getLeaveDetails),
     re_path(r'^getUserLeaveStats$', getUserLeaveStats),
     re_path(r'^addLeaveStatus$', addLeaveStatus),
+    re_path(r'^getEmployeeAttendance$', getEmployeeAttendance),
     re_path(r'^enableEditLeave$', enableEditLeave),
 
     # holiday urls
