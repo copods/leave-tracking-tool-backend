@@ -13,6 +13,13 @@ class DayDetailSerializer(serializers.ModelSerializer):
         model = DayDetails
         fields = '__all__'
 
+class DayDetailsUtilSerializer(serializers.ModelSerializer):
+    type = serializers.CharField(source='type.name')
+
+    class Meta:
+        model = DayDetails
+        fields = '__all__'
+
 
 class StatusReasonSerializer(serializers.ModelSerializer):
 
@@ -76,14 +83,15 @@ class LeaveDetailSerializer(serializers.ModelSerializer):
         }
 
 
-class LeaveUtilSerializer(serializers.ModelSerializer):
-    name = serializers.SerializerMethodField('get_name')
-    profilePicture = serializers.CharField(source='user.profile_image')
-    leave_type = serializers.CharField(source='leave_type.name')
-    day_details = DayDetailSerializer(many=True)
-    class Meta:
-        model = Leave
-        fields = ['id', 'name', 'profilePicture', 'leave_type', 'start_date', 'end_date', 'status', 'day_details']
+class LeaveUtilSerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    name = serializers.SerializerMethodField()
+    profilePicture = serializers.CharField(source='user.profile_image', read_only=True)
+    leave_type = serializers.CharField(source='leave_type.name', read_only=True)
+    start_date = serializers.DateField(read_only=True)
+    end_date = serializers.DateField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    day_details = DayDetailsUtilSerializer(many=True, read_only=True)
     
     def get_name(self, obj):
         return obj.user.long_name()

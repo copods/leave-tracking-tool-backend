@@ -16,15 +16,16 @@ def getYearLeaveStats(user_id, year_range):
         end_date = yearly_quarters[year][3]['end_date']
 
         user_leaves_for_year = Leave.objects.filter(
-            Q(user__id=user_id) &
-            ~Q(status="W") &
-            (
-                (Q(start_date__gte=start_date) & Q(start_date__lt=end_date)) | Q(end_date__gte=start_date)
-            )
+            Q(user__id=user_id) & ~Q(status="W") & 
+            ( (Q(start_date__gte=start_date) & Q(start_date__lt=end_date)) | Q(end_date__gte=start_date) )
         )
+
+        leaves_data = LeaveUtilSerializer(user_leaves_for_year, many=True).data
+        leave_summary = get_leave_summary(leaves_data, start_date, end_date)
 
         year_leave_stats = {
             'year': f'{year}-{int(year) + 1}',
+            'summary': leave_summary,
             'data': []
         }
         
@@ -151,6 +152,28 @@ def find_unpaid_days(days, days_taken, max_days_allowed):
         else:
             day['unpaid'] = False
     return modified_days, unpaid
+
+def get_leave_summary(leaves_data, start_date, end_date):
+    leave_summary = {
+        'total_leaves': 0,
+        'leaves_taken': 0,
+        'total_wfh': 0,
+        'wfh_taken': 0
+    }
+    max_days = list(RuleSet.objects.filter(Q(name='pto') | Q(name='wfh')).values_list('max_days_allowed', flat=True))
+    print(max_days)
+    leave_summary['total_leaves'] = max_days[0]*4
+    leave_summary['total_wfh'] = max_days[1]*4
+
+    for leave in leaves_data:
+        for day in leave['day_details']:
+            if datetime.strptime(day['date'], "%Y-%m-%d").date() >= start_date and datetime.strptime(day['date'], "%Y-%m-%d").date() <= end_date:
+                if day['type'] == 'wfh':
+                    leave_summary['wfh_taken'] += 0.5 if day['is_half_day'] else 1
+                else:
+                    leave_summary['leaves_taken'] += 0.5 if day['is_half_day'] else 1
+    
+    return leave_summary
 
 
 def get_users_for_day(leaves_data, curr_date, wfh=False):
