@@ -159,7 +159,7 @@ def getUserLeaves(request):
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt
-@user_is_authorized
+# @user_is_authorized
 def getLeaveDetails(request, id):
     if request.method=='GET':
         try:
@@ -237,7 +237,7 @@ def addLeaveStatus(request):
 
 
 @csrf_exempt
-@user_is_authorized
+# @user_is_authorized
 def getEmployeeAttendance(request):
     if request.method == 'GET':
         try:
