@@ -8,7 +8,8 @@ from LeaveTrackingApp.serializers import *
 from LeaveTrackingApp.utils import (
     check_leave_overlap,
     get_users_for_day,
-    getYearLeaveStats
+    user_leave_stats_hr_view,
+    user_leave_stats_user_view
 )
 from PushNotificationApp.models import FCMToken
 from PushNotificationApp.serializers import NotificationSerializer
@@ -33,7 +34,7 @@ def getLeaveTypes(request):
         return JsonResponse(leave_types_serializer.data, safe=False)
 
 @csrf_exempt
-# @user_is_authorized
+@user_is_authorized
 def createLeaveRequest(request):
     if request.method == 'POST':
         try:
@@ -159,7 +160,7 @@ def getUserLeaves(request):
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt
-# @user_is_authorized
+@user_is_authorized
 def getLeaveDetails(request, id):
     if request.method=='GET':
         try:
@@ -170,20 +171,34 @@ def getLeaveDetails(request, id):
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 @csrf_exempt
-# @user_is_authorized
+@user_is_authorized
 def getUserLeaveStats(request):
     if request.method == 'GET':
         try:
-            # user_email = getattr(request, 'user_email', None) 
-            user_email = "tejas.jaybhai+4@copods.co"
+            user_email = getattr(request, 'user_email', None) 
             year = request.GET.get('year', None)
             user = User.objects.get(email=user_email)
-            leave_stats = getYearLeaveStats(user.id, year)
+            leave_stats = user_leave_stats_user_view(user.id, year)
             return JsonResponse(leave_stats, safe=False)
         except ValueError as e:
             return JsonResponse({"error": str(e)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@csrf_exempt
+@user_is_authorized
+def getEmployeeLeaveStats(request, id):
+    if request.method == 'GET':
+        try:
+            year = request.GET.get('year', None)
+            user = User.objects.get(id=id)
+            leave_stats = user_leave_stats_hr_view(user.id, year)
+            return JsonResponse(leave_stats, safe=False)
+        except ValueError as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 # change leave status with status message
@@ -237,7 +252,7 @@ def addLeaveStatus(request):
 
 
 @csrf_exempt
-# @user_is_authorized
+@user_is_authorized
 def getEmployeeAttendance(request):
     if request.method == 'GET':
         try:

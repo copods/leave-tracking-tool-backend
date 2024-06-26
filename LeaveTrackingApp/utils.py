@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 import calendar
 
 
-def getYearLeaveStats(user_id, year_range):
+def user_leave_stats_hr_view(user_id, year_range):
     '''
         Algo:
             1. Get user doj
@@ -30,7 +30,7 @@ def getYearLeaveStats(user_id, year_range):
     try:
         user = User.objects.get(id=user_id)
         doj = user.date_of_joining
-        yearly_quarters = getYearlyQuarters(doj, year_range)
+        yearly_quarters = get_quarters(doj, year_range)
         year = list(yearly_quarters.keys())[0]
         start_date = yearly_quarters[year][0]['start_date']
         end_date = yearly_quarters[year][3]['end_date']
@@ -45,7 +45,10 @@ def getYearLeaveStats(user_id, year_range):
 
         year_leave_stats = {
             'year': f'{year}-{int(year) + 1}',
-            'summary': leave_summary,
+            'pto_taken' : leave_summary['leaves_taken'],
+            'total_pto': leave_summary['total_leaves'],
+            'wfh_taken': leave_summary['wfh_taken'],
+            'total_wfh': leave_summary['total_wfh'],
             'data': []
         }
 
@@ -142,9 +145,151 @@ def getYearLeaveStats(user_id, year_range):
 
     except Exception as e:
         raise e
+    
 
 
-def getYearlyQuarters(user_doj, year_range):
+
+def user_leave_stats_user_view(user_id, year_range):
+    '''
+        Algo:
+            1. Get user doj
+            2. Get yearly quarters object (having start, end dates, months etc.)
+            3. Filter off user's leaves for that year
+            4. prepare leave days for quarterly leaves and start and end dates for yearly leaves
+            5. find number of unpaid leaves
+            6. return leave stats
+    '''
+    try:
+        user = User.objects.get(id=user_id)
+        doj = user.date_of_joining
+        yearly_quarters = get_quarters(doj, year_range)
+        year = list(yearly_quarters.keys())[0]
+        start_date = yearly_quarters[year][0]['start_date']
+        end_date = yearly_quarters[year][3]['end_date']
+
+        user_leaves_for_year = Leave.objects.filter(
+            Q(user__id=user_id) & ~Q(status='W') & 
+            Q(start_date__lte=end_date) & Q(end_date__gte=start_date) 
+        )
+
+        data = LeaveUtilSerializer(user_leaves_for_year, many=True).data
+        leave_summary = get_leave_summary(data, start_date, end_date, yearly=True)
+        year_leave_stats = {
+            'year': f'{year}-{int(year) + 1}',
+            'pto_taken' : leave_summary['leaves_taken'],
+            'total_pto': leave_summary['total_leaves'],
+            'wfh_taken': leave_summary['wfh_taken'],
+            'total_wfh': leave_summary['total_wfh'],
+            'data': [],
+        }
+
+        quarterly_leave_types = LeaveType.objects.filter(~Q(rule_set__duration="None") | Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
+        yearly_leave_types = LeaveType.objects.filter(Q(rule_set__duration="None") & ~Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
+
+
+        # Organize quarterly leaves and day details
+        leave_wfh_for_year = {
+            'leaves': [],
+            'wfh': []
+        }
+
+        for leave_type in quarterly_leave_types:
+            leave_requests = user_leaves_for_year.filter(leave_type__name=leave_type).order_by('start_date')
+            leave_requests = LeaveUtilSerializer(leave_requests, many=True).data
+            for leave in leave_requests:
+                day_details = leave['day_details']
+                for day in day_details:
+                    #case where quarterly leave overlapped two years, filter off their days accordingly
+                    if start_date <= datetime.strptime(day['date'], "%Y-%m-%d").date() < end_date:
+                        temp_day = {
+                            'date': day['date'],
+                            'status': leave['status'],
+                            'is_half_day': day['is_half_day'],
+                            'type': day['type']
+                        }
+                        if day['type'] == 'wfh':
+                            leave_wfh_for_year['wfh'].append(temp_day)
+                        else:
+                            leave_wfh_for_year['leaves'].append(temp_day)
+
+        # Calculate quarterly statistics
+        for i in range(4):
+            quarter_obj = {
+                'title': f'Q{i + 1}',
+                'months': yearly_quarters[year][i]['months'],
+                'unpaid': []  
+            }
+
+            #check if any yearly leave overlaps with this quarter
+            for leave_type in yearly_leave_types:
+                leave_request = user_leaves_for_year.filter(leave_type__name=leave_type, start_date__lte=yearly_quarters[year][i]['end_date'], end_date__gte=yearly_quarters[year][i]['start_date']).order_by('start_date').first()
+                leave_request = LeaveUtilSerializer(leave_request).data
+                if leave_request:
+                    quarter_obj[leave_type] = {
+                        'start_date': leave_request['start_date'],
+                        'end_date': leave_request['end_date'],
+                    }
+
+            leave_days_in_curr_quarter = []
+            wfh_days_in_curr_quarter = []
+
+            # leaves overlapping quarters is handled here -> put days in respective quarter of days array accordingly
+            for day in leave_wfh_for_year['leaves']:
+                if calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month] in yearly_quarters[year][i]['months']:
+                        leave_days_in_curr_quarter.append(day)
+
+            for day in leave_wfh_for_year['wfh']:
+                if calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month] in yearly_quarters[year][i]['months']:
+                    wfh_days_in_curr_quarter.append(day)
+
+            leave_days_in_curr_quarter.sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
+            wfh_days_in_curr_quarter.sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
+
+            max_days = list(RuleSet.objects.filter(Q(name='pto') | Q(name='wfh')).values_list('max_days_allowed', flat=True))
+
+            count=0
+            for day in leave_days_in_curr_quarter:
+                count += 1
+                if count > max_days[0]:
+                    quarter_obj['unpaid'].append(day)
+            count=0
+            for day in wfh_days_in_curr_quarter:
+                count += 1
+                if count > max_days[1]:
+                    quarter_obj['unpaid'].append(day)
+
+            quarter_obj['leaves'] = {
+                'days_taken': len(leave_days_in_curr_quarter),
+                'total_days': max_days[0],
+                'remaining': max(max_days[0] - len(leave_days_in_curr_quarter), 0),
+                'day_details': leave_days_in_curr_quarter
+            }
+            quarter_obj['wfh'] = {
+                'days_taken': len(wfh_days_in_curr_quarter),
+                'total_days': max_days[1],
+                'remaining': max(max_days[1] - len(wfh_days_in_curr_quarter), 0),
+                'day_details': wfh_days_in_curr_quarter
+            }
+
+            year_leave_stats['data'].append(quarter_obj)
+
+        return year_leave_stats
+
+    except Exception as e:
+        raise e
+
+
+
+
+
+
+
+
+
+
+
+
+def get_quarters(user_doj, year_range):
     doj_year = user_doj.year
     doj_month = user_doj.month
     doj_date = user_doj.day
@@ -157,13 +302,13 @@ def getYearlyQuarters(user_doj, year_range):
     else:
         last_year = start_year = datetime.now().date().year if datetime.now().date().month >= doj_month else datetime.now().date().year - 1
     years_quarters = {
-        str(year) : getQuartersUtil(year,doj_date,doj_month)
+        str(year) : get_quarters_util(year,doj_date,doj_month)
         for year in range(start_year, last_year+1)
     }
     
     return years_quarters
 
-def getQuartersUtil(year, doj_date, doj_month):
+def get_quarters_util(year, doj_date, doj_month):
         quarter_start_dates = [
             date(year, doj_month, doj_date),
             add_months(date(year, doj_month, doj_date), 3),
