@@ -145,9 +145,6 @@ def user_leave_stats_hr_view(user_id, year_range):
 
     except Exception as e:
         raise e
-    
-
-
 
 def user_leave_stats_user_view(user_id, year_range):
     '''
@@ -245,7 +242,7 @@ def user_leave_stats_user_view(user_id, year_range):
             leave_days_in_curr_quarter.sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
             wfh_days_in_curr_quarter.sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
 
-            max_days = list(RuleSet.objects.filter(Q(name='pto') | Q(name='wfh')).values_list('max_days_allowed', flat=True))
+            max_days = list(LeaveType.objects.filter(Q(name='pto') | Q(name='wfh')).values_list('rule_set__max_days_allowed', flat=True))
 
             count=0
             for day in leave_days_in_curr_quarter:
@@ -277,16 +274,6 @@ def user_leave_stats_user_view(user_id, year_range):
 
     except Exception as e:
         raise e
-
-
-
-
-
-
-
-
-
-
 
 
 def get_quarters(user_doj, year_range):
@@ -373,7 +360,7 @@ def get_leave_summary(leaves_data, start_date, end_date, yearly=False):
         'total_wfh': 0,
         'wfh_taken': 0
     }
-    max_days = list(RuleSet.objects.filter(Q(name='pto') | Q(name='wfh')).values_list('max_days_allowed', flat=True))
+    max_days = list(LeaveType.objects.filter(Q(name='pto') | Q(name='wfh')).values_list('rule_set__max_days_allowed', flat=True))
     leave_summary['total_leaves'] = max_days[0]*4 if yearly else max_days[0]
     leave_summary['total_wfh'] = max_days[1]*4 if yearly else max_days[1]
 
