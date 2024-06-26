@@ -13,6 +13,7 @@ urlpatterns = [
     re_path(r'^addLeaveStatus$', addLeaveStatus),
     re_path(r'^getEmployeeAttendance$', getEmployeeAttendance),
     re_path(r'^enableEditLeave$', enableEditLeave),
+    re_path(r'^getUnpaidData$', getUnpaidData),
 
     # holiday urls
     re_path(r'^createHolidayCalendar$', createHolidayCalendar),
