@@ -118,7 +118,7 @@ class UserLeaveListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Leave
-        fields = ['id', 'leaveType', 'leaveStatus', 'startDate', 'endDate', 'updatedOn']
+        fields = ['id', 'leaveType', 'leaveStatus', 'startDate', 'endDate', 'updatedOn', 'editStatus']
     
     def get_updatedOn(self, obj):
         latest_status = obj.status_reasons.order_by('-created_at').first()
