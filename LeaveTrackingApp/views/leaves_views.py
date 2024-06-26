@@ -327,7 +327,7 @@ def enableEditLeave(request):
             leave_data = JSONParser().parse(request)
             leave = Leave.objects.get(id=leave_data['id'])
             if not leave.editStatus:
-                leave.editStatus = 'Requested-For-Edit'
+                leave.editStatus = 'requested_for_edit'
                 leave.editReason = leave_data['edit_reason']
                 leave.save()
                 return JsonResponse({'message': 'Leave request sent to Edit'}, status=200)   
@@ -346,7 +346,7 @@ def editLeave(request, id):
         try:
             leave_data = JSONParser().parse(request)
             leave = Leave.objects.get(id=id)
-            if leave.editStatus == 'Requested-For-Edit':
+            if leave.editStatus == 'requested_for_edit':
                 #update leave logic
 
                 #after update
