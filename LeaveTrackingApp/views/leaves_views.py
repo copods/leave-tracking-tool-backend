@@ -36,7 +36,7 @@ def getLeaveTypes(request):
         return JsonResponse(leave_types_serializer.data, safe=False)
 
 @csrf_exempt
-@user_is_authorized
+# @user_is_authorized
 def createLeaveRequest(request):
     if request.method == 'POST':
         try:
@@ -70,13 +70,13 @@ def createLeaveRequest(request):
                                  Reason: {leave_data['leave_reason']}. Take action now on the app! '''
                     subject = f'Leave Request by {user_data['first_name']} {user_data['last_name']}'
 
-                    send_email(
-                        recipients=[approver_data],
-                        subject=subject,
-                        template_name='leave_notification_template.html',
-                        context={'leave_text': leave_text},
-                        app_name='LeaveTrackingApp'
-                    )
+                    # send_email(
+                    #     recipients=[approver_data],
+                    #     subject=subject,
+                    #     template_name='leave_notification_template.html',
+                    #     context={'leave_text': leave_text},
+                    #     app_name='LeaveTrackingApp'
+                    # )
 
                     notification_data = {
                         'types': 'Leave-Request',  
@@ -188,7 +188,7 @@ def getUserLeaveStats(request):
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt
-@user_is_authorized
+# @user_is_authorized
 def getEmployeeLeaveStats(request, id):
     if request.method == 'GET':
         try:
