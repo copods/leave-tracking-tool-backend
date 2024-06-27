@@ -96,6 +96,7 @@ class LeaveListSerializer(serializers.ModelSerializer):
     startDate = serializers.DateField(source='start_date')
     endDate = serializers.DateField(source='end_date')
     modifiedOn = serializers.SerializerMethodField('get_modifiedOn')
+    editStatus = serializers.CharField(source='edit_choices')
 
     class Meta:
         model = Leave
@@ -115,10 +116,11 @@ class UserLeaveListSerializer(serializers.ModelSerializer):
     startDate = serializers.DateField(source='start_date')
     endDate = serializers.DateField(source='end_date')
     updatedOn = serializers.SerializerMethodField('get_updatedOn')
+    editStatus = serializers.CharField(source='edit_choices')
     
     class Meta:
         model = Leave
-        fields = ['id', 'leaveType', 'leaveStatus', 'startDate', 'endDate', 'updatedOn']
+        fields = ['id', 'leaveType', 'leaveStatus', 'startDate', 'endDate', 'updatedOn', 'editStatus']
     
     def get_updatedOn(self, obj):
         latest_status = obj.status_reasons.order_by('-created_at').first()

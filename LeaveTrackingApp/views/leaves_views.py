@@ -110,49 +110,52 @@ def createLeaveRequest(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# filter query param format=> filter=role:9f299ed6-caf0-4241-9265-7576af1d6426,status:P
 @csrf_exempt
 @user_is_authorized
-def leavesForApprover(request):
+def getLeavesList(request):
     if request.method=='GET':
         try:
-            user_email = getattr(request, 'user_email', None)  #user_email is fetched from token while authorizing, then added to request object
-            filters = request.GET.get('filter', None)
-            search = request.GET.get('search', None)
-            sort = request.GET.get('sort', None)
-            page = request.GET.get('page', 1)
-            pageSize = request.GET.get('pageSize', 100)
+            query_params = {key: request.GET.getlist(key) for key in request.GET.keys()}
+            search = query_params.get('search', [None])[0] 
+            sort = query_params.get('sort', [None])[0]
+            page = query_params.get('page', [1])[0]
+            pageSize = query_params.get('pageSize', [10])[0]
+            for_approver = query_params.get('for_approver', [False])[0]
+            user_email = getattr(request, 'user_email', None)
             user = User.objects.get(email=user_email)
-            leaves = Leave.objects.filter(approver=user)
-            if filters:
-                leaves = leaves.filter(Q(**{f.split(':')[0]: f.split(':')[1] for f in filters.split(',')})) 
+
+            if for_approver:
+                query_params.pop('for_approver')
+                leaves = Leave.objects.filter(approver=user)
+                serializer_class = LeaveListSerializer
+            else:
+                leaves = Leave.objects.filter(user=user)
+                serializer_class = UserLeaveListSerializer
+
+            filters = {}
+            for key, value in query_params.items():
+                if not key in ['search', 'sort', 'page', 'pageSize']:
+                    if key == 'leave_type':
+                        filters['leave_type__name__in'] = value
+                    else:
+                        filters[f'{key}__in'] = value
+            
+            leaves = leaves.filter(**filters) 
+
             if search:
-                leaves = leaves.filter(Q(user__first_name__icontains=search) | Q(user__last_name__icontains=search))
+                leaves = leaves.filter(
+                    Q(user__first_name__icontains=search) | 
+                    Q(user__last_name__icontains=search) | 
+                    Q(leave_type__name__icontains=search) 
+                )
             if sort:
                 leaves = leaves.order_by(sort)
             if page or pageSize:
                 leaves = leaves[(int(page)-1)*int(pageSize):int(page)*int(pageSize)]
-            leaves_serializer = LeaveListSerializer(leaves, many=True)
-            return JsonResponse(leaves_serializer.data, safe=False)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@csrf_exempt
-@user_is_authorized
-def getUserLeaves(request):
-    if request.method=='GET':
-        try:
-            user_email = getattr(request, 'user_email', None)  #user_email is fetched from token while authorizing, then added to request object
-            page = request.GET.get('page', 1)
-            pageSize = request.GET.get('pageSize', 100)
-            user = User.objects.get(email=user_email)
-            user_leaves = Leave.objects.filter(user_id=user.id)
-            if page or pageSize:
-                user_leaves = user_leaves[(int(page)-1)*int(pageSize):int(page)*int(pageSize)]
-            user_leaves_serializer = UserLeaveListSerializer(user_leaves, many=True)
-            return JsonResponse(user_leaves_serializer.data, safe=False)
+            leaves_serializer = serializer_class(leaves, many=True)
+            return JsonResponse(leaves_serializer.data, safe=False)
+        
         except User.DoesNotExist:
             return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
@@ -324,7 +327,7 @@ def enableEditLeave(request):
             leave_data = JSONParser().parse(request)
             leave = Leave.objects.get(id=leave_data['id'])
             if not leave.editStatus:
-                leave.editStatus = 'Requested-For-Edit'
+                leave.editStatus = 'requested_for_edit'
                 leave.editReason = leave_data['edit_reason']
                 leave.save()
                 return JsonResponse({'message': 'Leave request sent to Edit'}, status=200)   
@@ -343,7 +346,7 @@ def editLeave(request, id):
         try:
             leave_data = JSONParser().parse(request)
             leave = Leave.objects.get(id=id)
-            if leave.editStatus == 'Requested-For-Edit':
+            if leave.editStatus == 'requested_for_edit':
                 #update leave logic
 
                 #after update
