@@ -147,3 +147,34 @@ class Leave(models.Model):
 
     def __str__(self):
         return self.leave_type
+    
+
+class LeavePolicy(models.Model):
+    id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
+    name = models.CharField(max_length=100)
+    rule_set = models.ForeignKey(RuleSet, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+
+class YearPolicy(models.Model):
+    id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
+    year = models.CharField(max_length=100)
+    STATUS_CHOICES = [
+        ('Draft', 'Draft'),
+        ('Expired', 'Expired'),
+        ('Published', 'Published'),
+    ]
+    status = models.CharField(choices=STATUS_CHOICES, max_length=100, default='Draft')
+    leave_policy = models.ManyToManyField(LeavePolicy)
+
+    created_at = models.DateTimeField(default=now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.year
+    
+
