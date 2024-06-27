@@ -11,17 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = os.environ.get('DEBUG') == 'True'
 
-ALLOWED_HOSTS = [
-    "127.0.0.1", 
-    "localhost",
-    "10.0.2.2", 
-    "192.168.1.59", 
-    "192.168.1.104", 
-    "0.0.0.0", 
-    "159.89.175.231", 
-    "43.204.216.178",
-    "https://dev.d2ds51ii0ddsvx.amplifyapp.com"
-]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost","10.0.2.2", "192.168.1.59", "192.168.1.104", "0.0.0.0", "159.89.175.231", "43.204.216.178"]
 
 
 # Application definition
@@ -138,9 +128,13 @@ SIMPLE_JWT = {
 }
 
 CORS_ORIGIN_ALLOW_ALL = True
-CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
 
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
