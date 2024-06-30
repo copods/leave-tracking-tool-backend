@@ -5,8 +5,7 @@ from LeaveTrackingApp.views import *
 urlpatterns = [
     re_path(r'^createLeaveRequest$', createLeaveRequest),
     re_path(r'^getLeaveTypes$', getLeaveTypes),
-    re_path(r'^leavesForApprover$', leavesForApprover),
-    re_path(r'^getUserLeaves$', getUserLeaves),
+    re_path(r'^getLeavesList$', getLeavesList),
     re_path(r'^getLeaveDetails/([0-9a-f-]+)$', getLeaveDetails),
     re_path(r'^getUserLeaveStats$', getUserLeaveStats),
     re_path(r'^getEmployeeLeaveStats/([0-9a-f-]+)$$', getEmployeeLeaveStats),
