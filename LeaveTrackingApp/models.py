@@ -137,13 +137,18 @@ class Leave(models.Model):
     day_details = models.ManyToManyField(DayDetails)
     assets_documents = models.FileField(blank=True, null=True)
     IS_EDITED_CHOICES = [
-        ('Edited', 'Edited'),
-        ('Requested-For-Edit', 'Requested-For-Edit'),
+        ('edited', 'Edited'),
+        ('requested_for_edit', 'Requested For Edit'),
     ]
     editStatus = models.CharField(max_length=100, null=True, choices=IS_EDITED_CHOICES)
     editReason = models.CharField(max_length=300, null=True)
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def edit_choices(self):
+        return dict(self.IS_EDITED_CHOICES).get(self.editStatus)
+
 
     def __str__(self):
         return self.leave_type
