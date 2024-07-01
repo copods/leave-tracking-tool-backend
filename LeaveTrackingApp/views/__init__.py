@@ -28,5 +28,5 @@ __all__ = [
     'getLeavesList',
     'getHolidayCalendars',
     'getEmployeeLeaveStats',
-    'getUnpaidData'
+    'getUnpaidData',
 ]
