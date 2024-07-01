@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
 import calendar
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from LeaveTrackingApp.models import DayDetails, Leave, LeaveType, StatusReason
@@ -391,10 +391,16 @@ def getUnpaidData(request):
                 month: []
                 for month in months
             }
+
+            leave_types = LeaveType.objects.all()
+            users = User.objects.prefetch_related( Prefetch('user_of_leaves', queryset=Leave.objects.all()) )
+
             for month in months:
-                users = User.objects.all()
                 for user in users:
-                    unpaids_for_month = get_unpaid_data(user, curr_year, month)
+                    user_leaves = user.user_of_leaves.all()
+                    if not user_leaves:
+                        continue
+                    unpaids_for_month = get_unpaid_data(user, user_leaves, leave_types, curr_year, month)
                     if len(unpaids_for_month):
                         response_obj[month].append({
                             'name': user.long_name(),

@@ -411,7 +411,7 @@ def check_leave_overlap(leave_data):
         overlap = True
     return overlap
 
-def get_unpaid_data(user, curr_year, month):
+def get_unpaid_data(user, user_leaves, leave_types, curr_year, month):
     try:
 
         yearly_quarters = get_quarters(user.date_of_joining, None)
@@ -422,22 +422,24 @@ def get_unpaid_data(user, curr_year, month):
         if year==curr_year and start_date.month > month:
             return []
         
-        user_leaves_for_year = Leave.objects.filter(user=user, start_date__lte=end_date, end_date__gte=start_date).order_by('start_date')
+        user_leaves_for_year = user_leaves.filter(start_date__lte=end_date, end_date__gte=start_date).order_by('start_date')
 
-        leave_types = LeaveType.objects.values_list('name', flat=True).distinct()
-        taken_unpaid_obj = {
-            type: {
-                'leaves_taken' : 0,
-                'unpaid' : 0
-            }
-            for type in leave_types
-        }
+        type_names = leave_types.values_list('name', flat=True)
+        taken_unpaid_obj = { type: {'leaves_taken' : 0, 'unpaid' : 0} for type in type_names }
+
         quarterly_leave_types = user_leaves_for_year.filter(Q(leave_type__rule_set__duration="quarterly") | Q(leave_type__rule_set__name="miscellaneous_leave")).values_list('leave_type__name', flat=True).distinct()
         miscellaneous_types = user_leaves_for_year.filter(Q(leave_type__rule_set__name="miscellaneous_leave")).values_list('leave_type__name', flat=True).distinct()
         
         unpaid_days_for_month = []
 
+        curr_quarter = prev_quarter = None
         for i in range(4):
+            if month in yearly_quarters[year][i]['months']:
+                curr_quarter = i
+                prev_quarter = i-1 if i>0 else i
+                break
+
+        for i in range(prev_quarter, curr_quarter+1):
             leaves_for_curr_quarter = LeaveUtilSerializer(
                 user_leaves_for_year.filter(
                     Q(start_date__lte=yearly_quarters[year][i]['end_date']) & Q(end_date__gte=yearly_quarters[year][i]['start_date'])
@@ -452,7 +454,7 @@ def get_unpaid_data(user, curr_year, month):
                     if calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month] in yearly_quarters[year][i]['months']
                 ]
 
-                max_pto = LeaveType.objects.get(name='pto').rule_set.max_days_allowed
+                max_pto = leave_types.get(name='pto').rule_set.max_days_allowed
 
                 if leave['leave_type'] in miscellaneous_types:
                     temp_leaves_taken = taken_unpaid_obj['pto']['leaves_taken']
@@ -462,12 +464,12 @@ def get_unpaid_data(user, curr_year, month):
 
                 else:
                     if leave['leave_type'] == 'pto':
-                        max_wfh_days = LeaveType.objects.get(name='wfh').rule_set.max_days_allowed
+                        max_wfh_days = leave_types.get(name='wfh').rule_set.max_days_allowed
                         x = find_unpaid_days(days_in_quarter, leaves_taken=taken_unpaid_obj['pto']['leaves_taken'], wfh_taken=taken_unpaid_obj['wfh']['leaves_taken'], max_leave_days=max_pto, max_wfh_days=max_wfh_days)
                         taken_unpaid_obj['pto']['leaves_taken'] += x[3]
                         taken_unpaid_obj['wfh']['leaves_taken'] += x[2]
                     else: 
-                        max_days_allowed = LeaveType.objects.get(name=leave['leave_type']).rule_set.max_days_allowed
+                        max_days_allowed = leave_types.get(name=leave['leave_type']).rule_set.max_days_allowed
                         temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
                         x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
                         taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
