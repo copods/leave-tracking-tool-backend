@@ -149,32 +149,33 @@ class Leave(models.Model):
     def edit_choices(self):
         return dict(self.IS_EDITED_CHOICES).get(self.editStatus)
 
-
     def __str__(self):
         return self.leave_type
-    
 
 class LeavePolicy(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
+    leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
-    rule_set = models.ForeignKey(RuleSet, on_delete=models.CASCADE)
+    max_days_allowed = models.FloatField(blank=True, null=True)
+    duration = models.CharField(default=None, max_length=100)
+    draft_state = models.JSONField(default=dict)
+
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
 
-
 class YearPolicy(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
-    year = models.CharField(max_length=100)
+    year = models.IntegerField()
     STATUS_CHOICES = [
         ('Draft', 'Draft'),
         ('Expired', 'Expired'),
         ('Published', 'Published'),
     ]
     status = models.CharField(choices=STATUS_CHOICES, max_length=100, default='Draft')
-    leave_policy = models.ManyToManyField(LeavePolicy)
+    leave_policies = models.ManyToManyField(LeavePolicy)
 
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
