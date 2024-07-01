@@ -160,13 +160,14 @@ def user(request,id):
 def workTypeCounts(request):
     if request.method == 'GET':
         work_type_counts = User.objects.aggregate(
-            in_office=Count('id', filter=Q(work_type="In-Office")),
-            work_from_home=Count('id', filter=Q(work_type="Work-From-Home"))
+            in_office=Count('id', filter=Q(work_type="in_office")),
+            work_from_home=Count('id', filter=Q(work_type="work_from_home")),
+            total=Count('id')
         )
         return JsonResponse({
             "In-Office": work_type_counts['in_office'],
             "Work-From-Home": work_type_counts['work_from_home'],
-            "Total": work_type_counts['in_office'] + work_type_counts['work_from_home']
+            "Total": work_type_counts['total']
         }, safe=False)
 
 

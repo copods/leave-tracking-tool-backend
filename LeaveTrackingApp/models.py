@@ -1,6 +1,7 @@
 from django.db import models
 from UserApp.models import User
 import uuid
+from django.contrib.postgres.fields import ArrayField
 from django.utils.timezone import now  # Import the now function
 
 # Create your models here.
@@ -150,15 +151,15 @@ class Leave(models.Model):
         return dict(self.IS_EDITED_CHOICES).get(self.editStatus)
 
     def __str__(self):
-        return self.leave_type
+        return self.leave_type.name
 
 class LeavePolicy(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=25)
     max_days_allowed = models.FloatField(blank=True, null=True)
-    duration = models.CharField(default=None, max_length=100)
-    draft_state = models.JSONField(default=dict)
+    description = ArrayField( base_field=models.CharField(max_length=500), null=True, blank=True )
+    draft_state = models.JSONField(default=dict, null=True)
 
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -174,7 +175,7 @@ class YearPolicy(models.Model):
         ('Expired', 'Expired'),
         ('Published', 'Published'),
     ]
-    status = models.CharField(choices=STATUS_CHOICES, max_length=100, default='Draft')
+    status = models.CharField(choices=STATUS_CHOICES, max_length=10, default='Draft')
     leave_policies = models.ManyToManyField(LeavePolicy)
 
     created_at = models.DateTimeField(default=now)

@@ -54,13 +54,13 @@ class User(models.Model):
     # Work Information
     date_of_joining = models.DateField()
     EMPLOYMENT_TYPE_CHOICES = [
-        ('Full-time', 'Full-time'),
-        ('Part-time', 'Part-time'),
-        ('Contract', 'Contract')
+        ('full_time', 'Full-time'),
+        ('part_time', 'Part-time'),
+        ('contract', 'Contract')
     ] # Employement type information (is necessary to keep in db)
     WORK_TYPE_CHOICES = [
-        ('In-Office', 'In-Office'),
-        ('Work-From-Home', 'Work-From-Home')
+        ('in_office', 'In-Office'),
+        ('work_from_home', 'Work-From-Home')
     ]
     work_type = models.CharField(   
         max_length=15,
@@ -107,6 +107,14 @@ class User(models.Model):
             self.save()
         except ValueError as e:
             raise e
+        
+    @property
+    def work_type_choices(self):
+        return dict(self.WORK_TYPE_CHOICES).get(self.work_type)
+    
+    @property
+    def employment_type_choices(self):
+        return dict(self.EMPLOYMENT_TYPE_CHOICES).get(self.employment_type)
         
     def __str__(self):
         return self.email
