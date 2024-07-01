@@ -380,7 +380,7 @@ def editLeave(request, id):
 
 
 @csrf_exempt
-# @user_is_authorized
+@user_is_authorized
 def getUnpaidData(request):
     if request.method == 'GET':
         try:
