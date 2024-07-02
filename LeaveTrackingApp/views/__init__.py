@@ -26,6 +26,5 @@ __all__ = [
     'getUserLeaveStats', 
     'getLeavesList',
     'getHolidayCalendars',
-    'leavesForApprover', 
     'getEmployeeLeaveStats'
 ]
