@@ -34,7 +34,7 @@ def createHolidayCalendar(request):
         return JsonResponse(holiday_calendar_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 @csrf_exempt
-# @user_is_authorized
+@user_is_authorized
 def createYearPolicy(request):
     if request.method=='POST':
         year_policy_data = JSONParser().parse(request)
@@ -45,7 +45,7 @@ def createYearPolicy(request):
         return JsonResponse(year_policy_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @csrf_exempt
-# @user_is_authorized
+@user_is_authorized
 def getYearPolicy(request):
     if request.method=='GET':
         try:
@@ -54,7 +54,7 @@ def getYearPolicy(request):
             if year:
                 year_policy = YearPolicy.objects.filter(status=status, year=year).first()
             else:
-                year_policy = YearPolicy.objects.filter(status=status).order_by('-year').first()
+                year_policy = YearPolicy.objects.filter(status=status).order_by('-updated_at').first()
             year_policy_serializer = YearPolicySerializer(year_policy)
             return JsonResponse(year_policy_serializer.data, safe=False)
         except Exception as e:
