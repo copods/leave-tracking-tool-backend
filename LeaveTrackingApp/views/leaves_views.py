@@ -1,12 +1,14 @@
 from datetime import date, datetime, timedelta
+import calendar
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from LeaveTrackingApp.models import DayDetails, Leave, LeaveType, StatusReason
 from LeaveTrackingApp.serializers import *
 from LeaveTrackingApp.utils import (
     check_leave_overlap,
+    get_unpaid_data,
     get_users_for_day,
     user_leave_stats_hr_view,
     user_leave_stats_user_view
@@ -373,5 +375,41 @@ def editLeave(request, id):
         
         except Leave.DoesNotExist:
             return JsonResponse({'error': 'Leave not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@user_is_authorized
+def getUnpaidData(request):
+    if request.method == 'GET':
+        try:
+            curr_year = datetime.now().year
+            curr_month = datetime.now().month
+            months = [calendar.month_abbr[i] for i in range(1, curr_month+1)]
+            response_obj = {
+                month: []
+                for month in months
+            }
+
+            leave_types = LeaveType.objects.all()
+            users = User.objects.prefetch_related( Prefetch('user_of_leaves', queryset=Leave.objects.all()) )
+
+            for month in months:
+                for user in users:
+                    user_leaves = user.user_of_leaves.all()
+                    if not user_leaves:
+                        continue
+                    unpaids_for_month = get_unpaid_data(user, user_leaves, leave_types, curr_year, month)
+                    if len(unpaids_for_month):
+                        response_obj[month].append({
+                            'name': user.long_name(),
+                            'email': user.email,
+                            'profile_image': user.profile_image,
+                            'unpaid_leaves': unpaids_for_month
+                        })
+                        
+            return JsonResponse(response_obj, safe=False)
+                
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)

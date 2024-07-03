@@ -12,6 +12,7 @@ from .leaves_views import (
     getEmployeeAttendance,
     getUserLeaveStats, 
     getEmployeeLeaveStats,
+    getUnpaidData,
     getLeavesList,
 )
 
@@ -26,5 +27,6 @@ __all__ = [
     'getUserLeaveStats', 
     'getLeavesList',
     'getHolidayCalendars',
-    'getEmployeeLeaveStats'
+    'getEmployeeLeaveStats',
+    'getUnpaidData',
 ]
