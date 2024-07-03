@@ -175,7 +175,7 @@ class YearPolicy(models.Model):
     year = models.IntegerField()
     STATUS_CHOICES = [
         ('Draft', 'Draft'),
-        ('Expired', 'Expired'),
+        ('Approved', 'Approved'),
         ('Published', 'Published'),
     ]
     status = models.CharField(choices=STATUS_CHOICES, max_length=10, default='Draft')
