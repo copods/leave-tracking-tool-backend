@@ -1,5 +1,6 @@
 from django.db import models
 from UserApp.models import User
+from common.models import Comment
 import uuid
 from django.contrib.postgres.fields import ArrayField
 from django.utils.timezone import now  # Import the now function
@@ -39,6 +40,8 @@ class yearCalendar(models.Model):
         choices=STATUS_CHOICES,
         default='Draft',
     )
+    comments = models.ManyToManyField(Comment, blank=True)
+
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -177,6 +180,7 @@ class YearPolicy(models.Model):
     ]
     status = models.CharField(choices=STATUS_CHOICES, max_length=10, default='Draft')
     leave_policies = models.ManyToManyField(LeavePolicy)
+    comments = models.ManyToManyField(Comment, blank=True)
 
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -184,4 +188,3 @@ class YearPolicy(models.Model):
     def __str__(self):
         return self.year
     
-
