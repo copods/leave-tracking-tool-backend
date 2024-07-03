@@ -129,33 +129,21 @@ SIMPLE_JWT = {
 
 CORS_ORIGIN_ALLOW_ALL = True
 # CSRF_COOKIE_SECURE = False
-# CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_SECURE = True
 
 
-# SECURE_SSL_REDIRECT = False
+SECURE_SSL_REDIRECT = False
 CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
 
-# ========================================================
 
 
-# Ensure that the browser only sends the CSRF token over HTTPS
-# CSRF_COOKIE_HTTPONLY = True
-
-# Ensure that the browser only sends the session cookie over HTTPS
-# SESSION_COOKIE_HTTPONLY = True
 
 
-# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-SECURE_SSL_REDIRECT = True
-
-
-# ========================================================
 
 
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
