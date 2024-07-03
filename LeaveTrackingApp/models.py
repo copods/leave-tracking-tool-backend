@@ -162,7 +162,6 @@ class LeavePolicy(models.Model):
     name = models.CharField(max_length=25)
     max_days_allowed = models.FloatField(blank=True, null=True)
     description = ArrayField( base_field=models.CharField(max_length=500), null=True, blank=True )
-    draft_state = models.JSONField(default=dict, null=True)
 
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
