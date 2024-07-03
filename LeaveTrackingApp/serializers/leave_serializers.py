@@ -13,6 +13,13 @@ class DayDetailSerializer(serializers.ModelSerializer):
         model = DayDetails
         fields = '__all__'
 
+class DayDetailsUtilSerializer(serializers.ModelSerializer):
+    type = serializers.CharField(source='type.name')
+
+    class Meta:
+        model = DayDetails
+        fields = '__all__'
+
 
 class StatusReasonSerializer(serializers.ModelSerializer):
 
@@ -76,14 +83,15 @@ class LeaveDetailSerializer(serializers.ModelSerializer):
         }
 
 
-class LeaveUtilSerializer(serializers.ModelSerializer):
-    name = serializers.SerializerMethodField('get_name')
-    profilePicture = serializers.CharField(source='user.profile_image')
-    leave_type = serializers.CharField(source='leave_type.name')
-    day_details = DayDetailSerializer(many=True)
-    class Meta:
-        model = Leave
-        fields = ['name','profilePicture', 'leave_type', 'start_date', 'end_date','day_details']
+class LeaveUtilSerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    name = serializers.SerializerMethodField()
+    profilePicture = serializers.CharField(source='user.profile_image', read_only=True)
+    leave_type = serializers.CharField(source='leave_type.name', read_only=True)
+    start_date = serializers.DateField(read_only=True)
+    end_date = serializers.DateField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    day_details = DayDetailsUtilSerializer(many=True, read_only=True)
     
     def get_name(self, obj):
         return obj.user.long_name()
@@ -96,6 +104,7 @@ class LeaveListSerializer(serializers.ModelSerializer):
     startDate = serializers.DateField(source='start_date')
     endDate = serializers.DateField(source='end_date')
     modifiedOn = serializers.SerializerMethodField('get_modifiedOn')
+    editStatus = serializers.CharField(source='edit_choices')
 
     class Meta:
         model = Leave
@@ -115,10 +124,11 @@ class UserLeaveListSerializer(serializers.ModelSerializer):
     startDate = serializers.DateField(source='start_date')
     endDate = serializers.DateField(source='end_date')
     updatedOn = serializers.SerializerMethodField('get_updatedOn')
+    editStatus = serializers.CharField(source='edit_choices')
     
     class Meta:
         model = Leave
-        fields = ['id', 'leaveType', 'leaveStatus', 'startDate', 'endDate', 'updatedOn']
+        fields = ['id', 'leaveType', 'leaveStatus', 'startDate', 'endDate', 'updatedOn', 'editStatus']
     
     def get_updatedOn(self, obj):
         latest_status = obj.status_reasons.order_by('-created_at').first()
