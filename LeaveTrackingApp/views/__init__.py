@@ -31,6 +31,6 @@ __all__ = [
     'getHolidayCalendars',
     'getEmployeeLeaveStats',
     'createYearPolicy',
-    'getYearPolicy'
+    'getYearPolicy',
     'getUnpaidData',
 ]

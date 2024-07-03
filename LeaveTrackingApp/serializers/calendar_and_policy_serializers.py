@@ -1,6 +1,8 @@
 from LeaveTrackingApp.models import Holiday, LeavePolicy, LeaveType, YearPolicy, yearCalendar
 from rest_framework import serializers
 from django.db import transaction
+from common.models import Comment
+from common.serializers import CommentSerializer
 
 
 class HolidaySerializer(serializers.ModelSerializer):
@@ -12,6 +14,7 @@ class HolidaySerializer(serializers.ModelSerializer):
 
 class YearCalendarSerializerList(serializers.ModelSerializer):
     holidays = HolidaySerializer(many=True)
+    comments = CommentSerializer(many=True)
 
     class Meta:
         model = yearCalendar
@@ -20,6 +23,7 @@ class YearCalendarSerializerList(serializers.ModelSerializer):
 
 class YearCalendarSerializer(serializers.ModelSerializer):
     holidays = HolidaySerializer(many=True)
+    comments = CommentSerializer(many=True, required=False)
 
     class Meta:
         model = yearCalendar
@@ -27,15 +31,21 @@ class YearCalendarSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         holiday_data = validated_data.pop('holidays')
+        comments = validated_data.pop('comments', [])
         holiday_calendar = yearCalendar.objects.create(**validated_data)
         for holiday in holiday_data:
             holiday = Holiday.objects.create(**holiday)
             holiday_calendar.holidays.add(holiday)
+
+        for comment in comments:
+            comment = Comment.objects.create(**comment)
+            holiday_calendar.comments.add(comment)
+
         return holiday_calendar
 
 
 class LeavePolicySerializer(serializers.ModelSerializer):
-
+   
     class Meta:
         model = LeavePolicy
         fields = '__all__'
@@ -70,6 +80,7 @@ class LeavePolicyUtilSerializer(serializers.ModelSerializer):
 
 class YearPolicySerializer(serializers.ModelSerializer):
     leave_policies = LeavePolicySerializer(many=True)
+    comments = CommentSerializer(many=True, required=False)
 
     class Meta:
         model = YearPolicy
@@ -78,14 +89,19 @@ class YearPolicySerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         policies_data = validated_data.pop('leave_policies')
+        comments = validated_data.pop('comments', [])
         year_policy = YearPolicy.objects.create(**validated_data)
-        
+
         for policy_data in policies_data:
             leave_policy_serializer = LeavePolicySerializer(data=policy_data)
             if leave_policy_serializer.is_valid(raise_exception=True):
                 leave_policy = leave_policy_serializer.save()
                 year_policy.leave_policies.add(leave_policy)
         
+        for comment in comments:
+            comment = Comment.objects.create(**comment)
+            year_policy.comments.add(comment)
+
         return year_policy
 
     def to_representation(self, instance):
