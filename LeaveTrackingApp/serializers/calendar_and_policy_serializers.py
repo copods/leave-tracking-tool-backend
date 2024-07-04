@@ -97,6 +97,25 @@ class YearPolicySerializer(serializers.ModelSerializer):
 
         return year_policy
 
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        policies_data = validated_data.pop('leave_policies', None)
+        
+        validated_data['status'] = 'Draft' if not validated_data.get('status') else validated_data['status']
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if policies_data:
+            instance.leave_policies.all().delete()
+            for policy_data in policies_data:
+                leave_policy_serializer = LeavePolicySerializer(data=policy_data)
+                if leave_policy_serializer.is_valid(raise_exception=True):
+                    leave_policy = leave_policy_serializer.save()
+                    instance.leave_policies.add(leave_policy)
+
+        return instance
+
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         representation['leave_policies'] = LeavePolicyUtilSerializer(instance.leave_policies.all(), many=True).data
