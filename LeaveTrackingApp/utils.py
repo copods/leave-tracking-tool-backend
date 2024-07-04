@@ -172,12 +172,22 @@ def user_leave_stats_user_view(user_id, year_range):
             'total_pto': leave_summary['total_leaves'],
             'wfh_taken': leave_summary['wfh_taken'],
             'total_wfh': leave_summary['total_wfh'],
+            'yearly_leaves': {},
             'data': [],
         }
 
         quarterly_leave_types = LeaveType.objects.filter(~Q(rule_set__duration="None") | Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
         yearly_leave_types = LeaveType.objects.filter(Q(rule_set__duration="None") & ~Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
 
+        #find yearly leaves taken
+        for leave_type in yearly_leave_types:
+            leave_request = user_leaves_for_year.filter(leave_type__name=leave_type, status='A').order_by('start_date').first()
+            leave_request = LeaveUtilSerializer(leave_request).data
+            if leave_request:
+                year_leave_stats['yearly_leaves'][leave_type] = {
+                    'start_date': leave_request['start_date'],
+                    'end_date': leave_request['end_date'],
+                    }
 
         # Organize quarterly leaves and day details
         leave_wfh_for_year = {
@@ -209,19 +219,8 @@ def user_leave_stats_user_view(user_id, year_range):
             quarter_obj = {
                 'title': f'Q{i + 1}',
                 'months': yearly_quarters[year][i]['months'],
-                'yearly_leaves': {},
                 'unpaid': []  
             }
-
-            #check if any yearly leave overlaps with this quarter
-            for leave_type in yearly_leave_types:
-                leave_request = user_leaves_for_year.filter(leave_type__name=leave_type, start_date__lte=yearly_quarters[year][i]['end_date'], end_date__gte=yearly_quarters[year][i]['start_date']).order_by('start_date').first()
-                leave_request = LeaveUtilSerializer(leave_request).data
-                if leave_request:
-                    quarter_obj['yearly_leaves'][leave_type] = {
-                        'start_date': leave_request['start_date'],
-                        'end_date': leave_request['end_date'],
-                    }
 
             leave_days_in_curr_quarter = []
             wfh_days_in_curr_quarter = []
