@@ -176,12 +176,11 @@ def getLeaveDetails(request, id):
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 @csrf_exempt
-# @user_is_authorized
+@user_is_authorized
 def getUserLeaveStats(request):
     if request.method == 'GET':
         try:
-            # user_email = getattr(request, 'user_email', None) 
-            user_email = "tejas.jaybhai+4@copods.co"
+            user_email = getattr(request, 'user_email', None) 
             year = request.GET.get('year', None)
             user = User.objects.get(email=user_email)
             leave_stats = user_leave_stats_user_view(user.id, year)

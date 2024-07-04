@@ -209,6 +209,7 @@ def user_leave_stats_user_view(user_id, year_range):
             quarter_obj = {
                 'title': f'Q{i + 1}',
                 'months': yearly_quarters[year][i]['months'],
+                'yearly_leaves': {},
                 'unpaid': []  
             }
 
@@ -217,7 +218,7 @@ def user_leave_stats_user_view(user_id, year_range):
                 leave_request = user_leaves_for_year.filter(leave_type__name=leave_type, start_date__lte=yearly_quarters[year][i]['end_date'], end_date__gte=yearly_quarters[year][i]['start_date']).order_by('start_date').first()
                 leave_request = LeaveUtilSerializer(leave_request).data
                 if leave_request:
-                    quarter_obj[leave_type] = {
+                    quarter_obj['yearly_leaves'][leave_type] = {
                         'start_date': leave_request['start_date'],
                         'end_date': leave_request['end_date'],
                     }
