@@ -49,10 +49,7 @@ class LeavePolicySerializer(serializers.ModelSerializer):
     class Meta:
         model = LeavePolicy
         fields = '__all__'
-        extra_kwargs = {
-            'leave_type': {'read_only': True}, 
-            'draft_state': {'read_only': True}  
-        }
+        extra_kwargs = { 'leave_type': {'read_only': True} }
 
     def validate(self, data):
         leave_type_name = data.get('name')
@@ -62,10 +59,6 @@ class LeavePolicySerializer(serializers.ModelSerializer):
                 if leave_type_name in leave_type_names:
                     leave_type = LeaveType.objects.get(name=leave_type_name)
                     data['leave_type'] = leave_type
-                    data['draft_state'] = {
-                        'leave_type': str(leave_type.id),
-                        'max_days_allowed': data.get('max_days_allowed')
-                    }
             except LeaveType.DoesNotExist:
                 raise serializers.ValidationError({'name': f"LeaveType with name '{leave_type_name}' does not exist."})
         else:
