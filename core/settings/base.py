@@ -44,6 +44,7 @@ INSTALLED_APPS += EXTERNAL_APPS
 
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -53,7 +54,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Added the account middleware:
     "allauth.account.middleware.AccountMiddleware",
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -138,6 +138,15 @@ CORS_ORIGIN_ALLOW_ALL = True
 CSRF_COOKIE_HTTPONLY = False
 # SESSION_COOKIE_SECURE = True
 
+CORS_ALLOW_HEADERS = ['*']
+CORS_ORIGIN_WHITELIST = [
+    "http://localhost:8000",
+    "http://localhost:5173",
+]
+CORS_ALLOW_METHODS = ['*']
+CORS_ALLOW_CREDENTIALS = True
+
+
 
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -145,7 +154,7 @@ X_FRAME_OPTIONS = 'DENY'
 
 
 
-SECURE_SSL_REDIRECT = True  # Redirect all non-HTTPS requests to HTTPS
+SECURE_SSL_REDIRECT = False  # Redirect all non-HTTPS requests to HTTPS
 SESSION_COOKIE_SECURE = True  # Use secure cookies
 CSRF_COOKIE_SECURE = True  # Use secure CSRF cookies
 SECURE_HSTS_SECONDS = 3600  # Enable HTTP Strict Transport Security
