@@ -11,7 +11,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = os.environ.get('DEBUG') == 'True'
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost","10.0.2.2", "192.168.1.59", "192.168.1.104", "0.0.0.0", "159.89.175.231", "43.204.216.178"]
+ALLOWED_HOSTS = [
+    "127.0.0.1", 
+    "localhost",
+    "10.0.2.2", 
+    "192.168.1.59", 
+    "192.168.1.104", "0.0.0.0", "159.89.175.231", "43.204.216.178",
+    "43.204.216.123","13.201.76.70"]
 
 
 # Application definition
@@ -38,6 +44,7 @@ INSTALLED_APPS += EXTERNAL_APPS
 
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -47,7 +54,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Added the account middleware:
     "allauth.account.middleware.AccountMiddleware",
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -127,13 +133,33 @@ SIMPLE_JWT = {
     'USER_ID_FIELD': 'email',
 }
 
-# CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173/',
-]
-CSRF_COOKIE_SECURE = False
+CORS_ORIGIN_ALLOW_ALL = True
+# CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
-SESSION_COOKIE_SECURE = True
+# SESSION_COOKIE_SECURE = True
+CORS_ALLOW_HEADERS = ['*']
+CORS_ALLOW_METHODS = ['*']
+CORS_ALLOW_CREDENTIALS = True
+
+
+
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+
+
+SECURE_SSL_REDIRECT = False  # Redirect all non-HTTPS requests to HTTPS
+SESSION_COOKIE_SECURE = True  # Use secure cookies
+CSRF_COOKIE_SECURE = True  # Use secure CSRF cookies
+SECURE_HSTS_SECONDS = 3600  # Enable HTTP Strict Transport Security
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_REFERRER_POLICY = "no-referrer-when-downgrade"
+
+
+
+
 
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
