@@ -387,8 +387,8 @@ def getUnpaidData(request):
             curr_month = datetime.now().month
             months = [calendar.month_abbr[i] for i in range(1, curr_month+1)]
             response_obj = {
-                month: []
-                for month in months
+                'months': months,
+                'months_data': {month: [] for month in months}
             }
 
             leave_types = LeaveType.objects.all()
@@ -401,7 +401,7 @@ def getUnpaidData(request):
                         continue
                     unpaids_for_month = get_unpaid_data(user, user_leaves, leave_types, curr_year, month)
                     if len(unpaids_for_month):
-                        response_obj[month].append({
+                        response_obj['months_data'][month].append({
                             'name': user.long_name(),
                             'email': user.email,
                             'profile_image': user.profile_image,
