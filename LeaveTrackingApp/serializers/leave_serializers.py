@@ -56,7 +56,7 @@ class LeaveSerializer(serializers.ModelSerializer):
 
 
 class LeaveDetailSerializer(serializers.ModelSerializer):
-    day_details = DayDetailSerializer(many=True)
+    day_details = DayDetailsUtilSerializer(many=True)
     status_reasons = StatusReasonSerializer(many=True, required=False)
     user = serializers.SerializerMethodField('get_user')
     approver = serializers.SerializerMethodField('get_approver')
