@@ -54,6 +54,8 @@ def userList(request):
                         filters['department__department_key__in'] = value
                     elif key == 'role':
                         filters['role__role_key__in'] = value
+                    elif key == 'work_type':
+                        value = [('in_office' if v == 'In-Office' else ('work_from_home' if v == 'Work-From-Home' else v)) for v in value]
                     else:
                         filters[f'{key}__in'] = value
             
