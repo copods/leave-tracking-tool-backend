@@ -2,6 +2,7 @@ import math
 from django.db.models import Count, Q
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
 from rest_framework import status
 from rest_framework.parsers import JSONParser
 from UserApp.decorators import user_is_authorized
@@ -175,7 +176,8 @@ def workTypeCounts(request):
 
 
 @csrf_exempt
-@user_is_authorized
+# @user_is_authorized
+@transaction.atomic
 def bulkUserAdd(request):
     if request.method == 'POST':
         users_data = JSONParser().parse(request)
@@ -194,9 +196,17 @@ def bulkUserAdd(request):
         users_serializer = UserSerializer(data=users_data, many=True)
         if users_serializer.is_valid():
             users_serializer.save()
+            
             #send email to users
             data = users_serializer.data
-            send_email(data)
+            data = [data] if not isinstance(data, list) else data
+            send_email(
+                recipients=data,
+                subject='Your Leave Management Platform Awaits!',
+                template_name='onboarding_template.html',
+                context={},
+                app_name='UserApp'
+            )
 
             return JsonResponse("Added Successfully!!", safe=False)
         else:
