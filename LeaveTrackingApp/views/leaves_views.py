@@ -205,7 +205,6 @@ def getEmployeeLeaveStats(request, id):
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 # change leave status with status message
 @csrf_exempt
 @user_is_authorized
@@ -214,17 +213,17 @@ def addLeaveStatus(request):
         try:
             # future aspect: based on the deadline to get leave accepted, withdrawn or rejected, status reason creation can be done
             status_data = JSONParser().parse(request)
-            user_email = getattr(request, 'user_email', None) 
+            user_email = getattr(request, 'user_email', None)
             status = status_data.get('status')
-            reason_value = status_data.get('reason')
+            reason_value = status_data.get('reason', None)
             leave_id = status_data.get('leave_id')
 
-            if not all([status, reason_value, user_email, leave_id]):
+            if (not all([status, leave_id])) or (status in ['R', 'W'] and not reason_value):
                 return JsonResponse({'error': 'Missing required fields'}, status=400)
 
             user = User.objects.only('id').get(email=user_email)
             leave = Leave.objects.only('id').get(id=leave_id)
-            
+
             status_reason = StatusReason.objects.create(user=user, status=status, reason=reason_value)
             status_reason.save()
             leave.status_reasons.add(status_reason)

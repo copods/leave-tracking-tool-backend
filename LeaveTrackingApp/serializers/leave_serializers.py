@@ -27,6 +27,19 @@ class StatusReasonSerializer(serializers.ModelSerializer):
         model = StatusReason
         fields = '__all__'
 
+# class StatusReasonUtilSerializer(serializers.ModelSerializer):
+#     user = serializers.SerializerMethodField('get_user')
+
+#     class Meta:
+#         model = StatusReason
+#         fields = '__all__'
+
+#     def get_user(self, obj):
+#         return {
+#             'name': obj.user.long_name(),
+#             'profilePicture': obj.user.profile_image
+#         }
+
 
 class LeaveTypeSerializer(serializers.ModelSerializer):
     rule_set = RuleSetSerializer(read_only=True)
@@ -58,9 +71,11 @@ class LeaveSerializer(serializers.ModelSerializer):
 class LeaveDetailSerializer(serializers.ModelSerializer):
     day_details = DayDetailsUtilSerializer(many=True)
     status_reasons = StatusReasonSerializer(many=True, required=False)
+    # status_reasons = StatusReasonUtilSerializer(many=True, required=False)  # TODO: use this in second phase
     user = serializers.SerializerMethodField('get_user')
     approver = serializers.SerializerMethodField('get_approver')
     leave_type = serializers.CharField(source='leave_type.name')
+    editStatus = serializers.CharField(source='edit_choices')
 
     class Meta:
         model = Leave
