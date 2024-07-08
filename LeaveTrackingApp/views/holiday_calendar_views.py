@@ -1,14 +1,12 @@
-# create CRUD views for Role model and Department model
-
+from django.http.response import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.parsers import JSONParser
-from django.http.response import JsonResponse
 from rest_framework import status
-
+from rest_framework.parsers import JSONParser
 from LeaveTrackingApp.models import yearCalendar
-from LeaveTrackingApp.serializers import YearCalendarSerializerList, YearCalendarSerializer
+from LeaveTrackingApp.serializers import YearCalendarSerializer, YearCalendarSerializerList
 from UserApp.decorators import user_is_authorized
+
 
 @csrf_exempt
 @user_is_authorized

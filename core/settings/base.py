@@ -11,7 +11,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = os.environ.get('DEBUG') == 'True'
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost","10.0.2.2", "192.168.1.59", "192.168.1.104", "0.0.0.0", "159.89.175.231", "43.204.216.178"]
+ALLOWED_HOSTS = [
+    "127.0.0.1", 
+    "localhost",
+    "10.0.2.2", 
+    "192.168.1.59", 
+    "192.168.1.104", "0.0.0.0", "159.89.175.231", "43.204.216.178",
+    "43.204.216.123","13.201.76.70","ec2-13-201-76-70.ap-south-1.compute.amazonaws.com"]
 
 
 # Application definition
@@ -24,13 +30,15 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'corsheaders',
+    'whitenoise.runserver_nostatic',
 ]
 
 EXTERNAL_APPS = [
     'rest_framework',
     'LeaveTrackingApp.apps.LeavetrackingappConfig',
     'UserApp.apps.UserappConfig',
-    'PushNotificationApp.apps.PushnotificationappConfig'
+    'PushNotificationApp.apps.PushnotificationappConfig',
+    'common.apps.CommonConfig',
 ]
 
 INSTALLED_APPS += EXTERNAL_APPS
@@ -47,6 +55,7 @@ MIDDLEWARE = [
     # Added the account middleware:
     "allauth.account.middleware.AccountMiddleware",
     'corsheaders.middleware.CorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -108,6 +117,11 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
@@ -126,7 +140,40 @@ SIMPLE_JWT = {
     'USER_ID_FIELD': 'email',
 }
 
+
 CORS_ORIGIN_ALLOW_ALL = True
 CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_SECURE = True
+
+
+
+
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SES_REGION_NAME = 'ap-south-1'
+
+### Email config with AWS SES
+EMAIL_BACKEND = 'django_ses.SESBackend'
+
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            os.path.join(BASE_DIR, 'LeaveTrackingApp', 'templates'),
+            os.path.join(BASE_DIR, 'UserApp', 'templates'),
+            os.path.join(BASE_DIR, 'common', 'templates'),
+            #... other apps templates
+        ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
