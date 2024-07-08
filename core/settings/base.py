@@ -20,7 +20,7 @@ ALLOWED_HOSTS = [
     "0.0.0.0", 
     # prod
     "43.204.216.178",
-    "http://ec2-43-204-216-178.ap-south-1.compute.amazonaws.com"
+    "ec2-43-204-216-178.ap-south-1.compute.amazonaws.com"
     # dev
     "13.201.76.70",
     "ec2-13-201-76-70.ap-south-1.compute.amazonaws.com"
