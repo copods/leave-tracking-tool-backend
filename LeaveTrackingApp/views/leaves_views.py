@@ -421,7 +421,7 @@ def getLeaveStatusCount(request):
         try:
             user_email = getattr(request, 'user_email', None)
             user = User.objects.get(email=user_email)
-            leave_status_counts = Leave.objects.leaves.aggregate(
+            leave_status_counts = Leave.objects.aggregate(
                 approved=Count('id', filter=Q(status='A')&Q(approver=user)),
                 pending=Count('id', filter=Q(status='P')&Q(approver=user)),
                 rejected=Count('id', filter=Q(status='R')&Q(approver=user)),
