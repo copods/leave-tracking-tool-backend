@@ -45,7 +45,7 @@ def createYearPolicy(request):
             if YearPolicy.objects.filter(status__in=['approved', 'draft', 'sent_for_approval']).exists():
                 return JsonResponse({"error": "A draft or an approved policy already exists"}, status=status.HTTP_403_FORBIDDEN)
             
-            if year_policy_data['status'] != 'Draft':
+            if not year_policy_data.get('status') or year_policy_data['status'] != 'Draft':
                 year_policy_data['status'] = 'Draft'
 
             year_policy_serializer = YearPolicySerializer(data=year_policy_data)
