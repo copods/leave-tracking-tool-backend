@@ -16,8 +16,16 @@ ALLOWED_HOSTS = [
     "localhost",
     "10.0.2.2", 
     "192.168.1.59", 
-    "192.168.1.104", "0.0.0.0", "159.89.175.231", "43.204.216.178",
-    "43.204.216.123","13.201.76.70","ec2-13-201-76-70.ap-south-1.compute.amazonaws.com"]
+    "192.168.1.104",
+    "0.0.0.0", 
+    # prod
+    "43.204.216.178",
+    "http://ec2-43-204-216-178.ap-south-1.compute.amazonaws.com"
+    # dev
+    "13.201.76.70",
+    "ec2-13-201-76-70.ap-south-1.compute.amazonaws.com"
+    "43.204.216.123",
+]
 
 
 # Application definition
