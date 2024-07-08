@@ -25,6 +25,8 @@ ALLOWED_HOSTS = [
     "13.201.76.70",
     "ec2-13-201-76-70.ap-south-1.compute.amazonaws.com"
     "43.204.216.123",
+
+    "dev.api.podspace.copods.co"
 ]
 
 
