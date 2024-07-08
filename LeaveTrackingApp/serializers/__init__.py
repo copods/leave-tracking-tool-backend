@@ -1,7 +1,6 @@
 from .calendar_and_policy_serializers import (
     HolidaySerializer, 
     YearCalendarSerializer, 
-    YearCalendarSerializerList,
     YearPolicySerializer,
     LeavePolicySerializer
 )
@@ -31,7 +30,6 @@ __all__ = [
     'StatusReasonSerializer',
     'UserLeaveListSerializer',
     'YearCalendarSerializer',
-    'YearCalendarSerializerList',
     'LeavePolicySerializer',
     'YearPolicySerializer'
 ]

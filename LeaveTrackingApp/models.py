@@ -31,19 +31,23 @@ class yearCalendar(models.Model):
     year = models.IntegerField()
     holidays = models.ManyToManyField('Holiday')
     STATUS_CHOICES = [
-        ('Draft', 'Draft'),
-        ('Approved', 'Approved'),
-        ('Published', 'Published'),
+        ('draft', 'Draft'),
+        ('approved', 'Approved'),
+        ('published', 'Published'),
+        ('sent_for_approval', 'Sent For Approval'),
     ]
     status = models.CharField(
-        max_length=100,
+        max_length=20,
         choices=STATUS_CHOICES,
-        default='Draft',
+        default='draft',
     )
     comments = models.ManyToManyField(Comment, blank=True)
-
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def status_choices(self):
+        return dict(self.STATUS_CHOICES).get(self.status)
 
     def __str__(self):
         return self.year

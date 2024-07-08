@@ -3,7 +3,8 @@ from .calendar_and_policy_views import (
     getHolidayCalendars,
     createYearPolicy,
     getYearPolicy,
-    updateYearPolicy
+    updateYearPolicy,
+    updateYearCalendar
 )
 
 from .leaves_views import (
@@ -34,5 +35,6 @@ __all__ = [
     'createYearPolicy',
     'getYearPolicy',
     'getUnpaidData',
-    'updateYearPolicy'
+    'updateYearPolicy',
+    'updateYearCalendar'
 ]
