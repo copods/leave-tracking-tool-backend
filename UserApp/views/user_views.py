@@ -45,7 +45,7 @@ def userList(request):
             search = query_params.get('search', [None])[0] 
             sort = query_params.get('sort', [None])[0]
             page = query_params.get('page', [1])[0]
-            pageSize = query_params.get('pageSize', [10])[0]
+            pageSize = query_params.get('pageSize', [6])[0]
             serializer_class = UserListSerializer if query_params.get('admin', [False])[0] else ApproverListSerializer
             
             filters = {}
