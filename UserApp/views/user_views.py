@@ -176,7 +176,7 @@ def workTypeCounts(request):
 
 
 @csrf_exempt
-# @user_is_authorized
+@user_is_authorized
 @transaction.atomic
 def bulkUserAdd(request):
     if request.method == 'POST':
