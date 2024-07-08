@@ -103,26 +103,16 @@ class YearPolicySerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
+        validated_data['status'] = 'draft' # set status to draft when policy gets edited
         policies_data = validated_data.pop('leave_policies', None)
 
-        if 'status' in validated_data:
-            status = validated_data.pop('status')
-            statuses = dict(YearPolicy.STATUS_CHOICES)
-            if status in statuses.values():
-                validated_data['status'] = next((k for k, v in statuses.items() if v == status), None)
-            else:
-                raise serializers.ValidationError({'status': f"Invalid choice: {status}. Expected one of {list(statuses.values())}."})
-        
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
         if policies_data:
-            print('here')
             provided_policy_ids = [policy_data.get('id') for policy_data in policies_data if policy_data.get('id')]
             existing_policies = {str(policy.id): policy for policy in instance.leave_policies.filter(id__in=provided_policy_ids)}
-
-            # Update existing policies
             for policy_data in policies_data:
                 policy_id = policy_data.get('id')
                 if policy_id and str(policy_id) in existing_policies:
