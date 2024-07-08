@@ -16,5 +16,11 @@ urlpatterns = [
 
     # holiday urls
     re_path(r'^createHolidayCalendar$', createHolidayCalendar),
-    re_path(r'^getHolidayCalendars$', getHolidayCalendars)
+    re_path(r'^getHolidayCalendars$', getHolidayCalendars),
+
+    #leave policy urls
+    re_path(r'^createYearPolicy$', createYearPolicy),
+    re_path(r'^getYearPolicy$', getYearPolicy),
+    re_path(r'^updateYearPolicy/([0-9a-f-]+)$', updateYearPolicy),
+
 ]

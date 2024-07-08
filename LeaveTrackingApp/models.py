@@ -82,8 +82,8 @@ class StatusReason(models.Model):
         choices=STATUS_CHOICES,
         default='P',
     )    
-    reason = models.CharField(max_length=100)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    reason = models.CharField(max_length=100, null=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='status_reasons')
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
 

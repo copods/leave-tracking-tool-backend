@@ -2,6 +2,7 @@ import math
 from django.db.models import Count, Q
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
 from rest_framework import status
 from rest_framework.parsers import JSONParser
 from UserApp.decorators import user_is_authorized
@@ -44,7 +45,7 @@ def userList(request):
             search = query_params.get('search', [None])[0] 
             sort = query_params.get('sort', [None])[0]
             page = query_params.get('page', [1])[0]
-            pageSize = query_params.get('pageSize', [10])[0]
+            pageSize = query_params.get('pageSize', [6])[0]
             serializer_class = UserListSerializer if query_params.get('admin', [False])[0] else ApproverListSerializer
             
             filters = {}
@@ -56,6 +57,7 @@ def userList(request):
                         filters['role__role_key__in'] = value
                     elif key == 'work_type':
                         value = [('in_office' if v == 'In-Office' else ('work_from_home' if v == 'Work-From-Home' else v)) for v in value]
+                        filters[f'{key}__in'] = value
                     else:
                         filters[f'{key}__in'] = value
             
@@ -174,7 +176,8 @@ def workTypeCounts(request):
 
 
 @csrf_exempt
-@user_is_authorized
+# @user_is_authorized
+@transaction.atomic
 def bulkUserAdd(request):
     if request.method == 'POST':
         users_data = JSONParser().parse(request)
@@ -193,9 +196,17 @@ def bulkUserAdd(request):
         users_serializer = UserSerializer(data=users_data, many=True)
         if users_serializer.is_valid():
             users_serializer.save()
+            
             #send email to users
             data = users_serializer.data
-            send_email(data)
+            data = [data] if not isinstance(data, list) else data
+            send_email(
+                recipients=data,
+                subject='Your Leave Management Platform Awaits!',
+                template_name='onboarding_template.html',
+                context={},
+                app_name='UserApp'
+            )
 
             return JsonResponse("Added Successfully!!", safe=False)
         else:

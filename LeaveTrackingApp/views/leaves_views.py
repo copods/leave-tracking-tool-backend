@@ -205,7 +205,6 @@ def getEmployeeLeaveStats(request, id):
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 # change leave status with status message
 @csrf_exempt
 @user_is_authorized
@@ -214,17 +213,17 @@ def addLeaveStatus(request):
         try:
             # future aspect: based on the deadline to get leave accepted, withdrawn or rejected, status reason creation can be done
             status_data = JSONParser().parse(request)
-            user_email = getattr(request, 'user_email', None) 
+            user_email = getattr(request, 'user_email', None)
             status = status_data.get('status')
-            reason_value = status_data.get('reason')
+            reason_value = status_data.get('reason', None)
             leave_id = status_data.get('leave_id')
 
-            if not all([status, reason_value, user_email, leave_id]):
+            if (not all([status, leave_id])) or (status in ['R', 'W'] and not reason_value):
                 return JsonResponse({'error': 'Missing required fields'}, status=400)
 
             user = User.objects.only('id').get(email=user_email)
             leave = Leave.objects.only('id').get(id=leave_id)
-            
+
             status_reason = StatusReason.objects.create(user=user, status=status, reason=reason_value)
             status_reason.save()
             leave.status_reasons.add(status_reason)
@@ -388,8 +387,8 @@ def getUnpaidData(request):
             curr_month = datetime.now().month
             months = [calendar.month_abbr[i] for i in range(1, curr_month+1)]
             response_obj = {
-                month: []
-                for month in months
+                'months': months,
+                'months_data': {month: [] for month in months}
             }
 
             leave_types = LeaveType.objects.all()
@@ -402,7 +401,7 @@ def getUnpaidData(request):
                         continue
                     unpaids_for_month = get_unpaid_data(user, user_leaves, leave_types, curr_year, month)
                     if len(unpaids_for_month):
-                        response_obj[month].append({
+                        response_obj['months_data'][month].append({
                             'name': user.long_name(),
                             'email': user.email,
                             'profile_image': user.profile_image,
