@@ -3,7 +3,7 @@ from rest_framework import serializers
 from django.db import transaction
 from common.models import Comment
 from common.serializers import CommentSerializer
-
+ 
 
 class HolidaySerializer(serializers.ModelSerializer):
 
@@ -45,11 +45,12 @@ class YearCalendarSerializer(serializers.ModelSerializer):
 
 
 class LeavePolicySerializer(serializers.ModelSerializer):
-   
+    id = serializers.UUIDField(required=False)
+
     class Meta:
         model = LeavePolicy
         fields = '__all__'
-        extra_kwargs = { 'leave_type': {'read_only': True} }
+        extra_kwargs = {'leave_type': {'read_only': True}}
 
     def validate(self, data):
         leave_type_name = data.get('name')
@@ -74,6 +75,7 @@ class LeavePolicyUtilSerializer(serializers.ModelSerializer):
 class YearPolicySerializer(serializers.ModelSerializer):
     leave_policies = LeavePolicySerializer(many=True)
     comments = CommentSerializer(many=True, required=False)
+    status = serializers.CharField(source='status_choices', read_only=True)
 
     class Meta:
         model = YearPolicy
@@ -83,6 +85,8 @@ class YearPolicySerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         policies_data = validated_data.pop('leave_policies')
         comments = validated_data.pop('comments', [])
+        if 'status' in validated_data:
+            validated_data['status'] = 'draft' 
         year_policy = YearPolicy.objects.create(**validated_data)
 
         for policy_data in policies_data:
@@ -100,19 +104,32 @@ class YearPolicySerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         policies_data = validated_data.pop('leave_policies', None)
+
+        if 'status' in validated_data:
+            status = validated_data.pop('status')
+            statuses = dict(YearPolicy.STATUS_CHOICES)
+            if status in statuses.values():
+                validated_data['status'] = next((k for k, v in statuses.items() if v == status), None)
+            else:
+                raise serializers.ValidationError({'status': f"Invalid choice: {status}. Expected one of {list(statuses.values())}."})
         
-        validated_data['status'] = 'Draft' if not validated_data.get('status') else validated_data['status']
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
         if policies_data:
-            instance.leave_policies.all().delete()
+            print('here')
+            provided_policy_ids = [policy_data.get('id') for policy_data in policies_data if policy_data.get('id')]
+            existing_policies = {str(policy.id): policy for policy in instance.leave_policies.filter(id__in=provided_policy_ids)}
+
+            # Update existing policies
             for policy_data in policies_data:
-                leave_policy_serializer = LeavePolicySerializer(data=policy_data)
-                if leave_policy_serializer.is_valid(raise_exception=True):
-                    leave_policy = leave_policy_serializer.save()
-                    instance.leave_policies.add(leave_policy)
+                policy_id = policy_data.get('id')
+                if policy_id and str(policy_id) in existing_policies:
+                    leave_policy_instance = existing_policies[str(policy_id)]
+                    leave_policy_serializer = LeavePolicySerializer(instance=leave_policy_instance, data=policy_data, partial=True)
+                    if leave_policy_serializer.is_valid(raise_exception=True):
+                        leave_policy_serializer.save()
 
         return instance
 

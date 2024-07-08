@@ -173,16 +173,21 @@ class YearPolicy(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     year = models.IntegerField()
     STATUS_CHOICES = [
-        ('Draft', 'Draft'),
-        ('Approved', 'Approved'),
-        ('Published', 'Published'),
+        ('draft', 'Draft'),
+        ('approved', 'Approved'),
+        ('published', 'Published'),
+        ('sent_for_approval', 'Sent For Approval'),
     ]
-    status = models.CharField(choices=STATUS_CHOICES, max_length=10, default='Draft')
+    status = models.CharField(choices=STATUS_CHOICES, max_length=20, default='draft')
     leave_policies = models.ManyToManyField(LeavePolicy)
     comments = models.ManyToManyField(Comment, blank=True)
 
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def status_choices(self):
+        return dict(self.STATUS_CHOICES).get(self.status)
 
     def __str__(self):
         return self.year
