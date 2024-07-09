@@ -164,8 +164,8 @@ class LeavePolicy(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE, related_name='leave_policy_type', null=True, default=None)
     name = models.CharField(max_length=25)
-    max_days_allowed = models.FloatField(blank=True, null=True)
-    description = ArrayField( base_field=models.CharField(max_length=500), null=True, blank=True )
+    max_days_allowed = ArrayField(base_field=models.FloatField(), null=True, blank=True)
+    description = ArrayField( base_field=models.CharField(max_length=500), null=True, blank=True)
 
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)

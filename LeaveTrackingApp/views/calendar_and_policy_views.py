@@ -225,7 +225,13 @@ def updateYearPolicy(request, id):
                 with transaction.atomic():
                     for policy in policies:
                         if policy.leave_type:
-                            policy.leave_type.rule_set.max_days_allowed = policy.max_days_allowed
+                            if policy.name == 'maternity_leave' or policy.name == 'paternity_leave' or policy.name == 'marriage_leave':
+                                max_days = policy.max_days_allowed[0]
+                            elif policy.name == 'wfh' or policy.name == 'pto':
+                                max_days = policy.max_days_allowed[1]
+                            else:
+                                max_days = policy.max_days_allowed
+                            policy.leave_type.rule_set.max_days_allowed = max_days
                             policy.leave_type.rule_set.save()
                     policy_obj.save()
                 return JsonResponse({'message': 'Policy published'}, status=status.HTTP_200_OK)
