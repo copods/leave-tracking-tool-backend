@@ -136,12 +136,14 @@ def updateYearPolicy(request, id):
                 with transaction.atomic():
                     for policy in policies:
                         if policy.leave_type:
-                            if policy.name == 'maternity_leave' or policy.name == 'paternity_leave' or policy.name == 'marriage_leave':
-                                max_days = policy.max_days_allowed[0]
+                            if policy.name == 'maternity_leave':
+                                max_days = policy.details.get('paid')
+                            elif policy.name == 'paternity_leave' or policy.name == 'marriage_leave':
+                                max_days = policy.details.get('leaves')
                             elif policy.name == 'wfh' or policy.name == 'pto':
-                                max_days = policy.max_days_allowed[1]
+                                max_days = policy.details.get('quarterly')
                             else:
-                                max_days = policy.max_days_allowed
+                                max_days = None 
                             policy.leave_type.rule_set.max_days_allowed = max_days
                             policy.leave_type.rule_set.save()
                     policy_obj.save()
