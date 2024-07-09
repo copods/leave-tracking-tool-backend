@@ -93,7 +93,7 @@ class LeavePolicyUtilSerializer(serializers.ModelSerializer):
    
     class Meta:
         model = LeavePolicy
-        fields = ['id', 'name', 'max_days_allowed', 'description', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'details', 'description', 'created_at', 'updated_at']
 
 class YearPolicySerializer(serializers.ModelSerializer):
     leave_policies = LeavePolicySerializer(many=True)
@@ -128,7 +128,6 @@ class YearPolicySerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         validated_data['status'] = 'draft' # set status to draft when policy gets edited
         policies_data = validated_data.pop('leave_policies', None)
-
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
