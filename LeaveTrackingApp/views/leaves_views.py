@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
 import calendar
 from django.db import transaction
-from django.db.models import Q, Prefetch
+from django.db.models import Count, Q, Prefetch
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from LeaveTrackingApp.models import DayDetails, Leave, LeaveType, StatusReason
@@ -414,5 +414,22 @@ def getUnpaidData(request):
                         
             return JsonResponse(response_obj, safe=False)
                 
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+        
+
+@csrf_exempt
+@user_is_authorized
+def getLeaveStatusCount(request):
+    if request.method == 'GET':
+        try:
+            user_email = getattr(request, 'user_email', None)
+            user = User.objects.get(email=user_email)
+            leave_status_counts = Leave.objects.aggregate(
+                approved=Count('id', filter=Q(status='A')&Q(approver=user)),
+                pending=Count('id', filter=Q(status='P')&Q(approver=user)),
+                rejected=Count('id', filter=Q(status='R')&Q(approver=user)),
+            )
+            return JsonResponse(leave_status_counts, safe=False)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
