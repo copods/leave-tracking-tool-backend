@@ -365,10 +365,14 @@ def editLeave(request, id):
             leave = Leave.objects.get(id=id)
             if leave.editStatus == 'requested_for_edit':
                 #update leave logic
-
-                #after update
-                # leave.editStatus = 'Edited'
-                pass
+                leave_serializer = LeaveSerializer(leave, data=leave_data, partial=True)
+                if leave_serializer.is_valid():
+                    leave_serializer.save()
+                    leave.editStatus = 'edited'
+                    leave.save()
+                    response_data = LeaveDetailSerializer(leave).data
+                    return JsonResponse(response_data, status=200)
+                return JsonResponse(leave_serializer.errors, status=400)
             else:
                 return JsonResponse({'error': 'Leave request is not editable'}, status=400)
         
