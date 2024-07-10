@@ -151,10 +151,7 @@ def getYearPolicy(request):
             else:
                 year_policy = YearPolicy.objects.filter(status='published').order_by('-updated_at').first()
             if not year_policy:
-                if year:
-                    year_policy = YearPolicy.objects.filter(status__in=['approved', 'draft'], year=year).order_by('-created_at').first()
-                else:
-                    year_policy = YearPolicy.objects.filter(status__in=['approved', 'draft']).order_by('-created_at').first()
+                year_policy = YearPolicy.objects.filter(status__in=['approved', 'draft', 'sent_for_approval'], year=year).order_by('-created_at').first()
                 if not year_policy:
                     return JsonResponse({"error": "No year policy found for this year"}, status=status.HTTP_404_NOT_FOUND)
                     
