@@ -22,5 +22,6 @@ urlpatterns = [
     re_path(r'^createYearPolicy$', createYearPolicy),
     re_path(r'^getYearPolicy$', getYearPolicy),
     re_path(r'^updateYearPolicy/([0-9a-f-]+)$', updateYearPolicy),
+    re_path(r'^getLeaveStatusCount$', getLeaveStatusCount),
 
 ]
