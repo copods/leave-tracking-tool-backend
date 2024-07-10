@@ -17,6 +17,7 @@ from .leaves_views import (
     getEmployeeLeaveStats,
     getUnpaidData,
     getLeavesList,
+    editLeave
 )
 
 __all__ = [
@@ -34,5 +35,6 @@ __all__ = [
     'createYearPolicy',
     'getYearPolicy',
     'getUnpaidData',
-    'updateYearPolicy'
+    'updateYearPolicy',
+    'editLeave'
 ]
