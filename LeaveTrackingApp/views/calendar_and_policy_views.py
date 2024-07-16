@@ -23,9 +23,9 @@ def getHolidayCalendar(request):
                 year_calendar = yearCalendar.objects.filter(status='published').order_by('-updated_at').first()
             if not year_calendar:
                 if year:
-                    year_calendar = yearCalendar.objects.filter(status__in=['approved', 'draft', 'sent_for_approval'], year=year).order_by('-updated_at').first()
+                    year_calendar = yearCalendar.objects.filter(status__in=['approved', 'draft', 'sent_for_approval'], year=year).first()
                 else:
-                    year_calendar = yearCalendar.objects.filter(status__in=['approved', 'draft', 'sent_for_approval']).order_by('-updated_at').first()
+                    year_calendar = yearCalendar.objects.filter(status__in=['approved', 'draft', 'sent_for_approval']).first()
                 if not year_calendar:
                     return JsonResponse({"error": "No year calendar found for this year"}, status=status.HTTP_404_NOT_FOUND)
             holiday_calendars_serializer = YearCalendarSerializer(year_calendar)
