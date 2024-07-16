@@ -115,7 +115,6 @@ def updateYearCalendar(request, id):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-
 @csrf_exempt
 @user_is_authorized
 def createYearPolicy(request):
