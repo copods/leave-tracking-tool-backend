@@ -80,7 +80,7 @@ class User(models.Model):
     permanent_address_city = models.CharField(max_length=100, null=True)
     permanent_address_state = models.CharField(max_length=100, null=True)
     permanent_address_pincode = models.IntegerField(null=True)
-    is_curr_address_same = models.BooleanField(default=True)
+    is_current_address_same = models.BooleanField(default=True)
 
     # Emergency Contact Information
     emergency_contact_name = models.CharField(max_length=100, null=True)
