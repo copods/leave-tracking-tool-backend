@@ -13,7 +13,7 @@ from UserApp.models import User
  
 @csrf_exempt
 @user_is_authorized
-def getHolidayCalendars(request):
+def getHolidayCalendar(request):
     if request.method=='GET':
         try:
             year = request.GET.get('year', None)

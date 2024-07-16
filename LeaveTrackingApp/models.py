@@ -41,6 +41,7 @@ class yearCalendar(models.Model):
         choices=STATUS_CHOICES,
         default='draft',
     )
+    info_text = models.TextField(blank=True, null=True)
     comments = models.ManyToManyField(Comment, blank=True)
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
