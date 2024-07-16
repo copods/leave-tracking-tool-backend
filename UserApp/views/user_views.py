@@ -84,8 +84,8 @@ def userList(request):
                 'current_page': int(page),
                 'page_size': int(pageSize),
                 'data': users_serializer.data,
-
             }, safe=False)
+        
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -191,7 +191,6 @@ def bulkUserAdd(request):
 
             department_serializer = DepartmentSerializer(department)
             user['department'] = department_serializer.data['id']
-
 
         users_serializer = UserSerializer(data=users_data, many=True)
         if users_serializer.is_valid():

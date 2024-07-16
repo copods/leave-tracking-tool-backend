@@ -50,7 +50,6 @@ class User(models.Model):
     date_of_birth = models.DateField()
     profile_image = models.CharField(max_length=250, null=True, blank=True)
 
-
     # Work Information
     date_of_joining = models.DateField()
     EMPLOYMENT_TYPE_CHOICES = [
@@ -81,6 +80,7 @@ class User(models.Model):
     permanent_address_city = models.CharField(max_length=100, null=True)
     permanent_address_state = models.CharField(max_length=100, null=True)
     permanent_address_pincode = models.IntegerField(null=True)
+    is_current_address_same = models.BooleanField(default=True)
 
     # Emergency Contact Information
     emergency_contact_name = models.CharField(max_length=100, null=True)
