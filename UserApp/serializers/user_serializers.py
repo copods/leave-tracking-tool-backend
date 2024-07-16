@@ -76,7 +76,7 @@ class UserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'profile_image', 'designation', 'role', 'department', 'id', 'work_location', 'work_type', 'date_of_joining']
+        fields = ['first_name', 'last_name', 'email', 'profile_image', 'designation', 'role', 'department', 'id', 'work_location', 'work_type', 'date_of_joining', 'app_registration_status']
     
     def to_representation(self, instance):
         representation = super().to_representation(instance)
