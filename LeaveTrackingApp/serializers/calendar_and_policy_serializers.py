@@ -26,8 +26,7 @@ class YearCalendarSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         holiday_data = validated_data.pop('holidays')
         comments = validated_data.pop('comments', [])
-        if 'status' in validated_data:
-            validated_data['status'] = 'draft'
+        validated_data['status'] = 'draft'
         holiday_calendar = yearCalendar.objects.create(**validated_data)
         for holiday in holiday_data:
             holiday = Holiday.objects.create(**holiday)

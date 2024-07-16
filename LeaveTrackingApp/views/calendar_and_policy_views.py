@@ -42,9 +42,6 @@ def createHolidayCalendar(request):
             if yearCalendar.objects.filter(status__in=['approved', 'draft', 'sent_for_approval']).exists():
                 return JsonResponse({"error": "A draft or an approved calendar already exists"}, status=status.HTTP_403_FORBIDDEN)
             
-            if not year_calendar_data.get('status') or year_calendar_data['status'] != 'Draft':
-                year_calendar_data['status'] = 'Draft'
-
             year_calendar_serializer = YearCalendarSerializer(data=year_calendar_data)
             if year_calendar_serializer.is_valid():
                 year_calendar_serializer.save()
