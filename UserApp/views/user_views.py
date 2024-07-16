@@ -95,12 +95,6 @@ def createUser(request):
     if request.method=='POST':
         try:
             user_data = JSONParser().parse(request)
-            if user_data.get('is_curr_address_same'):
-                user_data['current_address_line'] = user_data.get('permanent_address_line')
-                user_data['current_address_city'] = user_data.get('permanent_address_city')
-                user_data['current_address_state'] = user_data.get('permanent_address_state')
-                user_data['current_address_pincode'] = user_data.get('permanent_address_pincode')
-
             user_serializer = UserSerializer(data=user_data)
             if user_serializer.is_valid():
                 user_serializer.save()
@@ -197,12 +191,6 @@ def bulkUserAdd(request):
 
             department_serializer = DepartmentSerializer(department)
             user['department'] = department_serializer.data['id']
-
-            if user.get('is_curr_address_same'):
-                user['current_address_line'] = user.get('permanent_address_line')
-                user['current_address_city'] = user.get('permanent_address_city')
-                user['current_address_state'] = user.get('permanent_address_state')
-                user['current_address_pincode'] = user.get('permanent_address_pincode')
 
         users_serializer = UserSerializer(data=users_data, many=True)
         if users_serializer.is_valid():
