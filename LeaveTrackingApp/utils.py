@@ -185,7 +185,7 @@ def user_leave_stats_user_view(user_id, year_range):
                 leave_request = LeaveUtilSerializer(leave_request).data
                 max_days = rulesets.filter(name=leave_type).first().max_days_allowed
                 year_leave_stats['yearly_leaves'].append({
-                    'leave_type': leave_request['leave_type'],
+                    'leaveType': leave_request['leave_type'],
                     'daysTaken' : len(leave_request['day_details']),
                     'totalDays': max_days,
                     'remaining': max(0, max_days - len(leave_request['day_details'])),
