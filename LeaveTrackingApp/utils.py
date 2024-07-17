@@ -170,22 +170,27 @@ def user_leave_stats_user_view(user_id, year_range):
             'total_pto': leave_summary['total_leaves'],
             'wfh_taken': leave_summary['wfh_taken'],
             'total_wfh': leave_summary['total_wfh'],
-            'yearly_leaves': {},
+            'yearly_leaves': [],
             'data': [],
         }
 
         quarterly_leave_types = LeaveType.objects.filter(~Q(rule_set__duration="None") | Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
         yearly_leave_types = LeaveType.objects.filter(Q(rule_set__duration="None") & ~Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
+        rulesets = RuleSet.objects.all()
 
         #find yearly leaves taken
         for leave_type in yearly_leave_types:
             leave_request = user_leaves_for_year.filter(leave_type__name=leave_type, status='A').order_by('start_date').first()
-            leave_request = LeaveUtilSerializer(leave_request).data
             if leave_request:
-                year_leave_stats['yearly_leaves'][leave_type] = {
-                    'start_date': leave_request['start_date'],
-                    'end_date': leave_request['end_date'],
-                    }
+                leave_request = LeaveUtilSerializer(leave_request).data
+                max_days = rulesets.filter(name=leave_type).first().max_days_allowed
+                year_leave_stats['yearly_leaves'].append({
+                    'leave_type': leave_request['leave_type'],
+                    'daysTaken' : len(leave_request['day_details']),
+                    'totalDays': max_days,
+                    'remaining': max(0, max_days - len(leave_request['day_details'])),
+                    'dayDetails': [{'id': day['id'], 'date': day['date']} for day in leave_request['day_details']]
+                })
 
         # Organize quarterly leaves and day details
         leave_wfh_for_year = {
@@ -235,7 +240,7 @@ def user_leave_stats_user_view(user_id, year_range):
             leave_days_in_curr_quarter.sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
             wfh_days_in_curr_quarter.sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
 
-            max_days = list(LeaveType.objects.filter(Q(name='pto') | Q(name='wfh')).values_list('rule_set__max_days_allowed', flat=True))
+            max_days = list(rulesets.filter(Q(name='pto') | Q(name='wfh')).values_list('max_days_allowed', flat=True))
 
             count=0
             for day in leave_days_in_curr_quarter:
