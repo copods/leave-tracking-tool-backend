@@ -6,32 +6,27 @@ from common.serializers import CommentSerializer
  
 
 class HolidaySerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(required=False)
 
     class Meta:
         model = Holiday
         fields = '__all__'
 
 
-class YearCalendarSerializerList(serializers.ModelSerializer):
-    holidays = HolidaySerializer(many=True)
-    comments = CommentSerializer(many=True)
-
-    class Meta:
-        model = yearCalendar
-        fields = '__all__'
-
-
 class YearCalendarSerializer(serializers.ModelSerializer):
     holidays = HolidaySerializer(many=True)
     comments = CommentSerializer(many=True, required=False)
+    status = serializers.CharField(source='status_choices', read_only=True)
 
     class Meta:
         model = yearCalendar
         fields = '__all__'
 
+    @transaction.atomic
     def create(self, validated_data):
         holiday_data = validated_data.pop('holidays')
         comments = validated_data.pop('comments', [])
+        validated_data['status'] = 'draft'
         holiday_calendar = yearCalendar.objects.create(**validated_data)
         for holiday in holiday_data:
             holiday = Holiday.objects.create(**holiday)
@@ -42,6 +37,32 @@ class YearCalendarSerializer(serializers.ModelSerializer):
             holiday_calendar.comments.add(comment)
 
         return holiday_calendar
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        validated_data['status'] = 'draft' # set status to draft when policy gets edited
+        holiday_data = validated_data.pop('holidays', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if holiday_data:
+            provided_holiday_ids = [holiday.get('id') for holiday in holiday_data if holiday.get('id')]
+            existing_holidays = {str(holiday.id): holiday for holiday in instance.holidays.filter(id__in=provided_holiday_ids)}
+            for holiday in holiday_data:
+                holiday_id = holiday.get('id')
+                if holiday_id and str(holiday_id) in existing_holidays:
+                    holiday_instance = existing_holidays[str(holiday_id)]
+                    holiday_serializer = HolidaySerializer(instance=holiday_instance, data=holiday, partial=True)
+                    if holiday_serializer.is_valid(raise_exception=True):
+                        holiday_serializer.save()
+
+        return instance
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['holidays'] = HolidaySerializer(instance.holidays.all(), many=True).data
+        return representation
 
 
 class LeavePolicySerializer(serializers.ModelSerializer):
