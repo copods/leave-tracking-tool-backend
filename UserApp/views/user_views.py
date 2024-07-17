@@ -24,7 +24,7 @@ def createUserUnauthorized(request):
     if request.method=='POST':
         user_data = JSONParser().parse(request)
         role = RoleSerializer(Role.objects.get(role_key='admin'))
-        department = DepartmentSerializer(Department.objects.get(department_key='developer'))
+        department = DepartmentSerializer(Department.objects.get(department_key='development'))
         user_data['role'] = role.data['id']
         user_data['department'] = department.data['id']
         user_serializer = UserSerializer(data=user_data)
