@@ -29,6 +29,7 @@ class StatusReasonSerializer(serializers.ModelSerializer):
         model = StatusReason
         fields = '__all__'
 
+# TODO: for future need
 # class StatusReasonUtilSerializer(serializers.ModelSerializer):
 #     user = serializers.SerializerMethodField('get_user')
 
