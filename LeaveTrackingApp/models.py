@@ -5,7 +5,14 @@ import uuid
 from django.contrib.postgres.fields import ArrayField
 from django.utils.timezone import now  # Import the now function
 
-# Create your models here.
+
+#status choice enum
+STATUS_CHOICES = [
+    ('draft', 'Draft'),
+    ('approved', 'Approved'),
+    ('published', 'Published'),
+    ('sent_for_approval', 'Sent For Approval'),
+]
 
 class Holiday(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
@@ -30,12 +37,6 @@ class yearCalendar(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     year = models.IntegerField()
     holidays = models.ManyToManyField('Holiday')
-    STATUS_CHOICES = [
-        ('draft', 'Draft'),
-        ('approved', 'Approved'),
-        ('published', 'Published'),
-        ('sent_for_approval', 'Sent For Approval'),
-    ]
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -177,12 +178,6 @@ class LeavePolicy(models.Model):
 class YearPolicy(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     year = models.IntegerField()
-    STATUS_CHOICES = [
-        ('draft', 'Draft'),
-        ('approved', 'Approved'),
-        ('published', 'Published'),
-        ('sent_for_approval', 'Sent For Approval'),
-    ]
     status = models.CharField(choices=STATUS_CHOICES, max_length=20, default='draft')
     leave_policies = models.ManyToManyField(LeavePolicy)
     comments = models.ManyToManyField(Comment, blank=True)
