@@ -16,8 +16,19 @@ ALLOWED_HOSTS = [
     "localhost",
     "10.0.2.2", 
     "192.168.1.59", 
-    "192.168.1.104", "0.0.0.0", "159.89.175.231", "43.204.216.178",
-    "43.204.216.123","13.201.76.70"]
+    "192.168.1.104",
+    "0.0.0.0", 
+    # prod
+    "43.204.216.178",
+    "ec2-43-204-216-178.ap-south-1.compute.amazonaws.com"
+    # dev
+    "13.201.76.70",
+    "ec2-13-201-76-70.ap-south-1.compute.amazonaws.com"
+    "43.204.216.123",
+
+    "dev.api.podspace.copods.co",
+    "api.podspace.copods.co"
+]
 
 
 # Application definition
@@ -30,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'corsheaders',
+    'whitenoise.runserver_nostatic',
 ]
 
 EXTERNAL_APPS = [
@@ -44,7 +56,6 @@ INSTALLED_APPS += EXTERNAL_APPS
 
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -54,6 +65,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Added the account middleware:
     "allauth.account.middleware.AccountMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware'
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -115,6 +128,11 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
@@ -133,35 +151,11 @@ SIMPLE_JWT = {
     'USER_ID_FIELD': 'email',
 }
 
+
 CORS_ORIGIN_ALLOW_ALL = True
-# CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
-# SESSION_COOKIE_SECURE = True
-
-CORS_ALLOW_HEADERS = ['*']
-CORS_ORIGIN_WHITELIST = [
-    "http://localhost:8000",
-    "http://localhost:5173",
-]
-CORS_ALLOW_METHODS = ['*']
-CORS_ALLOW_CREDENTIALS = True
-
-
-
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
-
-
-
-SECURE_SSL_REDIRECT = False  # Redirect all non-HTTPS requests to HTTPS
-SESSION_COOKIE_SECURE = True  # Use secure cookies
-CSRF_COOKIE_SECURE = True  # Use secure CSRF cookies
-SECURE_HSTS_SECONDS = 3600  # Enable HTTP Strict Transport Security
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-SECURE_REFERRER_POLICY = "no-referrer-when-downgrade"
-
+SESSION_COOKIE_SECURE = True
 
 
 
