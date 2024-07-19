@@ -49,7 +49,7 @@ class yearCalendar(models.Model):
 
     @property
     def status_choices(self):
-        return dict(self.STATUS_CHOICES).get(self.status)
+        return dict(STATUS_CHOICES).get(self.status)
 
     def __str__(self):
         return self.year
@@ -187,7 +187,7 @@ class YearPolicy(models.Model):
 
     @property
     def status_choices(self):
-        return dict(self.STATUS_CHOICES).get(self.status)
+        return dict(STATUS_CHOICES).get(self.status)
 
     def __str__(self):
         return self.year

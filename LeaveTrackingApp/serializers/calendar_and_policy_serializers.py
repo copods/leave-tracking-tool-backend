@@ -16,7 +16,7 @@ class HolidaySerializer(serializers.ModelSerializer):
 class YearCalendarSerializer(serializers.ModelSerializer):
     holidays = HolidaySerializer(many=True)
     comments = CommentSerializer(many=True, required=False)
-    status = serializers.CharField(source='status_choices', read_only=True)
+    status = serializers.CharField(source='status_choices')
 
     class Meta:
         model = yearCalendar
@@ -96,7 +96,7 @@ class LeavePolicyUtilSerializer(serializers.ModelSerializer):
 class YearPolicySerializer(serializers.ModelSerializer):
     leave_policies = LeavePolicySerializer(many=True)
     comments = CommentSerializer(many=True, required=False)
-    status = serializers.CharField(source='status_choices', read_only=True)
+    status = serializers.CharField(source='status_choices')
 
     class Meta:
         model = YearPolicy
@@ -106,8 +106,7 @@ class YearPolicySerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         policies_data = validated_data.pop('leave_policies')
         comments = validated_data.pop('comments', [])
-        if 'status' in validated_data:
-            validated_data['status'] = 'draft' 
+        validated_data['status'] = 'draft' 
         year_policy = YearPolicy.objects.create(**validated_data)
 
         for policy_data in policies_data:
