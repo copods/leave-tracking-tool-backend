@@ -1,6 +1,10 @@
-from .holiday_calendar_views import (
+from .calendar_and_policy_views import (
     createHolidayCalendar, 
-    getHolidayCalendars
+    getHolidayCalendar,
+    createYearPolicy,
+    getYearPolicy,
+    updateYearPolicy,
+    updateYearCalendar
 )
 
 from .leaves_views import (
@@ -14,6 +18,8 @@ from .leaves_views import (
     getEmployeeLeaveStats,
     getUnpaidData,
     getLeavesList,
+    editLeave,
+    getLeaveStatusCount
 )
 
 __all__ = [
@@ -26,7 +32,13 @@ __all__ = [
     'getEmployeeAttendance',
     'getUserLeaveStats', 
     'getLeavesList',
-    'getHolidayCalendars',
+    'getHolidayCalendar',
     'getEmployeeLeaveStats',
+    'createYearPolicy',
+    'getYearPolicy',
     'getUnpaidData',
+    'updateYearPolicy',
+    'updateYearCalendar',
+    'editLeave',
+    'getLeaveStatusCount'
 ]

@@ -50,17 +50,16 @@ class User(models.Model):
     date_of_birth = models.DateField()
     profile_image = models.CharField(max_length=250, null=True, blank=True)
 
-
     # Work Information
     date_of_joining = models.DateField()
     EMPLOYMENT_TYPE_CHOICES = [
-        ('Full-time', 'Full-time'),
-        ('Part-time', 'Part-time'),
-        ('Contract', 'Contract')
+        ('full_time', 'Full-time'),
+        ('part_time', 'Part-time'),
+        ('contract', 'Contract')
     ] # Employement type information (is necessary to keep in db)
     WORK_TYPE_CHOICES = [
-        ('In-Office', 'In-Office'),
-        ('Work-From-Home', 'Work-From-Home')
+        ('in_office', 'In-Office'),
+        ('work_from_home', 'Work-From-Home')
     ]
     work_type = models.CharField(   
         max_length=15,
@@ -81,6 +80,7 @@ class User(models.Model):
     permanent_address_city = models.CharField(max_length=100, null=True)
     permanent_address_state = models.CharField(max_length=100, null=True)
     permanent_address_pincode = models.IntegerField(null=True)
+    is_current_address_same = models.BooleanField(default=True)
 
     # Emergency Contact Information
     emergency_contact_name = models.CharField(max_length=100, null=True)
@@ -107,6 +107,14 @@ class User(models.Model):
             self.save()
         except ValueError as e:
             raise e
+        
+    @property
+    def work_type_choices(self):
+        return dict(self.WORK_TYPE_CHOICES).get(self.work_type)
+    
+    @property
+    def employment_type_choices(self):
+        return dict(self.EMPLOYMENT_TYPE_CHOICES).get(self.employment_type)
         
     def __str__(self):
         return self.email

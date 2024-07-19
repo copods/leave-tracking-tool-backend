@@ -2,6 +2,7 @@ import math
 from django.db.models import Count, Q
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
 from rest_framework import status
 from rest_framework.parsers import JSONParser
 from UserApp.decorators import user_is_authorized
@@ -23,7 +24,7 @@ def createUserUnauthorized(request):
     if request.method=='POST':
         user_data = JSONParser().parse(request)
         role = RoleSerializer(Role.objects.get(role_key='admin'))
-        department = DepartmentSerializer(Department.objects.get(department_key='developer'))
+        department = DepartmentSerializer(Department.objects.get(department_key='development'))
         user_data['role'] = role.data['id']
         user_data['department'] = department.data['id']
         user_serializer = UserSerializer(data=user_data)
@@ -44,7 +45,7 @@ def userList(request):
             search = query_params.get('search', [None])[0] 
             sort = query_params.get('sort', [None])[0]
             page = query_params.get('page', [1])[0]
-            pageSize = query_params.get('pageSize', [10])[0]
+            pageSize = query_params.get('pageSize', [6])[0]
             serializer_class = UserListSerializer if query_params.get('admin', [False])[0] else ApproverListSerializer
             
             filters = {}
@@ -54,6 +55,9 @@ def userList(request):
                         filters['department__department_key__in'] = value
                     elif key == 'role':
                         filters['role__role_key__in'] = value
+                    elif key == 'work_type':
+                        value = [('in_office' if v == 'In-Office' else ('work_from_home' if v == 'Work-From-Home' else v)) for v in value]
+                        filters[f'{key}__in'] = value
                     else:
                         filters[f'{key}__in'] = value
             
@@ -80,8 +84,8 @@ def userList(request):
                 'current_page': int(page),
                 'page_size': int(pageSize),
                 'data': users_serializer.data,
-
             }, safe=False)
+        
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -160,18 +164,20 @@ def user(request,id):
 def workTypeCounts(request):
     if request.method == 'GET':
         work_type_counts = User.objects.aggregate(
-            in_office=Count('id', filter=Q(work_type="In-Office")),
-            work_from_home=Count('id', filter=Q(work_type="Work-From-Home"))
+            in_office=Count('id', filter=Q(work_type="in_office")),
+            work_from_home=Count('id', filter=Q(work_type="work_from_home")),
+            total=Count('id')
         )
         return JsonResponse({
             "In-Office": work_type_counts['in_office'],
             "Work-From-Home": work_type_counts['work_from_home'],
-            "Total": work_type_counts['in_office'] + work_type_counts['work_from_home']
+            "Total": work_type_counts['total']
         }, safe=False)
 
 
 @csrf_exempt
 @user_is_authorized
+@transaction.atomic
 def bulkUserAdd(request):
     if request.method == 'POST':
         users_data = JSONParser().parse(request)
@@ -186,13 +192,20 @@ def bulkUserAdd(request):
             department_serializer = DepartmentSerializer(department)
             user['department'] = department_serializer.data['id']
 
-
         users_serializer = UserSerializer(data=users_data, many=True)
         if users_serializer.is_valid():
             users_serializer.save()
+            
             #send email to users
             data = users_serializer.data
-            send_email(data)
+            data = [data] if not isinstance(data, list) else data
+            send_email(
+                recipients=data,
+                subject='Your Leave Management Platform Awaits!',
+                template_name='onboarding_template.html',
+                context={},
+                app_name='UserApp'
+            )
 
             return JsonResponse("Added Successfully!!", safe=False)
         else:

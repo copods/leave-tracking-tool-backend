@@ -66,7 +66,7 @@ MIDDLEWARE = [
     # Added the account middleware:
     "allauth.account.middleware.AccountMiddleware",
     'corsheaders.middleware.CorsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware'
 ]
 
 ROOT_URLCONF = "core.urls"

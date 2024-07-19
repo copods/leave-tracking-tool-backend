@@ -9,6 +9,8 @@ class RuleSetSerializer(serializers.ModelSerializer):
 
 
 class DayDetailSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(required=False)
+
     class Meta:
         model = DayDetails
         fields = '__all__'
@@ -26,6 +28,20 @@ class StatusReasonSerializer(serializers.ModelSerializer):
     class Meta:
         model = StatusReason
         fields = '__all__'
+
+# TODO: for future need
+# class StatusReasonUtilSerializer(serializers.ModelSerializer):
+#     user = serializers.SerializerMethodField('get_user')
+
+#     class Meta:
+#         model = StatusReason
+#         fields = '__all__'
+
+#     def get_user(self, obj):
+#         return {
+#             'name': obj.user.long_name(),
+#             'profilePicture': obj.user.profile_image
+#         }
 
 
 class LeaveTypeSerializer(serializers.ModelSerializer):
@@ -54,13 +70,30 @@ class LeaveSerializer(serializers.ModelSerializer):
             leave.day_details.add(day_detail)
         return leave
 
+    def update(self, instance, validated_data):
+        day_details_data = validated_data.pop('day_details', [])
+        if day_details_data:
+            provided_days_ids = [day_data.get('id') for day_data in day_details_data if day_data.get('id')]
+            existing_days = {str(day.id): day for day in instance.day_details.filter(id__in=provided_days_ids)}
+            for day_data in day_details_data:
+                day_id = day_data.get('id')
+                if day_id and str(day_id) in existing_days:
+                    day_instance = existing_days[str(day_id)]
+                    if day_data.get('type'):
+                        day_data['type'] = day_data['type'].id
+                    day_serializer = DayDetailSerializer(instance=day_instance, data=day_data, partial=True)
+                    if day_serializer.is_valid(raise_exception=True):
+                        day_serializer.save()
+        return instance
 
 class LeaveDetailSerializer(serializers.ModelSerializer):
-    day_details = DayDetailSerializer(many=True)
+    day_details = DayDetailsUtilSerializer(many=True)
     status_reasons = StatusReasonSerializer(many=True, required=False)
+    # status_reasons = StatusReasonUtilSerializer(many=True, required=False)  # TODO: use this in second phase
     user = serializers.SerializerMethodField('get_user')
     approver = serializers.SerializerMethodField('get_approver')
     leave_type = serializers.CharField(source='leave_type.name')
+    editStatus = serializers.CharField(source='edit_choices')
 
     class Meta:
         model = Leave

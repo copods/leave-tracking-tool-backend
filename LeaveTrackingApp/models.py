@@ -1,9 +1,18 @@
 from django.db import models
 from UserApp.models import User
+from common.models import Comment
 import uuid
+from django.contrib.postgres.fields import ArrayField
 from django.utils.timezone import now  # Import the now function
 
-# Create your models here.
+
+#status choice enum
+STATUS_CHOICES = [
+    ('draft', 'Draft'),
+    ('approved', 'Approved'),
+    ('published', 'Published'),
+    ('sent_for_approval', 'Sent For Approval'),
+]
 
 class Holiday(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
@@ -28,18 +37,19 @@ class yearCalendar(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     year = models.IntegerField()
     holidays = models.ManyToManyField('Holiday')
-    STATUS_CHOICES = [
-        ('Draft', 'Draft'),
-        ('Approved', 'Approved'),
-        ('Published', 'Published'),
-    ]
     status = models.CharField(
-        max_length=100,
+        max_length=20,
         choices=STATUS_CHOICES,
-        default='Draft',
+        default='draft',
     )
+    info_text = models.TextField(blank=True, null=True)
+    comments = models.ManyToManyField(Comment, blank=True)
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def status_choices(self):
+        return dict(self.STATUS_CHOICES).get(self.status)
 
     def __str__(self):
         return self.year
@@ -78,8 +88,8 @@ class StatusReason(models.Model):
         choices=STATUS_CHOICES,
         default='P',
     )    
-    reason = models.CharField(max_length=100)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    reason = models.CharField(max_length=100, null=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='status_reasons')
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -149,6 +159,36 @@ class Leave(models.Model):
     def edit_choices(self):
         return dict(self.IS_EDITED_CHOICES).get(self.editStatus)
 
+    def __str__(self):
+        return self.leave_type.name
+
+class LeavePolicy(models.Model):
+    id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
+    leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE, related_name='leave_policy_type', null=True, default=None)
+    name = models.CharField(max_length=25)
+    details = models.JSONField(default=dict, null=True)
+    description = ArrayField( base_field=models.CharField(max_length=500), null=True, blank=True)
+
+    created_at = models.DateTimeField(default=now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.leave_type
+        return self.name
+
+class YearPolicy(models.Model):
+    id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
+    year = models.IntegerField()
+    status = models.CharField(choices=STATUS_CHOICES, max_length=20, default='draft')
+    leave_policies = models.ManyToManyField(LeavePolicy)
+    comments = models.ManyToManyField(Comment, blank=True)
+
+    created_at = models.DateTimeField(default=now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def status_choices(self):
+        return dict(self.STATUS_CHOICES).get(self.status)
+
+    def __str__(self):
+        return self.year
+    
