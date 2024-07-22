@@ -47,10 +47,6 @@ class yearCalendar(models.Model):
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
 
-    @property
-    def status_choices(self):
-        return dict(STATUS_CHOICES).get(self.status)
-
     def __str__(self):
         return self.year
 
@@ -184,10 +180,6 @@ class YearPolicy(models.Model):
 
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
-
-    @property
-    def status_choices(self):
-        return dict(STATUS_CHOICES).get(self.status)
 
     def __str__(self):
         return self.year

@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 from rest_framework import status
 from rest_framework.parsers import JSONParser
-from LeaveTrackingApp.models import LeaveType, YearPolicy, yearCalendar
+from LeaveTrackingApp.models import LeaveType, YearPolicy, yearCalendar, STATUS_CHOICES
 from LeaveTrackingApp.serializers import YearCalendarSerializer, YearPolicySerializer
 from UserApp.decorators import user_is_authorized
 from UserApp.models import User
@@ -41,6 +41,12 @@ def createHolidayCalendar(request):
             year_calendar_data = JSONParser().parse(request)
             if yearCalendar.objects.filter(status__in=['approved', 'draft', 'sent_for_approval']).exists():
                 return JsonResponse({"error": "A draft or an approved calendar already exists"}, status=status.HTTP_403_FORBIDDEN)
+
+            status_value = year_calendar_data.get('status', 'Draft')
+            if status_value not in ['Draft', 'Sent For Approval']:
+                year_calendar_data['status'] = 'draft'
+            else:
+                year_calendar_data['status'] = next((k for k, v in dict(STATUS_CHOICES).items() if v==status_value), None)
             
             year_calendar_serializer = YearCalendarSerializer(data=year_calendar_data)
             if year_calendar_serializer.is_valid():
@@ -126,12 +132,18 @@ def updateYearCalendar(request, id):
 @csrf_exempt
 @user_is_authorized
 def createYearPolicy(request):
-    if request.method=='POST':
+    if request.method == 'POST':
         try:
             year_policy_data = JSONParser().parse(request)
             if YearPolicy.objects.filter(status__in=['approved', 'draft', 'sent_for_approval']).exists():
                 return JsonResponse({"error": "A draft or an approved policy already exists"}, status=status.HTTP_403_FORBIDDEN)
-            
+
+            status_value = year_policy_data.get('status', 'Draft')
+            if status_value not in ['Draft', 'Sent For Approval']:
+                year_policy_data['status'] = 'draft'
+            else:
+                year_policy_data['status'] = next((k for k, v in dict(STATUS_CHOICES).items() if v==status_value), None)
+
             year_policy_serializer = YearPolicySerializer(data=year_policy_data)
             if year_policy_serializer.is_valid():
                 year_policy_serializer.save()
