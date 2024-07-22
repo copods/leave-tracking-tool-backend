@@ -45,7 +45,7 @@ def sign_in_web(request):
             user = User.objects.get(email=user_info['email'])
             user.profile_image = user_info['picture']
             user.save()
-            if user.role.role_key in {'admin', 'super-admin'}:
+            if user.role.role_key in {'admin', 'hr'}:
                 access_token, refresh_token = generate_tokens(user)
                 return JsonResponse({
                     'access_token': str(access_token), 
