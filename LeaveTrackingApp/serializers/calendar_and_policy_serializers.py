@@ -38,7 +38,6 @@ class YearCalendarSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        validated_data['status'] = 'draft' # set status to draft when policy gets edited
         holiday_data = validated_data.pop('holidays', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -120,7 +119,6 @@ class YearPolicySerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        validated_data['status'] = 'draft'  # set status to draft when policy gets edited
         policies_data = validated_data.pop('leave_policies', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

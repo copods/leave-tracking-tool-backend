@@ -46,7 +46,7 @@ def createHolidayCalendar(request):
             if status_value not in ['Draft', 'Sent For Approval']:
                 year_calendar_data['status'] = 'draft'
             else:
-                year_calendar_data['status'] = next((k for k, v in dict(STATUS_CHOICES).items() if v==status_value), None)
+                year_calendar_data['status'] = next((k for k, v in dict(STATUS_CHOICES).items() if v==status_value), 'draft')
             
             year_calendar_serializer = YearCalendarSerializer(data=year_calendar_data)
             if year_calendar_serializer.is_valid():
@@ -96,8 +96,10 @@ def updateYearCalendar(request, id):
                         return JsonResponse({"error": "Only admin can reject calendar"}, status=status.HTTP_403_FORBIDDEN)
                 #send notifications on approval and rejection
 
-            #edit calendar
-            elif not document_data.get('status') or document_data['status'] == 'Draft':
+            #edit calendar or (send for approval with edited data)
+            elif (not document_data.get('status') or document_data['status'] == 'Draft') or (calendar_obj.status == 'draft' and document_data['status'] == 'Sent For Approval'):
+                status_value = document_data.get('status', 'draft')
+                document_data['status'] = next((k for k, v in dict(STATUS_CHOICES).items() if v==status_value), 'draft')
                 year_calendar_serializer = YearCalendarSerializer(calendar_obj, document_data, partial=True)
                 if year_calendar_serializer.is_valid():
                     year_calendar_serializer.save()
@@ -112,12 +114,6 @@ def updateYearCalendar(request, id):
             
             elif calendar_obj.status == 'draft' and document_data['status'] == 'Approved':
                 return JsonResponse({"error": "calendar is not sent for approval yet"}, status=status.HTTP_403_FORBIDDEN)
-            
-            elif calendar_obj.status == 'draft' and document_data['status'] == 'Sent For Approval':
-                calendar_obj.status = 'sent_for_approval'
-                calendar_obj.save()
-                data = YearCalendarSerializer(calendar_obj).data
-                return JsonResponse(data, status=status.HTTP_200_OK)
             
             #publish calendar
             elif calendar_obj.status == 'approved' and document_data['status'] == 'Published':
@@ -142,7 +138,7 @@ def createYearPolicy(request):
             if status_value not in ['Draft', 'Sent For Approval']:
                 year_policy_data['status'] = 'draft'
             else:
-                year_policy_data['status'] = next((k for k, v in dict(STATUS_CHOICES).items() if v==status_value), None)
+                year_policy_data['status'] = next((k for k, v in dict(STATUS_CHOICES).items() if v==status_value), 'draft')
 
             year_policy_serializer = YearPolicySerializer(data=year_policy_data)
             if year_policy_serializer.is_valid():
@@ -211,8 +207,10 @@ def updateYearPolicy(request, id):
                     else:
                         return JsonResponse({"error": "Only admin can reject policy"}, status=status.HTTP_403_FORBIDDEN)
 
-            #edit policy
-            elif not document_data.get('status') or document_data['status'] == 'Draft':
+            #edit policy or (sent for approval with edited data)
+            elif (not document_data.get('status') or document_data['status'] == 'Draft') or (policy_obj.status == 'draft' and document_data['status'] == 'Sent For Approval'):
+                status_value = document_data.get('status', 'draft')
+                document_data['status'] = next((k for k, v in dict(STATUS_CHOICES).items() if v==status_value), 'draft')
                 year_policy_serializer = YearPolicySerializer(policy_obj, document_data, partial=True)
                 if year_policy_serializer.is_valid():
                     year_policy_serializer.save()
@@ -227,12 +225,6 @@ def updateYearPolicy(request, id):
             
             elif policy_obj.status == 'draft' and document_data['status'] == 'Approved':
                 return JsonResponse({"error": "Policy is not sent for approval yet"}, status=status.HTTP_403_FORBIDDEN)
-            
-            elif policy_obj.status == 'draft' and document_data['status'] == 'Sent For Approval':
-                policy_obj.status = 'sent_for_approval'
-                policy_obj.save()
-                data = YearPolicySerializer(policy_obj).data
-                return JsonResponse(data, status=status.HTTP_200_OK)
             
             #publish policy
             elif policy_obj.status == 'approved' and document_data['status'] == 'Published':
