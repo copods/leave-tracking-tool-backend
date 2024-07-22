@@ -42,6 +42,7 @@ class UserAppProfileSerializer(serializers.ModelSerializer):
             'emergency_contact',
             'current_address_line',
             'permanent_address_line',
+            'is_current_address_same',
             'points'
         ]
 
