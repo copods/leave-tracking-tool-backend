@@ -61,54 +61,59 @@ def createLeaveRequest(request):
                 leave_serializer = LeaveSerializer(data=leave_data)
                 if leave_serializer.is_valid():
                     leave_instance = leave_serializer.save()
-
-                    leave_data = leave_serializer.data
-                    approver_data = UserSerializer(approver).data
-                    user_data = UserSerializer(user).data
-                    leave_text = f'''Your Team member {user_data['first_name']} {user_data['last_name']} has requested 
-                                 a leave request from {leave_data['start_date']} to {leave_data['end_date']}.
-                                 Reason: {leave_data['leave_reason']}. Take action now on the app! '''
-                    subject = f'Leave Request by {user_data['first_name']} {user_data['last_name']}'
-
-                    send_email(
-                        recipients=[approver_data],
-                        subject=subject,
-                        template_name='leave_notification_template.html',
-                        context={'leave_text': leave_text},
-                        app_name='LeaveTrackingApp'
-                    )
-
-                    notification_data = {
-                        'types': 'Leave-Request',  
-                        'leaveApplicationId': leave_instance.id,
-                        'receivers': [approver.id],  
-                        'title': f"Leave Request by {user.long_name()}",
-                        'subtitle': f"{user.long_name()} has requested leave.",
-                        'created_by': user.id,
-                    }
-                    notification_serializer = NotificationSerializer(data=notification_data)
-                    if notification_serializer.is_valid():
-                        notification_serializer.save()
-                    else:
-                        return JsonResponse(notification_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
                 else:
                     return JsonResponse(leave_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+            leave_data = leave_serializer.data
+            approver_data = UserSerializer(approver).data
+            user_data = UserSerializer(user).data
+
+            errors = []
+
+            # Send Email
+            try:
+                leave_text = f'''Your Team member {user_data['first_name']} {user_data['last_name']} has requested 
+                                 a leave request from {leave_data['start_date']} to {leave_data['end_date']}.
+                                 Reason: {leave_data['leave_reason']}. Take action now on the app! '''
+                subject = f'Leave Request by {user_data['first_name']} {user_data['last_name']}'
+                send_email(
+                    recipients=[approver_data],
+                    subject=subject,
+                    template_name='leave_notification_template.html',
+                    context={'leave_text': leave_text},
+                    app_name='LeaveTrackingApp'
+                )
+            except Exception as e:
+                errors.append(f"Could not send email. Error: {e}")
+
+            # Create Notification
+            notification_data = {
+                'types': 'Leave-Request',  
+                'leaveApplicationId': leave_instance.id,
+                'receivers': [approver.id],  
+                'title': f"Leave Request by {user.long_name()}",
+                'subtitle': f"{user.long_name()} has requested leave.",
+                'created_by': user.id,
+            }
+            notification_serializer = NotificationSerializer(data=notification_data)
+            if notification_serializer.is_valid():
+                notification_serializer.save()
+            else:
+                errors.append(notification_serializer.errors)
+
+            # Send Push Notification
             fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
             fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
             valid_tokens = multi_fcm_tokens_validate(fcm_tokens, approver_id)
-
             if valid_tokens:
                 response = send_token_push(notification_data['title'], notification_data['subtitle'], valid_tokens)
-                if 'success' in response:
-                    return JsonResponse({"message": response['message']}, status=status.HTTP_201_CREATED)
-                else:
-                    # return JsonResponse({"error": response['error']}, status=status.HTTP_400_BAD_REQUEST)
-                    pass
+                if not 'success' in response:
+                    errors.append(response['error'])
             
-            # return JsonResponse({"error": "No valid FCM tokens found"}, status=status.HTTP_400_BAD_REQUEST)
-            return JsonResponse({"message": "Leave request created successfully"}, status=status.HTTP_201_CREATED)
+            if errors:
+                return JsonResponse({"message": "Leave request created successfully but sending email or notification failed", 'errors': errors}, status=status.HTTP_201_CREATED)
+            else:
+                return JsonResponse({"message": "Leave request created successfully"}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
