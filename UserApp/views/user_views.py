@@ -98,19 +98,27 @@ def createUser(request):
             user_serializer = UserSerializer(data=user_data)
             if user_serializer.is_valid():
                 user_serializer.save()
+
+                errors = []
+
                 #send email to user
-                data = user_serializer.data
-                if not isinstance(data, list):
-                    data = [data]
+                try:
+                    data = user_serializer.data
+                    if not isinstance(data, list):
+                        data = [data]
 
-                send_email(
-                    recipients=data,
-                    subject='Your Leave Management Platform Awaits!',
-                    template_name='onboarding_template.html',
-                    context={},
-                    app_name='UserApp'
-                )
+                    send_email(
+                        recipients=data,
+                        subject='Your Leave Management Platform Awaits!',
+                        template_name='onboarding_template.html',
+                        context={},
+                        app_name='UserApp'
+                    )
+                except Exception as e:
+                    errors.append(str(e))
 
+                if errors:
+                    return JsonResponse({"message": "Added Successfully!!", "errors": errors}, status=status.HTTP_201_CREATED)
                 return JsonResponse("Added Successfully!!", safe=False)
             else:
                 errors = user_serializer.errors

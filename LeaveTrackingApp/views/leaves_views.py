@@ -235,19 +235,27 @@ def addLeaveStatus(request):
             leave.status = status
             leave.save()
 
-            approver_data = UserSerializer(user).data
-            user_data = UserSerializer(leave.user).data
-            subject = f'Leave Status Updated by {approver_data["first_name"]} {approver_data["last_name"]}'
-            leave_text = f'''Your leave request from {leave.start_date} to {leave.end_date} has been {leave.status}!.
-                             For more details, check out on the app.''' 
-            send_email(
-                recipients=[user_data],
-                subject=subject,
-                template_name='leave_notification_template.html',
-                context={'leave_text': leave_text},
-                app_name='LeaveTrackingApp'
-            )
+            errors = []
 
+            # send email
+            try:
+                approver_data = UserSerializer(user).data
+                user_data = UserSerializer(leave.user).data
+                subject = f'Leave Status Updated by {approver_data["first_name"]} {approver_data["last_name"]}'
+                leave_text = f'''Your leave request from {leave.start_date} to {leave.end_date} has been {leave.status}!.
+                                For more details, check out on the app.''' 
+                send_email(
+                    recipients=[user_data],
+                    subject=subject,
+                    template_name='leave_notification_template.html',
+                    context={'leave_text': leave_text},
+                    app_name='LeaveTrackingApp'
+                )
+            except Exception as e:
+                errors.append(str(e))
+
+            if errors:
+                return JsonResponse({'data': StatusReasonSerializer(status_reason).data, 'error': errors}, status=201)
             return JsonResponse(StatusReasonSerializer(status_reason).data, status=201)
         
         except  User.DoesNotExist:
