@@ -44,15 +44,20 @@ class YearCalendarSerializer(serializers.ModelSerializer):
         instance.save()
 
         if holiday_data:
-            provided_holiday_ids = [holiday.get('id') for holiday in holiday_data if holiday.get('id')]
-            existing_holidays = {str(holiday.id): holiday for holiday in instance.holidays.filter(id__in=provided_holiday_ids)}
+            provided_holiday_dates = [holiday.get('date') for holiday in holiday_data if holiday.get('date')]
+            existing_holidays = {str(holiday.date): holiday for holiday in instance.holidays.filter(date__in=provided_holiday_dates)}
             for holiday in holiday_data:
-                holiday_id = holiday.get('id')
-                if holiday_id and str(holiday_id) in existing_holidays:
-                    holiday_instance = existing_holidays[str(holiday_id)]
+                holiday_date = holiday.get('date')
+                if holiday_date and str(holiday_date) in existing_holidays:
+                    holiday_instance = existing_holidays[str(holiday_date)]
                     holiday_serializer = HolidaySerializer(instance=holiday_instance, data=holiday, partial=True)
                     if holiday_serializer.is_valid(raise_exception=True):
                         holiday_serializer.save()
+                else:
+                    holiday_serializer = HolidaySerializer(data=holiday)
+                    if holiday_serializer.is_valid(raise_exception=True):
+                        holiday_instance = holiday_serializer.save()
+                        instance.holidays.add(holiday_instance)
 
         return instance
     
@@ -134,6 +139,11 @@ class YearPolicySerializer(serializers.ModelSerializer):
                     leave_policy_serializer = LeavePolicySerializer(instance=leave_policy_instance, data=policy_data, partial=True)
                     if leave_policy_serializer.is_valid(raise_exception=True):
                         leave_policy_serializer.save()
+                else:
+                    leave_policy_serializer = LeavePolicySerializer(data=policy_data)
+                    if leave_policy_serializer.is_valid(raise_exception=True):
+                        leave_policy_instance = leave_policy_serializer.save()
+                        instance.leave_policies.add(leave_policy_instance)
 
         return instance
 
