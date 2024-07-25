@@ -29,6 +29,8 @@ class UserAppProfileSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     emergency_contact = serializers.SerializerMethodField()
     work_type = serializers.CharField(source='work_type_choices')
+    current_address_line = serializers.SerializerMethodField()
+    permanent_address_line = serializers.SerializerMethodField()
     
     class Meta:
         model = User
@@ -55,6 +57,17 @@ class UserAppProfileSerializer(serializers.ModelSerializer):
             'relation': obj.emergency_contact_relation,
             'contact_no': obj.emergency_contact_number
         }
+    
+    def get_current_address_line(self, obj):
+        address_parts = [part for part in [obj.current_address_line1, obj.current_address_line2] if part]
+        if not address_parts:
+            address_parts = [part for part in [obj.permanent_address_line1, obj.permanent_address_line2] if part]
+        return " ".join(address_parts)
+    
+    def get_permanent_address_line(self, obj):
+        permanent_address_line1 = obj.permanent_address_line1 or ""
+        permanent_address_line2 = obj.permanent_address_line2 or ""
+        return permanent_address_line1 + " " + permanent_address_line2 
 
 class ApproverListSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()

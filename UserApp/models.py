@@ -72,11 +72,13 @@ class User(models.Model):
     department= models.ForeignKey(Department, on_delete=models.PROTECT, null=True)
 
     # Address Information
-    current_address_line = models.CharField(max_length=200, null=True)
+    current_address_line1 = models.CharField(max_length=200, null=True)
+    current_address_line2 = models.CharField(max_length=200, null=True)
     current_address_city = models.CharField(max_length=100, null=True)
     current_address_state = models.CharField(max_length=100, null=True)
     current_address_pincode = models.IntegerField(null=True)
-    permanent_address_line = models.CharField(max_length=200, null=True)
+    permanent_address_line1 = models.CharField(max_length=200, null=True)
+    permanent_address_line2 = models.CharField(max_length=200, null=True)
     permanent_address_city = models.CharField(max_length=100, null=True)
     permanent_address_state = models.CharField(max_length=100, null=True)
     permanent_address_pincode = models.IntegerField(null=True)
