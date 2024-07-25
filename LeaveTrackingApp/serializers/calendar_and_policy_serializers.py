@@ -44,8 +44,9 @@ class YearCalendarSerializer(serializers.ModelSerializer):
         instance.save()
 
         if holiday_data:
-            provided_holiday_ids = [holiday.get('id') for holiday in holiday_data if holiday.get('id')]
+            provided_holiday_ids = [str(holiday.get('id')) for holiday in holiday_data if holiday.get('id')]
             existing_holidays = {str(holiday.id): holiday for holiday in instance.holidays.all()}
+
             for holiday in holiday_data:
                 holiday_id = holiday.get('id')
                 if holiday_id and str(holiday_id) in existing_holidays:
@@ -60,8 +61,8 @@ class YearCalendarSerializer(serializers.ModelSerializer):
                         instance.holidays.add(holiday_instance)
 
             for holiday_id in existing_holidays:
-                if str(holiday_id) not in provided_holiday_ids:
-                    existing_holidays[str(holiday_id)].delete()
+                if holiday_id not in provided_holiday_ids:
+                    existing_holidays[holiday_id].delete()
 
         return instance
     
