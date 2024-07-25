@@ -438,11 +438,19 @@ def getLeaveStatusCount(request):
         try:
             user_email = getattr(request, 'user_email', None)
             user = User.objects.get(email=user_email)
-            leave_status_counts = Leave.objects.aggregate(
-                approved=Count('id', filter=Q(status='A')&Q(approver=user)),
-                pending=Count('id', filter=Q(status='P')&Q(approver=user)),
-                rejected=Count('id', filter=Q(status='R')&Q(approver=user)),
-            )
+            approver = request.GET.get('approver', None)
+            if approver:
+                leave_status_counts = Leave.objects.aggregate(
+                    approved=Count('id', filter=Q(status='A')&Q(approver=user)),
+                    pending=Count('id', filter=Q(status='P')&Q(approver=user)),
+                    rejected=Count('id', filter=Q(status='R')&Q(approver=user)),
+                )
+            else:
+                leave_status_counts = Leave.objects.aggregate(
+                    approved=Count('id', filter=Q(status='A')&Q(user=user)),
+                    pending=Count('id', filter=Q(status='P')&Q(user=user)),
+                    rejected=Count('id', filter=Q(status='R')&Q(user=user)),
+                )
             return JsonResponse(leave_status_counts, safe=False)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
