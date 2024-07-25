@@ -44,12 +44,12 @@ class YearCalendarSerializer(serializers.ModelSerializer):
         instance.save()
 
         if holiday_data:
-            provided_holiday_dates = [holiday.get('date') for holiday in holiday_data if holiday.get('date')]
-            existing_holidays = {str(holiday.date): holiday for holiday in instance.holidays.filter(date__in=provided_holiday_dates)}
+            provided_holiday_ids = [holiday.get('id') for holiday in holiday_data if holiday.get('id')]
+            existing_holidays = {str(holiday.id): holiday for holiday in instance.holidays.all()}
             for holiday in holiday_data:
-                holiday_date = holiday.get('date')
-                if holiday_date and str(holiday_date) in existing_holidays:
-                    holiday_instance = existing_holidays[str(holiday_date)]
+                holiday_id = holiday.get('id')
+                if holiday_id and str(holiday_id) in existing_holidays:
+                    holiday_instance = existing_holidays[str(holiday_id)]
                     holiday_serializer = HolidaySerializer(instance=holiday_instance, data=holiday, partial=True)
                     if holiday_serializer.is_valid(raise_exception=True):
                         holiday_serializer.save()
@@ -58,6 +58,10 @@ class YearCalendarSerializer(serializers.ModelSerializer):
                     if holiday_serializer.is_valid(raise_exception=True):
                         holiday_instance = holiday_serializer.save()
                         instance.holidays.add(holiday_instance)
+
+            for holiday_id in existing_holidays:
+                if str(holiday_id) not in provided_holiday_ids:
+                    existing_holidays[str(holiday_id)].delete()
 
         return instance
     
