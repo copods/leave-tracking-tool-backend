@@ -85,3 +85,16 @@ def fetchNotifications(request):
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+@csrf_exempt
+@user_is_authorized
+def updateNotifications(request):
+    if request.method == 'PUT':
+        try:
+            ids = JSONParser().parse(request)
+            Notification.objects.filter(id__in=ids).update(isRead=True)
+            return JsonResponse({'message': 'Notifications Updated Successfully!!'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
