@@ -242,7 +242,7 @@ def addLeaveStatus(request):
                 approver_data = UserSerializer(user).data
                 user_data = UserSerializer(leave.user).data
                 subject = f'Leave Status Updated by {approver_data["first_name"]} {approver_data["last_name"]}'
-                leave_text = f'''Your leave request from {leave.start_date} to {leave.end_date} has been {leave.status}!.
+                leave_text = f'''Your leave request from {leave.start_date} to {leave.end_date} has been {dict(Leave.STATUS_CHOICES).get(leave.status)}!.
                                 For more details, check out on the app.''' 
                 send_email(
                     recipients=[user_data],
