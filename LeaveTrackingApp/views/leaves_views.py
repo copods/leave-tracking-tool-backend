@@ -242,7 +242,7 @@ def addLeaveStatus(request):
                 approver_data = UserSerializer(user).data
                 user_data = UserSerializer(leave.user).data
                 subject = f'Leave Status Updated by {approver_data["first_name"]} {approver_data["last_name"]}'
-                leave_text = f'''Your leave request from {leave.start_date} to {leave.end_date} has been {leave.status}!.
+                leave_text = f'''Your leave request from {leave.start_date} to {leave.end_date} has been {dict(Leave.STATUS_CHOICES).get(leave.status)}!.
                                 For more details, check out on the app.''' 
                 send_email(
                     recipients=[user_data],
@@ -377,12 +377,10 @@ def editLeave(request, id):
             leave_data = JSONParser().parse(request)
             leave = Leave.objects.get(id=id)
             if leave.editStatus == 'requested_for_edit':
-                #update leave logic
                 leave_serializer = LeaveSerializer(leave, data=leave_data, partial=True)
                 if leave_serializer.is_valid():
                     leave_serializer.save()
-                    leave.editStatus = 'edited'
-                    leave.save()
+                    #TODO: send notification after updation
                     response_data = LeaveDetailSerializer(leave).data
                     return JsonResponse(response_data, status=200)
                 return JsonResponse(leave_serializer.errors, status=400)
