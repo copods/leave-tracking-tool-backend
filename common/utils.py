@@ -10,7 +10,7 @@ def send_email(recipients, subject, template_name, context, send_from=None, app_
         if not isinstance(recipients, list):
             recipients = [recipients]
 
-        from_email = send_from['email'] if send_from else "kalash.bhagwat@copods.co"
+        from_email = send_from['email'] if send_from else "hello@copods.co"
         parent_dir = os.path.dirname(settings.BASE_DIR)
         logo_path = os.path.join(parent_dir, 'common', 'templates', 'logo.png')
 
