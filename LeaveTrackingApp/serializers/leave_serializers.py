@@ -1,5 +1,6 @@
 from LeaveTrackingApp.models import Leave, LeaveType, RuleSet, DayDetails, StatusReason
 from rest_framework import serializers
+from django.db import transaction
 
 
 class RuleSetSerializer(serializers.ModelSerializer):
@@ -60,6 +61,7 @@ class LeaveSerializer(serializers.ModelSerializer):
         model = Leave
         fields = '__all__'
 
+    @transaction.atomic
     def create(self, validated_data):
         day_details_data = validated_data.pop('day_details', [])
         status_reasons_data = validated_data.pop('status_reasons', [])
@@ -70,20 +72,39 @@ class LeaveSerializer(serializers.ModelSerializer):
             leave.day_details.add(day_detail)
         return leave
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         day_details_data = validated_data.pop('day_details', [])
+        if validated_data.get('start_date'):
+            instance.start_date = validated_data.pop('start_date')
+        if validated_data.get('end_date'):
+            instance.end_date = validated_data.pop('end_date')
+        instance.editStatus = 'edited'
+        instance.save()
+
         if day_details_data:
-            provided_days_ids = [day_data.get('id') for day_data in day_details_data if day_data.get('id')]
-            existing_days = {str(day.id): day for day in instance.day_details.filter(id__in=provided_days_ids)}
+            provided_days_ids = [str(day_data.get('id')) for day_data in day_details_data if day_data.get('id')]
+            existing_days = {str(day.id): day for day in instance.day_details.all()}
+            
             for day_data in day_details_data:
                 day_id = day_data.get('id')
+                if day_data.get('type'):
+                    day_data['type'] = day_data['type'].id
                 if day_id and str(day_id) in existing_days:
                     day_instance = existing_days[str(day_id)]
-                    if day_data.get('type'):
-                        day_data['type'] = day_data['type'].id
                     day_serializer = DayDetailSerializer(instance=day_instance, data=day_data, partial=True)
                     if day_serializer.is_valid(raise_exception=True):
                         day_serializer.save()
+                else:
+                    day_serializer = DayDetailSerializer(data=day_data)
+                    if day_serializer.is_valid(raise_exception=True):
+                        day_instance = day_serializer.save()
+                        instance.day_details.add(day_instance)
+            
+            for day_id in existing_days:
+                if day_id not in provided_days_ids:
+                    existing_days[day_id].delete()
+
         return instance
 
 class LeaveDetailSerializer(serializers.ModelSerializer):

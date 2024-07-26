@@ -377,12 +377,9 @@ def editLeave(request, id):
             leave_data = JSONParser().parse(request)
             leave = Leave.objects.get(id=id)
             if leave.editStatus == 'requested_for_edit':
-                #update leave logic
                 leave_serializer = LeaveSerializer(leave, data=leave_data, partial=True)
                 if leave_serializer.is_valid():
                     leave_serializer.save()
-                    leave.editStatus = 'edited'
-                    leave.save()
                     response_data = LeaveDetailSerializer(leave).data
                     return JsonResponse(response_data, status=200)
                 return JsonResponse(leave_serializer.errors, status=400)
