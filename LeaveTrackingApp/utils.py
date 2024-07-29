@@ -351,8 +351,6 @@ def get_leave_summary(leaves_data, start_date, end_date, yearly=False):
 
 def get_users_for_day(leaves_data, curr_date, wfh=False):
     users = []
-    wfh_id = LeaveType.objects.get(name='wfh').id
-
     for leave in leaves_data:
         for day in leave['day_details']:
             if datetime.strptime(day['date'], "%Y-%m-%d").date() == curr_date:
@@ -362,11 +360,11 @@ def get_users_for_day(leaves_data, curr_date, wfh=False):
                     'leave_type': leave['leave_type'],
                     'date_range': f'{leave["start_date"]} - {leave["end_date"]}'
                 }
-                if wfh :
-                    if day['type']==wfh_id:
+                if wfh:
+                    if day['type']=='wfh':
                         users.append(user)
                 else:
-                    if not day['type']==wfh_id:
+                    if not day['type']=='wfh':
                         users.append(user)
                 break
     data = {
