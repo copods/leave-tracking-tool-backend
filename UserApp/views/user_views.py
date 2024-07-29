@@ -71,7 +71,7 @@ def userList(request):
                     Q(department__department_name__icontains=search)
                 )
             
-            users = users.order_by(sort) if sort else users.order_by('-updated_at')
+            users = users.order_by(sort) if sort else users.order_by('-created_at')
             total_users = users.count()
 
             if page or pageSize:
