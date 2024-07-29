@@ -280,25 +280,21 @@ def getEmployeeAttendance(request):
             i=1
             while i<=7:
                 last_date += timedelta(days=1)
-                if not (last_date.weekday()==5 or last_date.weekday()==6):
+                if not (last_date.weekday()==5 or last_date.weekday()==6): #TODO: also check for confirmed holidays
                     i+=1
             
-            leaves = Leave.objects.filter(
-                Q(status='A') &
-                (Q(start_date__gte=current_date) & Q(start_date__lte=last_date)) | 
-                (Q(end_date__gte=current_date) & Q(end_date__lte=last_date))
-            )
-            
+            leaves = Leave.objects.filter( Q(status='A') & (Q(start_date__lte=last_date) & Q(end_date__gte=current_date)) )
             leaves = LeaveUtilSerializer(leaves, many=True).data
-            
-            resp_obj = {}
-            resp_obj['users_on_leave'] = {
-                'today': [],
-                'next_seven_days': []
-            }
-            resp_obj['users_on_wfh'] = {
-                'today': [],
-                'next_seven_days': []
+
+            resp_obj = {
+                'users_on_leave': {
+                    'today': [],
+                    'next_seven_days': []
+                },
+                'users_on_wfh' : {
+                    'today': [],
+                    'next_seven_days': []
+                }
             }
 
             #calculate for on_leave
@@ -319,7 +315,6 @@ def getEmployeeAttendance(request):
             resp_obj['users_on_leave']['today'] = today_data.get('users')
             resp_obj['users_on_leave']['next_seven_days'] = [dict(data) for data in next_seven_day_data]
             
-
             #calculate for on_wfh
             today_data = get_users_for_day(leaves, current_date, wfh=True)
             temp_curr_date = current_date + timedelta(days=1)
