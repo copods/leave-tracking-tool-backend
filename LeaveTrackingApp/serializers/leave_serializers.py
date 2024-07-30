@@ -18,6 +18,7 @@ class DayDetailSerializer(serializers.ModelSerializer):
 
 class DayDetailsUtilSerializer(serializers.ModelSerializer):
     type = serializers.CharField(source='type.name')
+    type_id = serializers.UUIDField(source='type.id')
 
     class Meta:
         model = DayDetails
