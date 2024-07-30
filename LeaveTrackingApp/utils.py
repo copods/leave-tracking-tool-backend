@@ -61,9 +61,10 @@ def user_leave_stats_hr_view(user_id, year_range):
             }
             for type in leave_types
         }
+        
         quarterly_leave_types = user_leaves_for_year.filter(Q(leave_type__rule_set__duration="quarterly") | Q(leave_type__rule_set__name="miscellaneous_leave")).values_list('leave_type__name', flat=True).distinct()
         miscellaneous_types = user_leaves_for_year.filter(Q(leave_type__rule_set__name="miscellaneous_leave")).values_list('leave_type__name', flat=True).distinct()
-        
+
         # Calculate quarterly statistics
         for i in range(4):
             quarter_obj = {
@@ -99,7 +100,7 @@ def user_leave_stats_hr_view(user_id, year_range):
                     taken_unpaid_obj['pto']['unpaid'] += x[1]
 
                 else:
-                    if leave['leave_type'] == 'pto':
+                    if leave['leave_type'] in ['pto', 'wfh']:
                         max_wfh_days = LeaveType.objects.get(name='wfh').rule_set.max_days_allowed
                         x = find_unpaid_days(days_in_quarter, leaves_taken=taken_unpaid_obj['pto']['leaves_taken'], wfh_taken=taken_unpaid_obj['wfh']['leaves_taken'], max_leave_days=max_pto, max_wfh_days=max_wfh_days)
                         taken_unpaid_obj['pto']['leaves_taken'] += x[3]
@@ -159,7 +160,7 @@ def user_leave_stats_user_view(user_id, year_range):
         end_date = yearly_quarters[year][3]['end_date']
 
         user_leaves_for_year = Leave.objects.filter(
-            Q(user__id=user_id) & ~Q(status='W') & 
+            Q(user__id=user_id) & ~Q(status__in=['W','R']) & 
             Q(start_date__lte=end_date) & Q(end_date__gte=start_date) 
         )
 
@@ -273,7 +274,6 @@ def get_quarters(user_doj, year_range):
         str(year) : get_quarters_util(year,doj_date,doj_month)
         for year in range(start_year, last_year+1)
     }
-    print(years_quarters)
     return years_quarters
 
 def get_quarters_util(year, doj_date, doj_month):
@@ -324,28 +324,24 @@ def find_unpaid_days(days, leaves_taken, wfh_taken, max_leave_days, max_wfh_days
     return modified_days, unpaid, wfh_count, leave_count
 
 def get_leave_summary(leaves_data, start_date, end_date, yearly=False):
+    max_days = list(LeaveType.objects.filter(Q(name='pto') | Q(name='wfh')).values_list('rule_set__max_days_allowed', flat=True))
     leave_summary = {
-        'total_leaves': 0,
+        'total_leaves': max_days[0]*4 if yearly else max_days[0],
         'leaves_taken': 0,
-        'total_wfh': 0,
+        'total_wfh': max_days[1]*4 if yearly else max_days[1],
         'wfh_taken': 0
     }
-    max_days = list(LeaveType.objects.filter(Q(name='pto') | Q(name='wfh')).values_list('rule_set__max_days_allowed', flat=True))
-    leave_summary['total_leaves'] = max_days[0]*4 if yearly else max_days[0]
-    leave_summary['total_wfh'] = max_days[1]*4 if yearly else max_days[1]
-
     quarterly_leave_types = LeaveType.objects.filter(Q(rule_set__duration='quarterly') | Q(rule_set__name='miscellaneous_leave')).values_list('name', flat=True)
-
     for leave in leaves_data:
-        for day in leave['day_details']:
-            if datetime.strptime(day['date'], "%Y-%m-%d").date() >= start_date and datetime.strptime(day['date'], "%Y-%m-%d").date() <= end_date:
-                if not day['type'] in quarterly_leave_types:
-                    continue
-                elif day['type'] == 'wfh':
-                    leave_summary['wfh_taken'] += 0.5 if day['is_half_day'] else 1
-                else:
-                    leave_summary['leaves_taken'] += 0.5 if day['is_half_day'] else 1
-    
+        if leave['status'] == 'A':
+            for day in leave['day_details']:
+                if datetime.strptime(day['date'], "%Y-%m-%d").date() >= start_date and datetime.strptime(day['date'], "%Y-%m-%d").date() <= end_date:
+                    if not day['type'] in quarterly_leave_types:
+                        continue
+                    elif day['type'] == 'wfh':
+                        leave_summary['wfh_taken'] += 0.5 if day['is_half_day'] else 1
+                    else:
+                        leave_summary['leaves_taken'] += 0.5 if day['is_half_day'] else 1
     return leave_summary
 
 
@@ -438,7 +434,7 @@ def get_unpaid_data(user, user_leaves, leave_types, curr_year, month):
                     taken_unpaid_obj['pto']['unpaid'] += x[1]
 
                 else:
-                    if leave['leave_type'] == 'pto':
+                    if leave['leave_type'] in ['pto', 'wfh']:
                         max_wfh_days = leave_types.get(name='wfh').rule_set.max_days_allowed
                         x = find_unpaid_days(days_in_quarter, leaves_taken=taken_unpaid_obj['pto']['leaves_taken'], wfh_taken=taken_unpaid_obj['wfh']['leaves_taken'], max_leave_days=max_pto, max_wfh_days=max_wfh_days)
                         taken_unpaid_obj['pto']['leaves_taken'] += x[3]
