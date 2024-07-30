@@ -115,6 +115,7 @@ class LeaveDetailSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField('get_user')
     approver = serializers.SerializerMethodField('get_approver')
     leave_type = serializers.CharField(source='leave_type.name')
+    leave_type_id = serializers.UUIDField(source='leave_type.id')
     editStatus = serializers.CharField(source='edit_choices')
 
     class Meta:
