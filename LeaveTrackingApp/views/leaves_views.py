@@ -332,12 +332,9 @@ def getEmployeeAttendance(request):
 
             resp_obj['users_on_wfh']['today'] = today_data.get('users')
             resp_obj['users_on_wfh']['next_seven_days'] = [dict(data) for data in next_seven_day_data]
+            resp_obj['total_users'] = User.objects.all().count()
+            resp_obj['users_present'] = resp_obj['total_users'] - (len(resp_obj['users_on_wfh']['today']) + len(resp_obj['users_on_leave']['today']))
             
-            on_leave_wfh_count = DayDetails.objects.filter(date=current_date).count()
-            users = User.objects.all().count()
-
-            resp_obj['users_present'] = users - on_leave_wfh_count
-            resp_obj['total_users'] = users
             return JsonResponse(resp_obj, safe=False)
         
         except Exception as e:
