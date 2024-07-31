@@ -375,7 +375,7 @@ def check_leave_overlap(leave_data):
     start_date = leave_data['start_date']
     end_date = leave_data['end_date']
     earlier_leave = Leave.objects.filter(
-        Q(user=leave_data['user']) &
+        Q(user=leave_data['user']) & ~Q(status__in=['R', 'W']) &
         (Q(start_date__lte=end_date ) & Q(end_date__gte=start_date)) 
     )
     if earlier_leave.exists():
