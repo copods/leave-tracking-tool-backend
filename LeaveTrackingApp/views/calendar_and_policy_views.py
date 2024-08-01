@@ -9,7 +9,7 @@ from LeaveTrackingApp.models import LeaveType, YearPolicy, yearCalendar, STATUS_
 from LeaveTrackingApp.serializers import YearCalendarSerializer, YearPolicySerializer
 from UserApp.decorators import user_is_authorized
 from UserApp.models import User
-
+print('hi')
  
 @csrf_exempt
 @user_is_authorized
