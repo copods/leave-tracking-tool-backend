@@ -36,7 +36,7 @@ def getLeaveTypes(request):
         return JsonResponse(leave_types_serializer.data, safe=False)
 
 @csrf_exempt
-@user_is_authorized
+# @user_is_authorized
 def createLeaveRequest(request):
     if request.method == 'POST':
         try:

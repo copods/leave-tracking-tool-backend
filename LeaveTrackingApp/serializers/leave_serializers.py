@@ -117,6 +117,7 @@ class LeaveDetailSerializer(serializers.ModelSerializer):
     leave_type = serializers.CharField(source='leave_type.name')
     leave_type_id = serializers.UUIDField(source='leave_type.id')
     editStatus = serializers.CharField(source='edit_choices')
+    asset_documents = serializers.SerializerMethodField('get_asset_documents')
 
     class Meta:
         model = Leave
@@ -138,6 +139,11 @@ class LeaveDetailSerializer(serializers.ModelSerializer):
             'profilePicture': obj.approver.profile_image
         }
 
+    def get_asset_documents(self, obj):
+        if obj.asset_documents:
+            return obj.asset_documents.url
+        else:
+            return ""
 
 class LeaveUtilSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True)
