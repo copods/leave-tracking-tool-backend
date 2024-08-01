@@ -46,6 +46,7 @@ class yearCalendar(models.Model):
     comments = models.ManyToManyField(Comment, blank=True)
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='year_calendar_created_by')
 
     def __str__(self):
         return self.year
@@ -114,12 +115,6 @@ class DayDetails(models.Model):
         return self.date
 
 
-# Day Details
-# date
-# type : leave/optional holiday/wfh
-# is_half_day
-# type (first|second)
-
 class Leave(models.Model):
     id=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_of_leaves')
@@ -177,9 +172,9 @@ class YearPolicy(models.Model):
     status = models.CharField(choices=STATUS_CHOICES, max_length=20, default='draft')
     leave_policies = models.ManyToManyField(LeavePolicy)
     comments = models.ManyToManyField(Comment, blank=True)
-
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='year_policy_created_by')
 
     def __str__(self):
         return self.year

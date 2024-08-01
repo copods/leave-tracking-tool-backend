@@ -9,8 +9,7 @@ from LeaveTrackingApp.models import LeaveType, YearPolicy, yearCalendar, STATUS_
 from LeaveTrackingApp.serializers import YearCalendarSerializer, YearPolicySerializer
 from UserApp.decorators import user_is_authorized
 from UserApp.models import User
-print('hi')
- 
+
 @csrf_exempt
 @user_is_authorized
 def getHolidayCalendar(request):
@@ -39,6 +38,7 @@ def createHolidayCalendar(request):
     if request.method=='POST':
         try:
             year_calendar_data = JSONParser().parse(request)
+            year_calendar_data['created_by'] = User.objects.get(email=getattr(request, 'user_email', None)).id
             if yearCalendar.objects.filter(status__in=['approved', 'draft', 'sent_for_approval']).exists():
                 return JsonResponse({"error": "A draft or an approved calendar already exists"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -131,6 +131,7 @@ def createYearPolicy(request):
     if request.method == 'POST':
         try:
             year_policy_data = JSONParser().parse(request)
+            year_policy_data['created_by'] = User.objects.get(email=getattr(request, 'user_email', None)).id
             if YearPolicy.objects.filter(status__in=['approved', 'draft', 'sent_for_approval']).exists():
                 return JsonResponse({"error": "A draft or an approved policy already exists"}, status=status.HTTP_403_FORBIDDEN)
 
