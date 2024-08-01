@@ -25,6 +25,7 @@ from UserApp.decorators import user_is_authorized
 from UserApp.models import User
 from UserApp.serializers import UserSerializer
 from common.utils import send_email
+import json
 
 
 @csrf_exempt
@@ -36,11 +37,16 @@ def getLeaveTypes(request):
         return JsonResponse(leave_types_serializer.data, safe=False)
 
 @csrf_exempt
-# @user_is_authorized
+@user_is_authorized
 def createLeaveRequest(request):
     if request.method == 'POST':
         try:
-            leave_data = JSONParser().parse(request)
+            if request.content_type.startswith('application/json'):
+                leave_data = JSONParser().parse(request)
+            else:
+                leave_data = request.POST.dict()
+                leave_data['day_details'] = json.loads(request.POST.get('day_details', '[]'))
+                leave_data['assets_documents'] = request.FILES.get('assets_documents')
 
             try:
                 user = User.objects.get(id=leave_data['user'])
