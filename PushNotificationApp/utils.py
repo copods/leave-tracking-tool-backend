@@ -1,8 +1,5 @@
 from django.utils import timezone
-from PushNotificationApp.models import FCMToken
-from PushNotificationApp.serializers import FCMTokenSerializer, NotificationSerializer
-from UserApp.models import User
-from UserApp.decorators import user_is_authorized
+from PushNotificationApp.models import FCMToken, Notification
 import firebase_admin
 from firebase_admin import credentials, messaging
 import os
@@ -65,11 +62,11 @@ def send_token_push(title, body, tokens):
 def send_notification(notification_data, recievers):
     errors = []
     # Create Notification
-    notification_serializer = NotificationSerializer(data=notification_data)
-    if notification_serializer.is_valid():
-        notification_serializer.save()
-    else:
-        errors.append(notification_serializer.errors)
+    try:
+        notification = Notification(**notification_data)
+        notification.save()
+    except Exception as e:
+        errors.append(e)
 
     fcm_tokens_queryset = FCMToken.objects.filter(user_id__in=recievers)
 
