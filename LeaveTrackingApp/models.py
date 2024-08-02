@@ -136,7 +136,7 @@ class Leave(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     day_details = models.ManyToManyField(DayDetails)
-    assets_documents = models.FileField(blank=True, null=True)
+    assets_documents = models.FileField(upload_to='media/leave_docs/', blank=True, null=True)
     IS_EDITED_CHOICES = [
         ('edited', 'Edited'),
         ('requested_for_edit', 'Requested For Edit'),
