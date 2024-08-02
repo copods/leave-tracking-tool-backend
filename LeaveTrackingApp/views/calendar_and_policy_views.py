@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.parsers import JSONParser
 from LeaveTrackingApp.models import YearPolicy, yearCalendar, STATUS_CHOICES
 from LeaveTrackingApp.serializers import YearCalendarSerializer, YearPolicySerializer
-from PushNotificationApp.serializers import NotificationSerializer
+from PushNotificationApp.models import Notification
 from PushNotificationApp.utils import send_notification
 from UserApp.decorators import user_is_authorized
 from UserApp.models import User
@@ -66,7 +66,7 @@ def updateYearCalendar(request, id):
         try:
             user_email = getattr(request, 'user_email', None)
             user = User.objects.get(email=user_email)
-            admin_ids = User.objects.filter(role__role_key='admin').values_list('id', flat=True)
+            admins = User.objects.filter(role__role_key='admin')
             document_data = JSONParser().parse(request)
             calendar_obj = yearCalendar.objects.get(id=id)
 
@@ -90,15 +90,15 @@ def updateYearCalendar(request, id):
                             'type': 'calendar',  
                             'content_object': calendar_obj,
                             'receivers': [calendar_obj.created_by.id],  
-                            'title': f"Calendar Approved by {user.first_name()}",
+                            'title': f"Calendar Approved by {user.first_name}",
                             'subtitle': f"{user.long_name()} has Approved the calendar you created.",
-                            'created_by': user.id,
+                            'created_by': user,
                         }
-                        notification_serializer = NotificationSerializer(data=notification_data)
-                        if notification_serializer.is_valid():
-                            notification_serializer.save()
-                        else:
-                            errors.append(notification_serializer.errors)
+                        try:
+                            notification = Notification(**notification_data)
+                            notification.save()
+                        except Exception as e:
+                            errors.append(e)
                         data = YearCalendarSerializer(calendar_obj).data
                         return JsonResponse(data, status=status.HTTP_200_OK)
                     else:
@@ -112,15 +112,15 @@ def updateYearCalendar(request, id):
                             'type': 'calendar',  
                             'content_object': calendar_obj,
                             'receivers': [calendar_obj.created_by.id],  
-                            'title': f"Calendar Rejected by {user.first_name()}",
+                            'title': f"Calendar Rejected by {user.first_name}",
                             'subtitle': f"{user.long_name()} has Rejected the calendar you created.",
-                            'created_by': user.id,
+                            'created_by': user,
                         }
-                        notification_serializer = NotificationSerializer(data=notification_data)
-                        if notification_serializer.is_valid():
-                            notification_serializer.save()
-                        else:
-                            errors.append(notification_serializer.errors)
+                        try:
+                            notification = Notification(**notification_data)
+                            notification.save()
+                        except Exception as e:
+                            errors.append(e)
                         data = YearCalendarSerializer(calendar_obj).data
                         return JsonResponse(data, status=status.HTTP_200_OK)
                     else:
@@ -137,16 +137,16 @@ def updateYearCalendar(request, id):
                         notification_data = {
                             'type': 'calendar',  
                             'content_object': calendar_obj,
-                            'receivers': [admin_ids],  
-                            'title': f"Calendar Sent by {user.first_name()}",
+                            'receivers': [admin.id for admin in admins],  
+                            'title': f"Calendar Sent by {user.first_name}",
                             'subtitle': f"{user.long_name()} has sent a calendar for your approval or rejection.",
-                            'created_by': user.id,
+                            'created_by': user,
                         }
-                        notification_serializer = NotificationSerializer(data=notification_data)
-                        if notification_serializer.is_valid():
-                            notification_serializer.save()
-                        else:
-                            errors.append(notification_serializer.errors)
+                        try:
+                            notification = Notification(**notification_data)
+                            notification.save()
+                        except Exception as e:
+                            errors.append(e)
                     return JsonResponse(year_calendar_serializer.data, status=status.HTTP_200_OK)
                 return JsonResponse(year_calendar_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
@@ -163,20 +163,16 @@ def updateYearCalendar(request, id):
             elif calendar_obj.status == 'approved' and document_data['status'] == 'Published':
                 calendar_obj.status = 'published'
                 calendar_obj.save()
-                all_user_ids = User.objects.all().values_list('id', flat=True)
+                all_users = User.objects.all()
                 notification_data = {
                     'type': 'calendar',  
                     'content_object': calendar_obj,
-                    'receivers': [all_user_ids],  
+                    'receivers': [user.id for user in all_users],  
                     'title': f"New Calendar Published",
                     'subtitle': f"A new holidays calendar has been published for year {calendar_obj.year}.",
-                    'created_by': user.id,
+                    'created_by': user,
                 }
-                notification_serializer = NotificationSerializer(data=notification_data)
-                if notification_serializer.is_valid():
-                    notification_serializer.save()
-                else:
-                    errors.append(notification_serializer.errors)
+                errors.append(send_notification(notification_data, notification_data['receivers']))
                 data = YearCalendarSerializer(calendar_obj).data
                 return JsonResponse(data, status=status.HTTP_200_OK)
 
@@ -235,7 +231,7 @@ def updateYearPolicy(request, id):
         try:
             user_email = getattr(request, 'user_email', None)
             user = User.objects.get(email=user_email)
-            admin_ids = User.objects.filter(role__role_key='admin').values_list('id', flat=True)
+            admins = User.objects.filter(role__role_key='admin')
             document_data = JSONParser().parse(request)
             policy_obj = YearPolicy.objects.get(id=id)
 
@@ -259,15 +255,16 @@ def updateYearPolicy(request, id):
                             'type': 'leave_policy',  
                             'content_object': policy_obj,
                             'receivers': [policy_obj.created_by.id],  
-                            'title': f"Leave Policy Approved By {user.first_name()}",
+                            'title': f"Leave Policy Approved By {user.first_name}",
                             'subtitle': f"{user.long_name()} has Approved the Leave Policy you created.",
-                            'created_by': user.id,
+                            'created_by': user,
                         }
-                        notification_serializer = NotificationSerializer(data=notification_data)
-                        if notification_serializer.is_valid():
-                            notification_serializer.save()
-                        else:
-                            errors.append(notification_serializer.errors)
+                        try:
+                            notification = Notification(**notification_data)
+                            notification.save()
+                        except Exception as e:
+
+                            errors.append(e)
                         data = YearPolicySerializer(policy_obj).data
                         return JsonResponse(data, status=status.HTTP_200_OK)
                     else:
@@ -281,15 +278,15 @@ def updateYearPolicy(request, id):
                             'type': 'leave_policy',  
                             'content_object': policy_obj,
                             'receivers': [policy_obj.created_by.id],  
-                            'title': f"Leave Policy Rejected By {user.first_name()}",
+                            'title': f"Leave Policy Rejected By {user.first_name}",
                             'subtitle': f"{user.long_name()} has Rejected the Leave Policy you created.",
-                            'created_by': user.id,
+                            'created_by': user,
                         }
-                        notification_serializer = NotificationSerializer(data=notification_data)
-                        if notification_serializer.is_valid():
-                            notification_serializer.save()
-                        else:
-                            errors.append(notification_serializer.errors)
+                        try:
+                            notification = Notification(**notification_data)
+                            notification.save()
+                        except Exception as e:
+                            errors.append(e)
                         data = YearPolicySerializer(policy_obj).data
                         return JsonResponse(data, status=status.HTTP_200_OK)
                     else:
@@ -306,16 +303,16 @@ def updateYearPolicy(request, id):
                         notification_data = {
                             'type': 'leave_policy',  
                             'content_object': policy_obj,
-                            'receivers': [admin_ids],
-                            'title': f"Leave Policy Sent by {user.first_name()}",
+                            'receivers': [admin.id for admin in admins],
+                            'title': f"Leave Policy Sent by {user.first_name}",
                             'subtitle': f"{user.long_name()} has sent a Leave Policy for your approval or rejection.",
-                            'created_by': user.id,
+                            'created_by': user,
                         }
-                        notification_serializer = NotificationSerializer(data=notification_data)
-                        if notification_serializer.is_valid():
-                            notification_serializer.save()
-                        else:
-                            errors.append(notification_serializer.errors)
+                        try:
+                            notification = Notification(**notification_data)
+                            notification.save()
+                        except Exception as e:
+                            errors.append(e)
                     return JsonResponse(year_policy_serializer.data, status=status.HTTP_200_OK)
                 return JsonResponse(year_policy_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
@@ -347,14 +344,14 @@ def updateYearPolicy(request, id):
                             policy.leave_type.rule_set.save()
                     policy_obj.save()
                     data = YearPolicySerializer(policy_obj).data
-                all_user_ids = User.objects.all().values_list('id', flat=True)
+                all_users = User.objects.all()
                 notification_data = {
                     'type': 'leave_policy',  
                     'content_object': policy_obj,
-                    'receivers': [all_user_ids],  
+                    'receivers': [user.id for user in all_users],  
                     'title': f"New Calendar Published",
                     'subtitle': f"A new holidays calendar has been published for year {policy_obj.year}.",
-                    'created_by': user.id,
+                    'created_by': user,
                 }
                 errors.append(send_notification(notification_data, notification_data['receivers']))
                 return JsonResponse(data, status=status.HTTP_200_OK)

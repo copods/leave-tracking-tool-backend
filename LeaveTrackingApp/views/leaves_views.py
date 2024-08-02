@@ -50,7 +50,6 @@ def createLeaveRequest(request):
             
             try:
                 approver = User.objects.get(id=leave_data['approver'])
-                approver_id = approver.id
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Approver not found'}, status=status.HTTP_404_NOT_FOUND)
             
@@ -94,7 +93,7 @@ def createLeaveRequest(request):
                 'receivers': [approver.id],  
                 'title': f"Leave Request by {user.long_name()}",
                 'subtitle': f"{user.long_name()} has requested leave.",
-                'created_by': user.id,
+                'created_by': user,
             }
             errors.append(send_notification(notification_data, notification_data['receivers']))
             
