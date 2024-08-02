@@ -26,10 +26,10 @@ class Notification(models.Model):
         ('calendar', 'Calendar'),
         ('leave_policy', 'Leave Policy'),
     ]
-    type = models.CharField(max_length=100, verbose_name="notification type", choices=TYPE_CHOICES)
+    type = models.CharField(max_length=100, verbose_name="notification type", choices=TYPE_CHOICES, default='leave_request')
     isRead = models.BooleanField(default=False)
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.UUIDField()
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True)
+    object_id = models.UUIDField(null=True)
     content_object = GenericForeignKey('content_type', 'object_id')
     receivers = ArrayField(models.UUIDField())
     title = models.CharField(max_length=100, verbose_name='title')
