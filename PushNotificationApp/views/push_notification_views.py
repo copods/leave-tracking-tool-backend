@@ -3,8 +3,9 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from dotenv import load_dotenv
+from LeaveTrackingApp.models import Leave
 from PushNotificationApp.models import FCMToken, Notification
-from PushNotificationApp.serializers import FCMTokenSerializer, NotificationSerializer, FetchNotificationsSerializer
+from PushNotificationApp.serializers import FCMTokenSerializer, FetchNotificationsSerializer
 from PushNotificationApp.utils import multi_fcm_tokens_validate
 from rest_framework import status
 from rest_framework.parsers import JSONParser
@@ -74,13 +75,19 @@ def fetchNotifications(request):
         try:
             user_email = getattr(request, 'user_email', None)
             query_params = request.GET.dict()
+            platform = query_params.get('platform', 'mobile')
+            my_requests = query_params.get('my_requests')
+            isRead = query_params.get('isRead', None)
             user = User.objects.get(email=user_email)
-            notifications = Notification.objects.filter( receivers__contains=[user.id] )
+            notifications = Notification.objects.filter(receivers__contains=[user.id])
 
-            if query_params.get('my_requests'):
-                notifications = notifications.filter(leaveApplicationId__user=user.id)
-            if query_params.get('unread'):
-                notifications = notifications.filter(isRead=False)
+            if platform:
+                notifications = notifications.filter(target_platforms__contains=[platform])
+            if my_requests:
+                leaves = Leave.objects.filter(user=user)
+                notifications = notifications.filter(object_id__in=[leave.id for leave in leaves])
+            if isRead:
+                notifications = notifications.filter(isRead=isRead)
             
             notifications = notifications.order_by('-created_at')
             notifications_serializer = FetchNotificationsSerializer(notifications, many=True)

@@ -93,6 +93,7 @@ def updateYearCalendar(request, id):
                             'title': f"Calendar Approved by {user.first_name}",
                             'subtitle': f"{user.long_name()} has Approved the calendar you created.",
                             'created_by': user,
+                            'target_platforms': ['web']
                         }
                         try:
                             notification = Notification(**notification_data)
@@ -115,6 +116,7 @@ def updateYearCalendar(request, id):
                             'title': f"Calendar Rejected by {user.first_name}",
                             'subtitle': f"{user.long_name()} has Rejected the calendar you created.",
                             'created_by': user,
+                            'target_platforms': ['web']
                         }
                         try:
                             notification = Notification(**notification_data)
@@ -141,6 +143,7 @@ def updateYearCalendar(request, id):
                             'title': f"Calendar Sent by {user.first_name}",
                             'subtitle': f"{user.long_name()} has sent a calendar for your approval or rejection.",
                             'created_by': user,
+                            'target_platforms': ['web']
                         }
                         try:
                             notification = Notification(**notification_data)
@@ -171,6 +174,7 @@ def updateYearCalendar(request, id):
                     'title': f"New Calendar Published",
                     'subtitle': f"A new holidays calendar has been published for year {calendar_obj.year}.",
                     'created_by': user,
+                    'target_platforms': ['mobile']
                 }
                 errors.append(send_notification(notification_data, notification_data['receivers']))
                 data = YearCalendarSerializer(calendar_obj).data
@@ -258,6 +262,7 @@ def updateYearPolicy(request, id):
                             'title': f"Leave Policy Approved By {user.first_name}",
                             'subtitle': f"{user.long_name()} has Approved the Leave Policy you created.",
                             'created_by': user,
+                            'target_platforms': ['web']
                         }
                         try:
                             notification = Notification(**notification_data)
@@ -281,6 +286,7 @@ def updateYearPolicy(request, id):
                             'title': f"Leave Policy Rejected By {user.first_name}",
                             'subtitle': f"{user.long_name()} has Rejected the Leave Policy you created.",
                             'created_by': user,
+                            'target_platforms': ['web']
                         }
                         try:
                             notification = Notification(**notification_data)
@@ -307,6 +313,7 @@ def updateYearPolicy(request, id):
                             'title': f"Leave Policy Sent by {user.first_name}",
                             'subtitle': f"{user.long_name()} has sent a Leave Policy for your approval or rejection.",
                             'created_by': user,
+                            'target_platforms': ['web']
                         }
                         try:
                             notification = Notification(**notification_data)
@@ -352,6 +359,7 @@ def updateYearPolicy(request, id):
                     'title': f"New Calendar Published",
                     'subtitle': f"A new holidays calendar has been published for year {policy_obj.year}.",
                     'created_by': user,
+                    'target_platforms': ['mobile']
                 }
                 errors.append(send_notification(notification_data, notification_data['receivers']))
                 return JsonResponse(data, status=status.HTTP_200_OK)

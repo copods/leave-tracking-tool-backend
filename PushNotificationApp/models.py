@@ -35,6 +35,7 @@ class Notification(models.Model):
     title = models.CharField(max_length=100, verbose_name='title')
     subtitle = models.CharField(max_length=300, verbose_name="subtitle")
     redireactionUrl = models.CharField(max_length=250, null=True, blank=True)
+    target_platforms = ArrayField(models.CharField(max_length=10), default=list)  # ['mobile', 'web']
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='request_created_by')
     created_at = models.DateTimeField(default=now)
 
