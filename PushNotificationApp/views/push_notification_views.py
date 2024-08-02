@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from dotenv import load_dotenv
 from PushNotificationApp.models import FCMToken, Notification
 from PushNotificationApp.serializers import FCMTokenSerializer, NotificationSerializer, FetchNotificationsSerializer
-from PushNotificationApp.utils import fcm_token_validate, multi_fcm_tokens_validate
+from PushNotificationApp.utils import multi_fcm_tokens_validate
 from rest_framework import status
 from rest_framework.parsers import JSONParser
 from UserApp.decorators import user_is_authorized
@@ -50,13 +50,17 @@ def fcmTokenValidate(request):
             fcm_token_data = JSONParser().parse(request)
             user_email = getattr(request, 'user_email', None) 
             user = User.objects.get(email=user_email)
-            user_id = user.id 
-            token = fcm_token_data.get('fcm_token')
-            response = fcm_token_validate(token, user_id)
-            if response['valid']:
+            token = fcm_token_data.get('fcm_token', None)
+            fcm_token = FCMToken.objects.filter(fcm_token=token, user_id=user.id).first()
+            valid_tokens = multi_fcm_tokens_validate([fcm_token])
+            if valid_tokens:
                 return JsonResponse({'isValid': True}, status=status.HTTP_200_OK)
             else:
-                return JsonResponse({'isValid': False, 'error': response['error']}, status=status.HTTP_200_OK)
+                return JsonResponse({'isValid': False, 'error': 'Invalid token'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist as e:
+            return JsonResponse({'isValid': False, 'error': str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except FCMToken.DoesNotExist as e:
+            return JsonResponse({'isValid': False, 'error': str(e)}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return JsonResponse({'isValid': False, 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:

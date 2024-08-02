@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models import Count, Q, Prefetch
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from LeaveTrackingApp.models import DayDetails, Leave, LeaveType, StatusReason
+from LeaveTrackingApp.models import Leave, LeaveType, StatusReason
 from LeaveTrackingApp.serializers import *
 from LeaveTrackingApp.utils import (
     check_leave_overlap,
@@ -13,12 +13,7 @@ from LeaveTrackingApp.utils import (
     user_leave_stats_hr_view,
     user_leave_stats_user_view
 )
-from PushNotificationApp.models import FCMToken
-from PushNotificationApp.serializers import NotificationSerializer
-from PushNotificationApp.utils import (
-    multi_fcm_tokens_validate,
-    send_token_push
-)
+from PushNotificationApp.utils import send_notification
 from rest_framework import status
 from rest_framework.parsers import JSONParser
 from UserApp.decorators import user_is_authorized
@@ -88,27 +83,14 @@ def createLeaveRequest(request):
 
             # Create Notification
             notification_data = {
-                'types': 'Leave-Request',  
-                'leaveApplicationId': leave_instance.id,
+                'type': 'leave_request',  
+                'content_object': leave_instance,
                 'receivers': [approver.id],  
                 'title': f"Leave Request by {user.long_name()}",
                 'subtitle': f"{user.long_name()} has requested leave.",
                 'created_by': user.id,
             }
-            notification_serializer = NotificationSerializer(data=notification_data)
-            if notification_serializer.is_valid():
-                notification_serializer.save()
-            else:
-                errors.append(notification_serializer.errors)
-
-            # Send Push Notification
-            fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
-            fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
-            valid_tokens = multi_fcm_tokens_validate(fcm_tokens, approver_id)
-            if valid_tokens:
-                response = send_token_push(notification_data['title'], notification_data['subtitle'], valid_tokens)
-                if not 'success' in response:
-                    errors.append(response['error'])
+            errors.append(send_notification(notification_data, notification_data['receivers']))
             
             if errors:
                 return JsonResponse({"message": "Leave request created successfully but sending email or notification failed", 'errors': errors}, status=status.HTTP_201_CREATED)
