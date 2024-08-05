@@ -12,7 +12,11 @@ class NotificationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class FetchNotificationsSerializer(serializers.ModelSerializer):
-    
+    profile_image = serializers.SerializerMethodField('get_profile_image')
+
     class Meta:
         model = Notification
-        fields = ['id', 'type', 'isRead', 'object_id', 'title', 'subtitle', 'created_at']
+        fields = ['id', 'type', 'isRead', 'object_id', 'title', 'subtitle', 'created_at', 'profile_image']
+    
+    def get_profile_image(self, obj):
+        return obj.created_by.profile_image
