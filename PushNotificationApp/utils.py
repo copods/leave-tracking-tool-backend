@@ -1,7 +1,5 @@
 from django.utils import timezone
-from PushNotificationApp.models import FCMToken
-from UserApp.models import User
-from UserApp.decorators import user_is_authorized
+from PushNotificationApp.models import FCMToken, Notification
 import firebase_admin
 from firebase_admin import credentials, messaging
 import os
@@ -24,29 +22,15 @@ server_key = {
 firebase_cred = credentials.Certificate(server_key)
 firebase_app = firebase_admin.initialize_app(firebase_cred)
 
-def fcm_token_validate(token, user_id):
-    fcm_token = FCMToken.objects.filter(fcm_token=token, user_id=user_id).first()
-    try:
-        if fcm_token:
-            current_time = timezone.now()
-            token_expires_at = fcm_token.expires_at
-            if current_time < token_expires_at:
-                return {'valid': True}
-            else:
-                fcm_token.delete()
-                return {'valid': False, 'error': 'FCM token has expired. Token deleted.'}
-        else:
-            return {'valid': False, 'error': 'FCM token not found for the user'}
-    except Exception as e:
-        return {'valid': False, 'error': str(e)}
-
-def multi_fcm_tokens_validate(fcm_tokens, user_id):
+def multi_fcm_tokens_validate(fcm_tokens):
     try:
         valid_fcm_tokens = []
         for fcm_token in fcm_tokens:
-            response = fcm_token_validate(fcm_token, user_id)
-            if response['valid']:
-                valid_fcm_tokens.append(fcm_token)   
+            current_time = timezone.now()
+            if current_time < fcm_token.expires_at:
+                valid_fcm_tokens.append(fcm_token.fcm_token)
+            else:
+                fcm_token.delete()
         return valid_fcm_tokens
     except Exception as e:
         raise e
@@ -72,4 +56,25 @@ def send_token_push(title, body, tokens):
                 'message': 'Notification sent successfully to all tokens'}
     except Exception as e:
         return {'error': str(e)}
-    
+
+
+# Create Notification
+def send_notification(notification_data, recievers):
+    errors = []
+    # Create Notification
+    try:
+        notification = Notification(**notification_data)
+        notification.save()
+    except Exception as e:
+        errors.append(e)
+
+    fcm_tokens_queryset = FCMToken.objects.filter(user_id__in=recievers)
+
+    # Send Push Notification
+    valid_tokens = multi_fcm_tokens_validate(fcm_tokens_queryset)
+    if valid_tokens:
+        response = send_token_push(notification_data['title'], notification_data['subtitle'], valid_tokens)
+        if not 'success' in response:
+            errors.append(response['error'])
+
+    return errors

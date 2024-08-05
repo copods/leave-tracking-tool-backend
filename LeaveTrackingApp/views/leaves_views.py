@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models import Count, Q, Prefetch
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from LeaveTrackingApp.models import DayDetails, Leave, LeaveType, StatusReason
+from LeaveTrackingApp.models import Leave, LeaveType, StatusReason
 from LeaveTrackingApp.serializers import *
 from LeaveTrackingApp.utils import (
     check_leave_overlap,
@@ -13,18 +13,14 @@ from LeaveTrackingApp.utils import (
     user_leave_stats_hr_view,
     user_leave_stats_user_view
 )
-from PushNotificationApp.models import FCMToken
-from PushNotificationApp.serializers import NotificationSerializer
-from PushNotificationApp.utils import (
-    multi_fcm_tokens_validate,
-    send_token_push
-)
+from PushNotificationApp.utils import send_notification
 from rest_framework import status
 from rest_framework.parsers import JSONParser
 from UserApp.decorators import user_is_authorized
 from UserApp.models import User
 from UserApp.serializers import UserSerializer
 from common.utils import send_email
+import json
 
 
 @csrf_exempt
@@ -40,7 +36,12 @@ def getLeaveTypes(request):
 def createLeaveRequest(request):
     if request.method == 'POST':
         try:
-            leave_data = JSONParser().parse(request)
+            if request.content_type.startswith('application/json'):
+                leave_data = JSONParser().parse(request)
+            else:
+                leave_data = request.POST.dict()
+                leave_data['day_details'] = json.loads(request.POST.get('day_details', '[]'))
+                leave_data['assets_documents'] = request.FILES.get('assets_documents')
 
             try:
                 user = User.objects.get(id=leave_data['user'])
@@ -49,7 +50,6 @@ def createLeaveRequest(request):
             
             try:
                 approver = User.objects.get(id=leave_data['approver'])
-                approver_id = approver.id
             except User.DoesNotExist:
                 return JsonResponse({'error': 'Approver not found'}, status=status.HTTP_404_NOT_FOUND)
             
@@ -88,27 +88,15 @@ def createLeaveRequest(request):
 
             # Create Notification
             notification_data = {
-                'types': 'Leave-Request',  
-                'leaveApplicationId': leave_instance.id,
+                'type': 'leave_request',  
+                'content_object': leave_instance,
                 'receivers': [approver.id],  
                 'title': f"Leave Request by {user.long_name()}",
                 'subtitle': f"{user.long_name()} has requested leave.",
-                'created_by': user.id,
+                'created_by': user,
+                'target_platforms': ['mobile']
             }
-            notification_serializer = NotificationSerializer(data=notification_data)
-            if notification_serializer.is_valid():
-                notification_serializer.save()
-            else:
-                errors.append(notification_serializer.errors)
-
-            # Send Push Notification
-            fcm_tokens_queryset = FCMToken.objects.filter(user_id=approver_id)
-            fcm_tokens = [token.fcm_token for token in fcm_tokens_queryset]
-            valid_tokens = multi_fcm_tokens_validate(fcm_tokens, approver_id)
-            if valid_tokens:
-                response = send_token_push(notification_data['title'], notification_data['subtitle'], valid_tokens)
-                if not 'success' in response:
-                    errors.append(response['error'])
+            errors.append(send_notification(notification_data, notification_data['receivers']))
             
             if errors:
                 return JsonResponse({"message": "Leave request created successfully but sending email or notification failed", 'errors': errors}, status=status.HTTP_201_CREATED)
@@ -236,13 +224,14 @@ def addLeaveStatus(request):
             leave.save()
 
             errors = []
+            status = dict(Leave.STATUS_CHOICES).get(leave.status)
 
             # send email
             try:
                 approver_data = UserSerializer(user).data
                 user_data = UserSerializer(leave.user).data
-                subject = f'Leave Status Updated by {approver_data["first_name"]} {approver_data["last_name"]}'
-                leave_text = f'''Your leave request from {leave.start_date} to {leave.end_date} has been {dict(Leave.STATUS_CHOICES).get(leave.status)}!.
+                subject = f'Leave Status {status.capitalize()} by {approver_data["first_name"]} {approver_data["last_name"]}'
+                leave_text = f'''Your leave request from {leave.start_date} to {leave.end_date} has been {status.capitalize()}!.
                                 For more details, check out on the app.''' 
                 send_email(
                     recipients=[user_data],
@@ -253,6 +242,18 @@ def addLeaveStatus(request):
                 )
             except Exception as e:
                 errors.append(str(e))
+
+            # send notification
+            notification_data = {
+                'type': 'leave_request',  
+                'content_object': leave,
+                'receivers': [leave.user.id],  
+                'title': f"Your Leave is {status.capitalize()}",
+                'subtitle': f"{user.long_name()} has {status.lower()} your leave for {leave.start_date} to {leave.end_date}.",
+                'created_by': user,
+                'target_platforms': ['mobile']
+            }
+            errors.append(send_notification(notification_data, notification_data['receivers']))
 
             if errors:
                 return JsonResponse({'data': StatusReasonSerializer(status_reason).data, 'error': errors}, status=201)
@@ -347,12 +348,29 @@ def enableEditLeave(request):
     if request.method == 'POST':
         try:
             leave_data = JSONParser().parse(request)
+            user_email = getattr(request, 'user_email', None)
+            user = User.objects.get(email=user_email)
             leave = Leave.objects.get(id=leave_data['id'])
             if not leave.editStatus:
                 leave.editStatus = 'requested_for_edit'
                 leave.editReason = leave_data['edit_reason']
                 leave.save()
-                return JsonResponse({'message': 'Leave request sent to Edit'}, status=200)   
+                errors = []
+                # send notification
+                notification_data = {
+                    'type': 'leave_request',  
+                    'content_object': leave,
+                    'receivers': [leave.user.id],  
+                    'title': f"{user.first_name.capitalize()} Has Requested For Edit.",
+                    'subtitle': f"{user.long_name()} has requested to edit your leave for {leave.start_date} to {leave.end_date}.",
+                    'created_by': user,
+                    'target_platforms': ['mobile']
+                }
+                errors.append(send_notification(notification_data, notification_data['receivers']))
+                if errors:
+                    return JsonResponse({'message': 'Leave request sent to Edit', 'errors': errors}, status=200)
+                else:
+                    return JsonResponse({'message': 'Leave request sent to Edit'}, status=200)   
             else:
                 return JsonResponse({'message': 'Leave request already sent to Edit'}, status=400)
 
@@ -372,9 +390,23 @@ def editLeave(request, id):
                 leave_serializer = LeaveSerializer(leave, data=leave_data, partial=True)
                 if leave_serializer.is_valid():
                     leave_serializer.save()
-                    #TODO: send notification after updation
+                    errors = []
+                    notification_data = {
+                        'type': 'leave_request',  
+                        'content_object': leave,
+                        'receivers': [leave.approver.id],  
+                        'title': f"{leave.user.first_name.capitalize()} Has Edited the leave.",
+                        'subtitle': f"{leave.user.long_name()} has made the changes you requested.",
+                        'created_by': leave.user,
+                        'target_platforms': ['mobile']
+                    }
+                    errors.append(send_notification(notification_data, notification_data['receivers']))
                     response_data = LeaveDetailSerializer(leave).data
-                    return JsonResponse(response_data, status=200)
+                    if errors:
+                        return JsonResponse({'data': response_data, 'errors': errors}, status=200)
+                    else:
+                        return JsonResponse({'data': response_data}, status=200)  
+                    
                 return JsonResponse(leave_serializer.errors, status=400)
             else:
                 return JsonResponse({'error': 'Leave request is not editable'}, status=400)

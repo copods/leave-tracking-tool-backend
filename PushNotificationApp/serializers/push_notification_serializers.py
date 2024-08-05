@@ -15,4 +15,4 @@ class FetchNotificationsSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Notification
-        fields = ['id', 'types', 'isRead', 'leaveApplicationId', 'title', 'subtitle', 'created_at']
+        fields = ['id', 'type', 'isRead', 'object_id', 'title', 'subtitle', 'created_at']
