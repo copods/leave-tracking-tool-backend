@@ -34,6 +34,7 @@ class UserAppProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'name', 
+            'email',
             'profile_image', 
             'designation',
             'work_type',
