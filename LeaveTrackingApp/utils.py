@@ -370,18 +370,6 @@ def get_users_for_day(leaves_data, curr_date, wfh=False):
     }
     return data
 
-def check_leave_overlap(leave_data):
-    overlap = False
-    start_date = leave_data['start_date']
-    end_date = leave_data['end_date']
-    earlier_leave = Leave.objects.filter(
-        Q(user=leave_data['user']) & ~Q(status__in=['R', 'W']) &
-        (Q(start_date__lte=end_date ) & Q(end_date__gte=start_date)) 
-    )
-    if earlier_leave.exists():
-        overlap = True
-    return overlap
-
 def get_unpaid_data(user, user_leaves, leave_types, curr_year, month):
     try:
 
@@ -461,3 +449,25 @@ def get_unpaid_data(user, user_leaves, leave_types, curr_year, month):
 
     except Exception as e:
         raise e
+
+def check_leave_overlap(leave_data):
+    overlap = False
+    start_date = leave_data['start_date']
+    end_date = leave_data['end_date']
+    earlier_leave = Leave.objects.filter(
+        Q(user=leave_data['user']) & ~Q(status__in=['R', 'W']) &
+        (Q(start_date__lte=end_date ) & Q(end_date__gte=start_date)) 
+    )
+    if earlier_leave.exists():
+        overlap = True
+    return overlap
+
+def is_leave_valid(leave_data):
+    messages = []
+
+    #1: check if leave overlaps
+    if check_leave_overlap(leave_data):
+        messages.append('You have already applied leave for some of these days')
+
+    #2: check if leave start date is after one week
+    if leave_data['start_date'] < datetime.now() + timedelta(days=7):
