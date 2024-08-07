@@ -26,4 +26,8 @@ urlpatterns = [
     re_path(r'^updateYearPolicy/([0-9a-f-]+)$', updateYearPolicy),
     re_path(r'^getLeaveStatusCount$', getLeaveStatusCount),
 
+    #miscellaneous apis
+    re_path(r'^clearAllLeaves$', clear_all_leaves),
+    re_path(r'^clearAllNotifications$', clear_all_notifications),
+
 ]
