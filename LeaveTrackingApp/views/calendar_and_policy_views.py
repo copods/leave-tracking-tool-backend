@@ -28,7 +28,7 @@ def getHolidayCalendar(request):
                 else:
                     year_calendar = yearCalendar.objects.filter(status__in=['approved', 'draft', 'sent_for_approval']).first()
                 if not year_calendar:
-                    return JsonResponse({"error": "No year calendar found for this year"}, status=status.HTTP_404_NOT_FOUND)
+                    return JsonResponse({"error": "No year calendar found for this year"}, status=status.HTTP_200_OK)
             holiday_calendars_serializer = YearCalendarSerializer(year_calendar)
             return JsonResponse(holiday_calendars_serializer.data, safe=False)
         except Exception as e:
@@ -221,7 +221,7 @@ def getYearPolicy(request):
             if not year_policy:
                 year_policy = YearPolicy.objects.filter(status__in=['approved', 'draft', 'sent_for_approval'], year=year).order_by('-created_at').first()
                 if not year_policy:
-                    return JsonResponse({"error": "No year policy found for this year"}, status=status.HTTP_404_NOT_FOUND)
+                    return JsonResponse({"error": "No year policy found for this year"}, status=status.HTTP_200_OK)
                     
             year_policy_serializer = YearPolicySerializer(year_policy)
             return JsonResponse(year_policy_serializer.data, safe=False)
