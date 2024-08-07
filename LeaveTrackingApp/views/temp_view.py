@@ -1,10 +1,12 @@
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
 from rest_framework import status
 from LeaveTrackingApp.models import DayDetails, Leave
 from PushNotificationApp.models import Notification
 
 @csrf_exempt
+@transaction.atomic
 def clear_all_leaves(request):
     if request.method == 'DELETE':
         try:
@@ -24,6 +26,7 @@ def clear_all_leaves(request):
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 @csrf_exempt
+@transaction.atomic
 def clear_all_notifications(request):
     if request.method == 'DELETE':
         try:
