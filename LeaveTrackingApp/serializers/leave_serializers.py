@@ -1,6 +1,8 @@
+from django.conf import settings
 from LeaveTrackingApp.models import Leave, LeaveType, RuleSet, DayDetails, StatusReason
 from rest_framework import serializers
 from django.db import transaction
+import boto3
 
 
 class RuleSetSerializer(serializers.ModelSerializer):
@@ -140,10 +142,18 @@ class LeaveDetailSerializer(serializers.ModelSerializer):
         }
 
     def get_assets_documents(self, obj):
-        if obj.assets_documents:
-            return obj.assets_documents.url
-        else:
-            return ""
+        assets_documents = obj.assets_documents
+        if assets_documents:
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_S3_REGION_NAME
+            )
+            return s3_client.generate_presigned_url('get_object', Params={'Bucket': assets_documents.storage.bucket_name, 'Key':assets_documents.name}, ExpiresIn=600)
+        return ""
+        
+        
 
 class LeaveUtilSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True)
