@@ -40,7 +40,8 @@ def createHolidayCalendar(request):
     if request.method=='POST':
         try:
             year_calendar_data = JSONParser().parse(request)
-            year_calendar_data['created_by'] = User.objects.get(email=getattr(request, 'user_email', None)).id
+            year_calendar_data['created_by'] = User.objects.get(email=getattr(request, 'user_email',None)).id
+            admins = User.objects.filter(role__role_key='admin')
             if yearCalendar.objects.filter(status__in=['approved', 'draft', 'sent_for_approval']).exists():
                 return JsonResponse({"error": "A draft or an approved calendar already exists"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -50,9 +51,29 @@ def createHolidayCalendar(request):
             else:
                 year_calendar_data['status'] = next((k for k, v in dict(STATUS_CHOICES).items() if v==status_value), 'draft')
             
+            errors = []
             year_calendar_serializer = YearCalendarSerializer(data=year_calendar_data)
             if year_calendar_serializer.is_valid():
-                year_calendar_serializer.save()
+                calendar_instance = year_calendar_serializer.save()
+
+                #create notification if sent for approval directly
+                if calendar_instance.status == 'sent_for_approval':
+                    notification_data = {
+                        'type': 'calendar',  
+                        'content_object': calendar_instance,
+                        'receivers': [admin.id for admin in admins],  
+                        'title': f"Calendar Sent by {calendar_instance.created_by.first_name}",
+                        'subtitle': f"{calendar_instance.created_by.long_name()} has sent a calendar for your approval or rejection.",
+                        'created_by': calendar_instance.created_by,
+                        'target_platforms': ['web']
+                    }
+                    try:
+                        notification = Notification(**notification_data)
+                        notification.save()
+                    except Exception as e:
+                        errors.append(e)
+                if errors:
+                    return JsonResponse({"data": year_calendar_serializer.data, 'errors': errors}, status=status.HTTP_201_CREATED)
                 return JsonResponse(year_calendar_serializer.data, status=status.HTTP_201_CREATED)
             return JsonResponse(year_calendar_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
@@ -190,6 +211,7 @@ def createYearPolicy(request):
         try:
             year_policy_data = JSONParser().parse(request)
             year_policy_data['created_by'] = User.objects.get(email=getattr(request, 'user_email', None)).id
+            admins = User.objects.filter(role__role_key='admin')
             if YearPolicy.objects.filter(status__in=['approved', 'draft', 'sent_for_approval']).exists():
                 return JsonResponse({"error": "A draft or an approved policy already exists"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -199,9 +221,29 @@ def createYearPolicy(request):
             else:
                 year_policy_data['status'] = next((k for k, v in dict(STATUS_CHOICES).items() if v==status_value), 'draft')
 
+            errors=[]
             year_policy_serializer = YearPolicySerializer(data=year_policy_data)
             if year_policy_serializer.is_valid():
-                year_policy_serializer.save()
+                policy_instance = year_policy_serializer.save()
+                
+                #create notification if sent for approval directly
+                if policy_instance.status == 'sent_for_approval':
+                    notification_data = {
+                        'type': 'leave_policy',  
+                        'content_object': policy_instance,
+                        'receivers': [admin.id for admin in admins],  
+                        'title': f"Leave Policy Sent by {policy_instance.created_by.first_name}",
+                        'subtitle': f"{policy_instance.created_by.long_name()} has sent a leave policy for your approval or rejection.",
+                        'created_by': policy_instance.created_by,
+                        'target_platforms': ['web']
+                    }
+                    try:
+                        notification = Notification(**notification_data)
+                        notification.save()
+                    except Exception as e:
+                        errors.append(e)
+                if errors:
+                    return JsonResponse({"data": year_policy_serializer.data, 'errors': errors}, status=status.HTTP_201_CREATED)
                 return JsonResponse(year_policy_serializer.data, status=status.HTTP_201_CREATED)
             return JsonResponse(year_policy_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
