@@ -7,9 +7,9 @@ from django.views.decorators.csrf import csrf_exempt
 from LeaveTrackingApp.models import Leave, LeaveType, StatusReason
 from LeaveTrackingApp.serializers import *
 from LeaveTrackingApp.utils import (
-    check_leave_overlap,
     get_unpaid_data,
     get_users_for_day,
+    is_leave_valid,
     user_leave_stats_hr_view,
     user_leave_stats_user_view
 )

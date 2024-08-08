@@ -464,10 +464,24 @@ def check_leave_overlap(leave_data):
 
 def is_leave_valid(leave_data):
     messages = []
+    misc_leave_types = LeaveType.objects.filter(rule_set__name='miscellaneous_leave')
+    misc_types_names = misc_leave_types.values_list('name', flat=True)
+    sick_leave_type = misc_leave_types.get(name='sick_leave')
 
     #1: check if leave overlaps
     if check_leave_overlap(leave_data):
         messages.append('You have already applied leave for some of these days')
 
     #2: check if leave start date is after one week
-    if leave_data['start_date'] < datetime.now() + timedelta(days=7):
+    if leave_data['start_date'] < datetime.now() + timedelta(days=7) and leave_data['leave_type'] not in misc_leave_types:
+        messages.append('Leave cannot be applied for less than one week')
+
+    #3: if its a sick leave of at least 2 days, a file must be attached
+    if leave_data['leave_type'] == str(sick_leave_type.id) and leave_data['file'] is None:
+        messages.append('Sick Leave of at least 2 days must have a file attached')
+
+    #4: Block leave validation
+    if check_if_block_leave_taken(leave_data):
+        messages.append("you can't take a block leave before 90 days of your last block leave")
+
+    return messages
