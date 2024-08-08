@@ -144,15 +144,13 @@ class LeaveDetailSerializer(serializers.ModelSerializer):
     def get_assets_documents(self, obj):
         assets_documents = obj.assets_documents
         if assets_documents:
-            # name = assets_documents.name.split("/")[-1]
-            # return assets_documents.storage.url(name, parameters={'Bucket': assets_documents.storage.bucket_name, 'Key': f'leave_docs/{name}'})
             s3_client = boto3.client(
                 's3',
                 aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_S3_REGION_NAME
             )
-            resp = s3_client.generate_presigned_url('get_object', Params={'Bucket': assets_documents.storage.bucket_name, 'Key':'leave_docs/'+ assets_documents.name.split('/')[-1]}, ExpiresIn=3600)
-            return resp
+            return s3_client.generate_presigned_url('get_object', Params={'Bucket': assets_documents.storage.bucket_name, 'Key':assets_documents.name}, ExpiresIn=600)
         return ""
         
         
