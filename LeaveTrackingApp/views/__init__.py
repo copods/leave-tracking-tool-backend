@@ -22,11 +22,6 @@ from .leaves_views import (
     getLeaveStatusCount
 )
 
-from .temp_view import (
-    clear_all_leaves,
-    clear_all_notifications,
-)
-
 __all__ = [
     'addLeaveStatus',
     'createLeaveRequest',
@@ -46,6 +41,4 @@ __all__ = [
     'updateYearCalendar',
     'editLeave',
     'getLeaveStatusCount',
-    'clear_all_leaves',
-    'clear_all_notifications'
 ]
