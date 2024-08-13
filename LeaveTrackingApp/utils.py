@@ -88,7 +88,7 @@ def user_leave_stats_hr_view(user_id, year_range):
                 days_in_quarter = [
                     day
                     for day in leave['day_details']
-                    if yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']
+                    if (yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']) and not day['is_withdrawn']
                 ]
 
                 max_pto = LeaveType.objects.get(name='pto').rule_set.max_days_allowed
