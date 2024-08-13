@@ -14,6 +14,7 @@ urlpatterns = [
     re_path(r'^enableEditLeave$', enableEditLeave),
     re_path(r'^getUnpaidData$', getUnpaidData),
     re_path(r'^editLeave/([0-9a-f-]+)$', editLeave),
+    re_path(r'^withdrawLeave/([0-9a-f-]+)$', withdrawLeave),
 
     # holiday urls
     re_path(r'^createHolidayCalendar$', createHolidayCalendar),

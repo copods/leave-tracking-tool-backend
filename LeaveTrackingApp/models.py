@@ -108,6 +108,7 @@ class DayDetails(models.Model):
         blank=True, 
         null=True,
     )
+    is_withdrawn = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(auto_now=True)
 
