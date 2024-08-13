@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.conf import settings
 from django.template import Context, Template
 from django.core.mail import EmailMultiAlternatives, get_connection
@@ -19,6 +20,7 @@ def send_email(recipients, subject, template_name, context, send_from=None, app_
         for recipient in recipients:
             recipient_name = f"{recipient['first_name']} {recipient['last_name']}"
             context['recipient_name'] = recipient_name
+            context['year'] = datetime.now().year
 
             template_path = os.path.join(parent_dir, app_name, 'templates', template_name)
 
