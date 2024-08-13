@@ -482,9 +482,10 @@ def getLeaveStatusCount(request):
 def withdrawLeave(request, id):
     if(request.method == 'PUT'):
         try:
+            data =  JSONParser().parse(request)
+            day_ids = data.get('day_ids', [])
+            reason = data.get('reason', None)
             leave = Leave.objects.get(id=id)
-            day_ids = request.data.get('day_ids', [])
-            reason = request.data.get('reason', None)
             if leave.status in ['R', 'W']:
                 return JsonResponse({'error': "Can't withdraw leave"}, status=400)
             if not reason:
@@ -493,13 +494,13 @@ def withdrawLeave(request, id):
                 DayDetails.objects.filter(id__in=day_ids).update(is_withdrawn=True)
                 status_reason = StatusReason.objects.create(user=leave.user, status='W', reason=reason)
                 leave.status_reasons.add(status_reason)
-                if len(day_ids) == len(leave.day_details):
+                if len(day_ids) == leave.day_details.count():
                     leave.status = 'W'
                     leave.save()
 
                 #notify approver
-                title = f"{leave.user.first_name.capitalize()} Has Withdrawn the leave." if len(day_ids)==len(leave.day_details) else f"{leave.user.first_name.capitalize()} Has Withdrawn Some Days of Leave."
-                subtitle = f"{leave.user.long_name()} has withdrawn the leave from {leave.start_date} to {leave.end_date}." if len(day_ids)==len(leave.day_details) else f"{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave."
+                title = f"{leave.user.first_name.capitalize()} Has Withdrawn the leave." if len(day_ids)==leave.day_details.count() else f"{leave.user.first_name.capitalize()} Has Withdrawn Some Days of Leave."
+                subtitle = f"{leave.user.long_name()} has withdrawn the leave from {leave.start_date} to {leave.end_date}." if len(day_ids)==leave.day_details.count() else f"{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave."
                 notification_data = {
                     'type': 'leave_request',  
                     'content_object': leave,
