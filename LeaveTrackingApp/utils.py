@@ -234,37 +234,27 @@ def user_leave_stats_user_view(user_id, year_range):
 
             max_days = list(rulesets.filter(Q(name='pto') | Q(name='wfh')).values_list('max_days_allowed', flat=True))
             
-            #merge 2 sorted list algo
-            total_days = []
-            cnt1 = cnt2 = 0
-            while(len(leave_days_in_curr_quarter) > cnt1 and len(wfh_days_in_curr_quarter) > cnt2):
-                if datetime.strptime(leave_days_in_curr_quarter[cnt1]['date'], "%Y-%m-%d").date() < datetime.strptime(wfh_days_in_curr_quarter[cnt2]['date'], "%Y-%m-%d").date():
-                    total_days.append(leave_days_in_curr_quarter[cnt1])
-                    cnt1 += 1
-                elif datetime.strptime(leave_days_in_curr_quarter[cnt1]['date'], "%Y-%m-%d").date() > datetime.strptime(wfh_days_in_curr_quarter[cnt2]['date'], "%Y-%m-%d").date():
-                    total_days.append(wfh_days_in_curr_quarter[cnt2])
-                    cnt2 += 1
-            while(cnt1 < len(leave_days_in_curr_quarter)):
-                total_days.append(leave_days_in_curr_quarter[cnt1])
-                cnt1 += 1
-            while(cnt2 < len(wfh_days_in_curr_quarter)):
-                total_days.append(wfh_days_in_curr_quarter[cnt2])
-                cnt2 += 1
-            
-            cnt1=0
-            for day in total_days:
-                cnt1 += 0.5 if day['is_half_day'] else 1
-                if cnt1 > max_days[0]+max_days[1]:
+            cnt=0
+            for day in leave_days_in_curr_quarter:
+                cnt += 0.5 if day['is_half_day'] else 1
+                if cnt > max_days[0]:
                     quarter_obj['unpaid'].append(day)
+            cnt=0
+            for day in wfh_days_in_curr_quarter:
+                cnt += 0.5 if day['is_half_day'] else 1
+                if cnt > max_days[1]:
+                    quarter_obj['unpaid'].append(day)
+            
+            quarter_obj['unpaid'].sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
 
             quarter_obj['leaves'] = {
-                'days_taken': len(leave_days_in_curr_quarter),
+                'days_taken': sum(0.5 if day['is_half_day'] else 1 for day in leave_days_in_curr_quarter),
                 'total_days': max_days[0],
                 'remaining': max(max_days[0] - len(leave_days_in_curr_quarter), 0),
                 'day_details': leave_days_in_curr_quarter
             }
             quarter_obj['wfh'] = {
-                'days_taken': len(wfh_days_in_curr_quarter),
+                'days_taken': sum(0.5 if day['is_half_day'] else 1 for day in wfh_days_in_curr_quarter),
                 'total_days': max_days[1],
                 'remaining': max(max_days[1] - len(wfh_days_in_curr_quarter), 0),
                 'day_details': wfh_days_in_curr_quarter
