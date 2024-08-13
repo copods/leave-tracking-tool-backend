@@ -29,8 +29,9 @@ def getHolidayCalendar(request):
                     year_calendar = yearCalendar.objects.filter(status__in=['approved', 'draft', 'sent_for_approval']).first()
                 if not year_calendar:
                     return JsonResponse({}, status=status.HTTP_200_OK)
-            holiday_calendars_serializer = YearCalendarSerializer(year_calendar)
-            return JsonResponse(holiday_calendars_serializer.data, safe=False)
+            data = YearCalendarSerializer(year_calendar).data
+            data['holidays'].sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
+            return JsonResponse(data, safe=False)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
