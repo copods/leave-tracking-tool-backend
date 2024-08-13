@@ -88,7 +88,7 @@ def user_leave_stats_hr_view(user_id, year_range):
                 days_in_quarter = [
                     day
                     for day in leave['day_details']
-                    if yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']
+                    if (yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']) and not day['is_withdrawn']
                 ]
 
                 max_pto = LeaveType.objects.get(name='pto').rule_set.max_days_allowed
@@ -209,7 +209,7 @@ def user_leave_stats_user_view(user_id, year_range):
                 day_details = leave['day_details']
                 for day in day_details:
                     #case where quarterly leave overlapped two years, filter off their days accordingly
-                    if start_date <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= end_date:
+                    if start_date <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= end_date and not day['is_withdrawn']:
                         temp_day = {
                             'date': day['date'],
                             'status': leave['status'],
@@ -346,7 +346,7 @@ def get_leave_summary(leaves_data, start_date, end_date, yearly=False):
     for leave in leaves_data:
         if leave['status'] == 'A':
             for day in leave['day_details']:
-                if datetime.strptime(day['date'], "%Y-%m-%d").date() >= start_date and datetime.strptime(day['date'], "%Y-%m-%d").date() <= end_date:
+                if datetime.strptime(day['date'], "%Y-%m-%d").date() >= start_date and datetime.strptime(day['date'], "%Y-%m-%d").date() <= end_date and not day['is_withdrawn']:
                     if not day['type'] in quarterly_leave_types:
                         continue
                     elif day['type'] == 'wfh':
