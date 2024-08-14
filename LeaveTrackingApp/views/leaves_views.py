@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models import Count, Q, Prefetch
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from LeaveTrackingApp.models import Leave, LeaveType, StatusReason
+from LeaveTrackingApp.models import DayDetails, Leave, LeaveType, StatusReason
 from LeaveTrackingApp.serializers import *
 from LeaveTrackingApp.utils import (
     check_leave_overlap,
@@ -27,7 +27,8 @@ import json
 @user_is_authorized
 def getLeaveTypes(request):
     if request.method=='GET':
-        leave_types = LeaveType.objects.all()
+        leave_types = LeaveType.objects.filter(~Q(rule_set__duration='None') | Q(rule_set__name='miscellaneous_leave'))
+        # leave_types = LeaveType.objects.all() # TODO: in phase 2
         leave_types_serializer = LeaveTypeSerializer(leave_types, many=True)
         return JsonResponse(leave_types_serializer.data, safe=False)
 
@@ -474,5 +475,46 @@ def getLeaveStatusCount(request):
                     rejected=Count('id', filter=Q(status='R')&Q(user=user)),
                 )
             return JsonResponse(leave_status_counts, safe=False)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+        
+@csrf_exempt
+@user_is_authorized
+def withdrawLeave(request, id):
+    if(request.method == 'PUT'):
+        try:
+            data =  JSONParser().parse(request)
+            day_ids = data.get('day_ids', [])
+            reason = data.get('reason', None)
+            leave = Leave.objects.get(id=id)
+            if leave.status in ['R', 'W']:
+                return JsonResponse({'error': "Can't withdraw leave"}, status=400)
+            if not reason:
+                return JsonResponse({'error': 'Reason is required'}, status=400)
+            if day_ids:
+                DayDetails.objects.filter(id__in=day_ids).update(is_withdrawn=True)
+                status_reason = StatusReason.objects.create(user=leave.user, status='W', reason=reason)
+                leave.status_reasons.add(status_reason)
+                if len(day_ids) == leave.day_details.count():
+                    leave.status = 'W'
+                    leave.save()
+
+                #notify approver
+                title = f"{leave.user.first_name.capitalize()} Has Withdrawn the leave." if len(day_ids)==leave.day_details.count() else f"{leave.user.first_name.capitalize()} Has Withdrawn Some Days of Leave."
+                subtitle = f"{leave.user.long_name()} has withdrawn the leave from {leave.start_date} to {leave.end_date}." if len(day_ids)==leave.day_details.count() else f"{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave."
+                notification_data = {
+                    'type': 'leave_request',  
+                    'content_object': leave,
+                    'receivers': [leave.approver.id],  
+                    'title': title,
+                    'subtitle': subtitle,
+                    'created_by': leave.user,
+                    'target_platforms': ['mobile']
+                }
+                errors = send_notification(notification_data, notification_data['receivers'])
+                if errors:
+                    return JsonResponse({'msg': 'Withdrawn Successfully', 'errors': errors}, status=200)
+                else:
+                    return JsonResponse({'msg': 'Withdrawn Successfully'}, status=200)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)

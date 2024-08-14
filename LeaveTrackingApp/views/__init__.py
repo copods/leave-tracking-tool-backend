@@ -19,7 +19,8 @@ from .leaves_views import (
     getUnpaidData,
     getLeavesList,
     editLeave,
-    getLeaveStatusCount
+    getLeaveStatusCount,
+    withdrawLeave
 )
 
 __all__ = [
@@ -41,4 +42,5 @@ __all__ = [
     'updateYearCalendar',
     'editLeave',
     'getLeaveStatusCount',
+    'withdrawLeave',
 ]
