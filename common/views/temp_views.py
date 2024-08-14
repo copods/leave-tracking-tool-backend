@@ -10,6 +10,8 @@ from PushNotificationApp.utils import send_notification
 from rest_framework.parsers import JSONParser
 from rest_framework import serializers
 
+from UserApp.models import User
+
 @csrf_exempt
 @transaction.atomic
 def clear_all_leaves(request):
@@ -29,6 +31,31 @@ def clear_all_leaves(request):
         
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@csrf_exempt
+@transaction.atomic
+def clear_leaves_of_user(request, id):
+    if request.method == 'DELETE':
+        try:
+            user = User.objects.get(id=id)
+            all_leaves = Leave.objects.filter(user=user)
+            day_details_ids = []
+            leave_cnt = day_detail_cnt = 0
+            for leave in all_leaves:
+                for day_detail in leave.day_details.all():
+                    day_details_ids.append(day_detail.id)
+                leave.day_details.clear()
+                leave.delete()
+                leave_cnt += 1
+            all_day_details = DayDetails.objects.filter(id__in=day_details_ids)
+            for day in all_day_details:
+                day.delete()
+                day_detail_cnt += 1
+            
+            return JsonResponse({'msg': f'{day_detail_cnt} day details and {leave_cnt} leaves deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         
 @csrf_exempt
 @transaction.atomic
