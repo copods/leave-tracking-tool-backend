@@ -13,7 +13,6 @@ def send_email(recipients, subject, template_name, context, send_from=None, app_
 
         from_email = send_from['email'] if send_from else "hello@copods.co"
         parent_dir = os.path.dirname(settings.BASE_DIR)
-        logo_path = os.path.join(parent_dir, 'common', 'templates', 'logo.png')
 
         emails = []
 
@@ -42,12 +41,6 @@ def send_email(recipients, subject, template_name, context, send_from=None, app_
                 recipient_list
             )
             email.attach_alternative(html_message, "text/html")
-
-            with open(logo_path, 'rb') as img_file:
-                logo_image = MIMEImage(img_file.read())
-                logo_image.add_header('Content-ID', '<logo>')
-                email.attach(logo_image)
-
             emails.append(email)
 
         connection = get_connection()
