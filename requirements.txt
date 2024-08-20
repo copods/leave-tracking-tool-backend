@@ -1,4 +1,5 @@
 asgiref==3.8.1
+boto3==1.34.129
 cachetools==5.3.3
 certifi==2024.2.2
 cffi==1.16.0
@@ -12,6 +13,7 @@ django-debug-toolbar==4.3.0
 djangorestframework==3.15.1
 djangorestframework-simplejwt==5.3.1
 django-ses==4.1.0
+django-storages==1.14.4
 firebase-admin==6.5.0
 google-auth==2.29.0
 google-auth-httplib2==0.2.0
@@ -38,3 +40,5 @@ urllib3==2.2.1
 django-debug-toolbar==4.3.0
 django-cors-headers==4.3.1
 nanoid==2.0.0
+whitenoise==6.6.0
+gunicorn==21.2.0

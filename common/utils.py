@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.conf import settings
 from django.template import Context, Template
 from django.core.mail import EmailMultiAlternatives, get_connection
@@ -10,15 +11,15 @@ def send_email(recipients, subject, template_name, context, send_from=None, app_
         if not isinstance(recipients, list):
             recipients = [recipients]
 
-        from_email = send_from['email'] if send_from else "kalash.bhagwat@copods.co"
+        from_email = send_from['email'] if send_from else "hello@copods.co"
         parent_dir = os.path.dirname(settings.BASE_DIR)
-        logo_path = os.path.join(parent_dir, 'common', 'templates', 'logo.png')
 
         emails = []
 
         for recipient in recipients:
             recipient_name = f"{recipient['first_name']} {recipient['last_name']}"
             context['recipient_name'] = recipient_name
+            context['year'] = datetime.now().year
 
             template_path = os.path.join(parent_dir, app_name, 'templates', template_name)
 
@@ -40,12 +41,6 @@ def send_email(recipients, subject, template_name, context, send_from=None, app_
                 recipient_list
             )
             email.attach_alternative(html_message, "text/html")
-
-            with open(logo_path, 'rb') as img_file:
-                logo_image = MIMEImage(img_file.read())
-                logo_image.add_header('Content-ID', '<logo>')
-                email.attach(logo_image)
-
             emails.append(email)
 
         connection = get_connection()

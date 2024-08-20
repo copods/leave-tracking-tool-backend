@@ -16,8 +16,19 @@ ALLOWED_HOSTS = [
     "localhost",
     "10.0.2.2", 
     "192.168.1.59", 
-    "192.168.1.104", "0.0.0.0", "159.89.175.231", "43.204.216.178",
-    "43.204.216.123","13.201.76.70"]
+    "192.168.1.104",
+    "0.0.0.0", 
+    # prod
+    "43.204.216.178",
+    "ec2-43-204-216-178.ap-south-1.compute.amazonaws.com"
+    # dev
+    "13.201.76.70",
+    "ec2-13-201-76-70.ap-south-1.compute.amazonaws.com"
+    "43.204.216.123",
+
+    "dev.api.podspace.copods.co",
+    "api.podspace.copods.co"
+]
 
 
 # Application definition
@@ -30,6 +41,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'corsheaders',
+    'whitenoise.runserver_nostatic',
+    'storages',
 ]
 
 EXTERNAL_APPS = [
@@ -54,6 +67,7 @@ MIDDLEWARE = [
     # Added the account middleware:
     "allauth.account.middleware.AccountMiddleware",
     'corsheaders.middleware.CorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware'
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -113,7 +127,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -133,22 +146,38 @@ SIMPLE_JWT = {
     'USER_ID_FIELD': 'email',
 }
 
+
 CORS_ORIGIN_ALLOW_ALL = True
-# CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_SECURE = True
-
-
-SECURE_SSL_REDIRECT = False
-CSRF_COOKIE_SECURE = True
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
 
 
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SES_REGION_NAME = 'ap-south-1'
+
+#s3 bucket
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = 'ap-south-1'
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+
+AWS_QUERYSTRING_EXPIRE = 600
+
+# Static files
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
+
+# Media files (Uploaded files)
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+
+# S3 config
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
 
 ### Email config with AWS SES
 EMAIL_BACKEND = 'django_ses.SESBackend'
