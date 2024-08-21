@@ -97,7 +97,7 @@ def createUser(request):
             user_data = JSONParser().parse(request)
             user_readded = False
             user_serializer = None
-            user = User.objects.all_with_deleted().filter(email=user_data['email']).first()
+            user = User.objects.all_with_deleted().filter(email=user_data['email'], is_deleted=True).first()
             if user:
                 user.is_deleted = False
                 user.save()
