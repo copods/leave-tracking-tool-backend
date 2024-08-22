@@ -516,7 +516,7 @@ def is_block_leave_taken(leave_data):
 def is_leave_valid(leave_data):
     messages = []
     misc_leave_types = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(rule_set__name='miscellaneous_leave')}
-    sick_leave_type = misc_leave_types.get('sick_leave')
+    sick_leave_id = misc_leave_types.get('sick_leave')
     valid = True
 
     #1: check if day details are not empty
@@ -534,7 +534,7 @@ def is_leave_valid(leave_data):
         valid = False
 
     #4: if its a sick leave of at least 2 days, a file must be attached
-    elif leave_data['leave_type'] == str(sick_leave_type.id):
+    elif leave_data['leave_type'] == str(sick_leave_id):
         if len(leave_data['day_details']) >= 2 and leave_data['assets_documents'] is None:
             messages.append('Sick Leave of at least 2 days must have a file attached')
             valid = False
