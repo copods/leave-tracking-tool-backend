@@ -240,47 +240,52 @@ def user_leave_stats_user_view(user_id, year_range):
             leave_days_in_curr_quarter = [day for day in leave_wfh_for_year['leaves'] if yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']]
             wfh_days_in_curr_quarter = [day for day in leave_wfh_for_year['wfh'] if yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']]
             optional_days_in_quarter = [day for day in leave_wfh_for_year['optional_leaves'] if yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']]
-
-            max_days = list(rulesets.filter(Q(name='pto') | Q(name='wfh') | Q(name='optional_leave')).values_list('max_days_allowed', flat=True))
             
+            max_days = {ruleset.name: ruleset.max_days_allowed for ruleset in rulesets.filter(Q(name='optional_leave') | Q(name='wfh') | Q(name='pto'))}
+            temp_pto_max_days = max_days['pto']
+
             #counting optional days
             for day in optional_days_in_quarter:
                 optional_cnt += 0.5 if day['is_half_day'] else 1
-                if optional_cnt > max_days[2]:
-                    max_days[0] -= 0.5 if day['is_half_day'] else 1
-                    if max_days[0] < 0:
-                        max_days[0] = 0
+                if optional_cnt > max_days['optional_leave']:
+                    temp_pto_max_days -= 0.5 if day['is_half_day'] else 1
+                    if temp_pto_max_days < 0:
+                        temp_pto_max_days = 0
                         quarter_obj['unpaid'].append(day)
 
             pto_cnt=0 #counting leaves
             for day in leave_days_in_curr_quarter:
                 pto_cnt += 0.5 if day['is_half_day'] else 1
-                if pto_cnt > max_days[0]:
+                if pto_cnt > temp_pto_max_days:
                     quarter_obj['unpaid'].append(day)
 
             wfh_cnt=0 #counting wfh
             for day in wfh_days_in_curr_quarter:
                 wfh_cnt += 0.5 if day['is_half_day'] else 1
-                if wfh_cnt > max_days[1]:
+                if wfh_cnt > max_days['wfh']:
                     quarter_obj['unpaid'].append(day)
+
+            print(optional_cnt, pto_cnt, wfh_cnt)
             
             quarter_obj['unpaid'].sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
             
-            leave_days_cnt = pto_cnt + optional_cnt
+            leave_days_cnt = pto_cnt + len(optional_days_in_quarter)
             wfh_days_cnt = wfh_cnt
+
             quarter_obj['leaves'] = {
                 'days_taken': leave_days_cnt,
-                'total_days': max_days[0],
-                'remaining': max(max_days[0] - leave_days_cnt, 0),
-                'day_details': leave_days_in_curr_quarter
+                'total_days': max_days['pto'],
+                'remaining': max(max_days['pto'] - leave_days_cnt, 0),
+                'day_details': leave_days_in_curr_quarter + optional_days_in_quarter
             }
             quarter_obj['wfh'] = {
                 'days_taken': wfh_days_cnt,
-                'total_days': max_days[1],
-                'remaining': max(max_days[1] - wfh_days_cnt, 0),
+                'total_days': max_days['wfh'],
+                'remaining': max(max_days['wfh'] - wfh_days_cnt, 0),
                 'day_details': wfh_days_in_curr_quarter
             }
             year_leave_stats['data'].append(quarter_obj)
+            print('\n\n')
 
         return year_leave_stats
 
