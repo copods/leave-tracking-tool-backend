@@ -499,8 +499,8 @@ def check_leave_overlap(leave_data):
 
 def is_block_leave(leave_data):
     # if a combo of at least 5 consecutive leaves and at most 2 wfh are there -> block leave
-    leave_type_ids = LeaveType.objects.filter(name__in=['pto', 'wfh']).values_list('id', flat=True)
-    x = ''.join('1' if day['type']==str(leave_type_ids[0]) and not day['is_half_day'] else '0' if day['type']==str(leave_type_ids[1]) else '' for day in leave_data['day_details'])
+    leave_type_dict = {leave_type.name: str(leave_type.id) for leave_type in LeaveType.filter(name__in=['pto', 'wfh', 'optional_leave'])}
+    x = ''.join('1' if ((day['type']==leave_type_dict['pto'] or day['type']==leave_type_dict['optional_leave']) and not day['is_half_day']) else '0' if day['type']==leave_type_dict['wfh'] else 'x' for day in leave_data['day_details'])
     if x.find("1"*5) < 0 or x.count("0") > 2: #TODO: take block leave limit from constants or rule set table from db
         return False
     return True
@@ -515,7 +515,7 @@ def is_block_leave_taken(curr_date, user_id):
         (Q(start_date__lte=end) & Q(end_date__gte=start))
     )
     for leave in leaves:
-        x = ''.join('1' if day.type.name == 'pto' and not day.is_half_day else '0' if day.type.name == 'wfh' else '' for day in leave.day_details.all())
+        x = ''.join('1' if ((day.type.name == 'pto' or day.type.name == 'optional_leave') and not day.is_half_day) else '0' if day.type.name == 'wfh' else 'x' for day in leave.day_details.all().order_by('date'))
         if x.find("1"*5) >= 0 and x.count("0") <= 2: #TODO: take block leave limit from constants or rule set table from db
             return [True, leave.start_date]
     return [False, None]
