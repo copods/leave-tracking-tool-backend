@@ -433,7 +433,7 @@ def getUnpaidData(request):
             }
 
             leave_types = LeaveType.objects.all()
-            users = User.objects.prefetch_related( Prefetch('user_of_leaves', queryset=Leave.objects.all()) )
+            users = User.objects.prefetch_related( Prefetch('user_of_leaves', queryset=Leave.objects.filter(status='A')) )
 
             for month in months:
                 for user in users:
