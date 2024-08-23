@@ -27,7 +27,8 @@ import json
 @user_is_authorized
 def getLeaveTypes(request):
     if request.method=='GET':
-        leave_types = LeaveType.objects.all()
+        leave_types = LeaveType.objects.filter(~Q(rule_set__duration='None') | Q(rule_set__name='miscellaneous_leave'))
+        # leave_types = LeaveType.objects.all() # TODO: in phase 2
         leave_types_serializer = LeaveTypeSerializer(leave_types, many=True)
         return JsonResponse(leave_types_serializer.data, safe=False)
 
@@ -231,9 +232,9 @@ def addLeaveStatus(request):
             try:
                 approver_data = UserSerializer(user).data
                 user_data = UserSerializer(leave.user).data
-                subject = f'Leave Status {status.capitalize()} by {approver_data["first_name"]} {approver_data["last_name"]}'
+                subject = f'Leave {status.capitalize()} by {approver_data["first_name"]} {approver_data["last_name"]}'
                 leave_text = f'''Your leave request from {leave.start_date} to {leave.end_date} has been {status.capitalize()}!.
-                                For more details, check out on the app.''' 
+                                For more details, check out on the app''' 
                 send_email(
                     recipients=[user_data],
                     subject=subject,
@@ -432,7 +433,7 @@ def getUnpaidData(request):
             }
 
             leave_types = LeaveType.objects.all()
-            users = User.objects.prefetch_related( Prefetch('user_of_leaves', queryset=Leave.objects.all()) )
+            users = User.objects.prefetch_related( Prefetch('user_of_leaves', queryset=Leave.objects.filter(status='A')) )
 
             for month in months:
                 for user in users:

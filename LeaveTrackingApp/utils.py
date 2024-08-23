@@ -184,16 +184,18 @@ def user_leave_stats_user_view(user_id, year_range):
 
         #find yearly leaves taken
         for leave_type in yearly_leave_types:
-            leave_request = user_leaves_for_year.filter(leave_type__name=leave_type, status='A').order_by('start_date').first()
+            leave_request = user_leaves_for_year.filter(leave_type__name=leave_type, status__in=['A', 'P']).order_by('start_date').first()
             if leave_request:
                 leave_request = LeaveUtilSerializer(leave_request).data
                 max_days = rulesets.filter(name=leave_type).first().max_days_allowed
+                day_details = [{'id': day['id'], 'date': day['date']} for day in leave_request['day_details'] if not day['is_withdrawn']]
                 year_leave_stats['yearly_leaves'].append({
+                    'id': leave_request['id'],
                     'leaveType': leave_request['leave_type'],
-                    'daysTaken' : len(leave_request['day_details']),
+                    'daysTaken' : len(day_details),
                     'totalDays': max_days,
-                    'remaining': max(0, max_days - len(leave_request['day_details'])),
-                    'dayDetails': [{'id': day['id'], 'date': day['date']} for day in leave_request['day_details']]
+                    'remaining': max(0, max_days - len(day_details)),
+                    'dayDetails': day_details
                 })
 
         # Organize quarterly leaves and day details
@@ -211,6 +213,7 @@ def user_leave_stats_user_view(user_id, year_range):
                     #case where quarterly leave overlapped two years, filter off their days accordingly
                     if start_date <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= end_date and not day['is_withdrawn']:
                         temp_day = {
+                            'leave_id': leave['id'],
                             'date': day['date'],
                             'status': leave['status'],
                             'is_half_day': day['is_half_day'],
@@ -499,7 +502,7 @@ def is_block_leave_taken(curr_date, user_id):
 def is_leave_valid(leave_data):
     messages = []
     misc_leave_types = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(rule_set__name='miscellaneous_leave')}
-    sick_leave_type = misc_leave_types.get('sick_leave')
+    sick_leave_id = misc_leave_types.get('sick_leave')
     valid = True
 
     #1: check if day details are not empty
@@ -517,7 +520,7 @@ def is_leave_valid(leave_data):
         valid = False
 
     #4: if its a sick leave of at least 2 days, a file must be attached
-    elif leave_data['leave_type'] == str(sick_leave_type.id):
+    elif leave_data['leave_type'] == str(sick_leave_id):
         if len(leave_data['day_details']) >= 2 and leave_data['assets_documents'] is None:
             messages.append('Sick Leave of at least 2 days must have a file attached')
             valid = False
