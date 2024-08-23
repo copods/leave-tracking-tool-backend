@@ -162,7 +162,10 @@ def user_leave_stats_user_view(user_id, year_range):
         user_leaves_for_year = Leave.objects.filter(
             Q(user__id=user_id) & ~Q(status__in=['W','R']) & 
             Q(start_date__lte=end_date) & Q(end_date__gte=start_date) 
-        )
+        ).order_by('start_date')
+        quarterly_leave_types = LeaveType.objects.filter(~Q(rule_set__duration="None") | Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
+        yearly_leave_types = LeaveType.objects.filter(Q(rule_set__duration="None") & ~Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
+        rulesets = RuleSet.objects.all()
 
         data = LeaveUtilSerializer(user_leaves_for_year, many=True).data
         leave_summary = get_leave_summary(data, start_date, end_date, yearly=True)
@@ -173,12 +176,17 @@ def user_leave_stats_user_view(user_id, year_range):
             'wfh_taken': leave_summary['wfh_taken'],
             'total_wfh': leave_summary['total_wfh'],
             'yearly_leaves': [],
+            'last_block_leave_taken': "",
             'data': [],
         }
 
-        quarterly_leave_types = LeaveType.objects.filter(~Q(rule_set__duration="None") | Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
-        yearly_leave_types = LeaveType.objects.filter(Q(rule_set__duration="None") & ~Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
-        rulesets = RuleSet.objects.all()
+        #last block leave taken
+        block_end_date = ""
+        for leave in user_leaves_for_year:
+            x = ''.join('1' if ((day.type.name == 'pto' or day.type.name == 'optional_leave') and not day.is_half_day) else '0' if day.type.name == 'wfh' else 'x' for day in leave.day_details.all().order_by('date'))
+            if x.find("1"*5) >= 0 and x.count("0") <= 2: #TODO: take block leave limit from constants or rule set table from db
+                block_end_date = leave.end_date
+        year_leave_stats['last_block_leave_taken'] = block_end_date
 
         ######TODO: handle the case when yearly leaves exceed the max allowed, they must be counted into quarterly leaves######
 
@@ -265,18 +273,18 @@ def user_leave_stats_user_view(user_id, year_range):
                 if wfh_cnt > max_days['wfh']:
                     quarter_obj['unpaid'].append(day)
 
-            print(optional_cnt, pto_cnt, wfh_cnt)
-            
             quarter_obj['unpaid'].sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
             
-            leave_days_cnt = pto_cnt + len(optional_days_in_quarter)
+            leave_days_cnt = pto_cnt + max(optional_cnt-max_days['optional_leave'], 0)
             wfh_days_cnt = wfh_cnt
 
+            leave_days = (leave_days_in_curr_quarter + optional_days_in_quarter[int(max_days['optional_leave']):])
+            leave_days.sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
             quarter_obj['leaves'] = {
                 'days_taken': leave_days_cnt,
                 'total_days': max_days['pto'],
                 'remaining': max(max_days['pto'] - leave_days_cnt, 0),
-                'day_details': leave_days_in_curr_quarter + optional_days_in_quarter
+                'day_details': leave_days
             }
             quarter_obj['wfh'] = {
                 'days_taken': wfh_days_cnt,
@@ -284,8 +292,13 @@ def user_leave_stats_user_view(user_id, year_range):
                 'remaining': max(max_days['wfh'] - wfh_days_cnt, 0),
                 'day_details': wfh_days_in_curr_quarter
             }
+            quarter_obj['optional_leaves'] = {
+                'days_taken': optional_cnt,
+                'total_days': max_days['optional_leave'],
+                'remaining': max(max_days['optional_leave'] - optional_cnt, 0),
+                'day_details': optional_days_in_quarter[:int(max_days['optional_leave'])]
+            }
             year_leave_stats['data'].append(quarter_obj)
-            print('\n\n')
 
         return year_leave_stats
 
