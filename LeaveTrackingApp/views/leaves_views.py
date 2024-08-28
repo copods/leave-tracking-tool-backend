@@ -499,7 +499,17 @@ def withdrawLeave(request, id):
                 if len(day_ids) == leave.day_details.count():
                     leave.status = 'W'
                     leave.save()
-
+                else:
+                    days = leave.day_details.all().order_by('date')
+                    start_flag = False
+                    for day in days:
+                        if not day.is_withdrawn:
+                            if not start_flag:
+                                leave.start_date = day.date
+                                start_flag = True
+                            leave.end_date = day.date
+                    leave.save()
+                    
                 #notify approver
                 title = f"{leave.user.first_name.capitalize()} Has Withdrawn the leave." if len(day_ids)==leave.day_details.count() else f"{leave.user.first_name.capitalize()} Has Withdrawn Some Days of Leave."
                 subtitle = f"{leave.user.long_name()} has withdrawn the leave from {leave.start_date} to {leave.end_date}." if len(day_ids)==leave.day_details.count() else f"{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave."
