@@ -7,9 +7,9 @@ from django.views.decorators.csrf import csrf_exempt
 from LeaveTrackingApp.models import DayDetails, Leave, LeaveType, StatusReason
 from LeaveTrackingApp.serializers import *
 from LeaveTrackingApp.utils import (
-    check_leave_overlap,
     get_unpaid_data,
     get_users_for_day,
+    is_leave_valid,
     user_leave_stats_hr_view,
     user_leave_stats_user_view
 )
@@ -55,9 +55,10 @@ def createLeaveRequest(request):
                 return JsonResponse({'error': 'Approver not found'}, status=status.HTTP_404_NOT_FOUND)
             
             #validations
-            if check_leave_overlap(leave_data):
-                return JsonResponse({'error': 'You have already applied leave for some of these days'}, status=status.HTTP_400_BAD_REQUEST)
-
+            response = is_leave_valid(leave_data)
+            if not response['valid']:
+                return JsonResponse({'message': response['messages']}, status=status.HTTP_400_BAD_REQUEST)
+                
             with transaction.atomic():
                 leave_serializer = LeaveSerializer(data=leave_data)
                 if leave_serializer.is_valid():
@@ -231,9 +232,9 @@ def addLeaveStatus(request):
             try:
                 approver_data = UserSerializer(user).data
                 user_data = UserSerializer(leave.user).data
-                subject = f'Leave Status {status.capitalize()} by {approver_data["first_name"]} {approver_data["last_name"]}'
+                subject = f'Leave {status.capitalize()} by {approver_data["first_name"]} {approver_data["last_name"]}'
                 leave_text = f'''Your leave request from {leave.start_date} to {leave.end_date} has been {status.capitalize()}!.
-                                For more details, check out on the app.''' 
+                                For more details, check out on the app''' 
                 send_email(
                     recipients=[user_data],
                     subject=subject,
@@ -432,7 +433,7 @@ def getUnpaidData(request):
             }
 
             leave_types = LeaveType.objects.all()
-            users = User.objects.prefetch_related( Prefetch('user_of_leaves', queryset=Leave.objects.all()) )
+            users = User.objects.prefetch_related( Prefetch('user_of_leaves', queryset=Leave.objects.filter(status='A')) )
 
             for month in months:
                 for user in users:
@@ -492,13 +493,24 @@ def withdrawLeave(request, id):
             if not reason:
                 return JsonResponse({'error': 'Reason is required'}, status=400)
             if day_ids:
+                non_withdrawn_days_cnt = leave.day_details.filter(is_withdrawn=False).count()
                 DayDetails.objects.filter(id__in=day_ids).update(is_withdrawn=True)
                 status_reason = StatusReason.objects.create(user=leave.user, status='W', reason=reason)
                 leave.status_reasons.add(status_reason)
-                if len(day_ids) == leave.day_details.count():
+                if len(day_ids) == non_withdrawn_days_cnt:
                     leave.status = 'W'
                     leave.save()
-
+                else:
+                    days = leave.day_details.all().order_by('date')
+                    start_flag = False
+                    for day in days:
+                        if not day.is_withdrawn:
+                            if not start_flag:
+                                leave.start_date = day.date
+                                start_flag = True
+                            leave.end_date = day.date
+                    leave.save()
+                    
                 #notify approver
                 title = f"{leave.user.first_name.capitalize()} Has Withdrawn the leave." if len(day_ids)==leave.day_details.count() else f"{leave.user.first_name.capitalize()} Has Withdrawn Some Days of Leave."
                 subtitle = f"{leave.user.long_name()} has withdrawn the leave from {leave.start_date} to {leave.end_date}." if len(day_ids)==leave.day_details.count() else f"{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave."

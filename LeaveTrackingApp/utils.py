@@ -184,16 +184,18 @@ def user_leave_stats_user_view(user_id, year_range):
 
         #find yearly leaves taken
         for leave_type in yearly_leave_types:
-            leave_request = user_leaves_for_year.filter(leave_type__name=leave_type, status='A').order_by('start_date').first()
+            leave_request = user_leaves_for_year.filter(leave_type__name=leave_type, status__in=['A', 'P']).order_by('start_date').first()
             if leave_request:
                 leave_request = LeaveUtilSerializer(leave_request).data
                 max_days = rulesets.filter(name=leave_type).first().max_days_allowed
+                day_details = [{'id': day['id'], 'date': day['date']} for day in leave_request['day_details'] if not day['is_withdrawn']]
                 year_leave_stats['yearly_leaves'].append({
+                    'id': leave_request['id'],
                     'leaveType': leave_request['leave_type'],
-                    'daysTaken' : len(leave_request['day_details']),
+                    'daysTaken' : len(day_details),
                     'totalDays': max_days,
-                    'remaining': max(0, max_days - len(leave_request['day_details'])),
-                    'dayDetails': [{'id': day['id'], 'date': day['date']} for day in leave_request['day_details']]
+                    'remaining': max(0, max_days - len(day_details)),
+                    'dayDetails': day_details
                 })
 
         # Organize quarterly leaves and day details
@@ -211,6 +213,7 @@ def user_leave_stats_user_view(user_id, year_range):
                     #case where quarterly leave overlapped two years, filter off their days accordingly
                     if start_date <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= end_date and not day['is_withdrawn']:
                         temp_day = {
+                            'leave_id': leave['id'],
                             'date': day['date'],
                             'status': leave['status'],
                             'is_half_day': day['is_half_day'],
@@ -381,18 +384,6 @@ def get_users_for_day(leaves_data, curr_date, wfh=False):
     }
     return data
 
-def check_leave_overlap(leave_data):
-    overlap = False
-    start_date = leave_data['start_date']
-    end_date = leave_data['end_date']
-    earlier_leave = Leave.objects.filter(
-        Q(user=leave_data['user']) & ~Q(status__in=['R', 'W']) &
-        (Q(start_date__lte=end_date ) & Q(end_date__gte=start_date)) 
-    )
-    if earlier_leave.exists():
-        overlap = True
-    return overlap
-
 def get_unpaid_data(user, user_leaves, leave_types, curr_year, month):
     try:
 
@@ -472,3 +463,71 @@ def get_unpaid_data(user, user_leaves, leave_types, curr_year, month):
 
     except Exception as e:
         raise e
+
+def check_leave_overlap(leave_data):
+    overlap = False
+    start_date = leave_data['start_date']
+    end_date = leave_data['end_date']
+    earlier_leave = Leave.objects.filter(
+        Q(user=leave_data['user']) & ~Q(status__in=['R', 'W']) &
+        (Q(start_date__lte=end_date ) & Q(end_date__gte=start_date)) 
+    )
+    if earlier_leave.exists():
+        overlap = True
+    return overlap
+
+def is_block_leave(leave_data):
+    # if a combo of at least 5 consecutive leaves and at most 2 wfh are there -> block leave
+    leave_type_dict = {leave_type.name: str(leave_type.id) for leave_type in LeaveType.objects.filter(name__in=['pto', 'wfh', 'optional_leave'])}
+    x = ''.join('1' if ((day['type']==leave_type_dict['pto'] or day['type']==leave_type_dict['optional_leave']) and not day['is_half_day']) else '0' if day['type']==leave_type_dict['wfh'] else 'x' for day in leave_data['day_details'])
+    if x.find("1"*5) < 0 or x.count("0") > 2: #TODO: take block leave limit from constants or rule set table from db
+        return False
+    return True
+
+def is_block_leave_taken(curr_date, user_id):
+    #check if block leave is taken within last 90 days
+    start = curr_date - timedelta(days=90)
+    end = curr_date
+    leaves = Leave.objects.filter(
+        Q(user__id=user_id) & Q(status__in=['A', 'P']) &
+        Q(leave_type__name='pto') &
+        (Q(start_date__lte=end) & Q(end_date__gte=start))
+    )
+    for leave in leaves:
+        x = ''.join('1' if ((day.type.name == 'pto' or day.type.name == 'optional_leave') and not day.is_half_day) else '0' if day.type.name == 'wfh' else 'x' for day in leave.day_details.all().order_by('date'))
+        if x.find("1"*5) >= 0 and x.count("0") <= 2: #TODO: take block leave limit from constants or rule set table from db
+            return [True, leave.start_date]
+    return [False, None]
+
+def is_leave_valid(leave_data):
+    messages = []
+    misc_leave_types = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(rule_set__name='miscellaneous_leave')}
+    sick_leave_id = misc_leave_types.get('sick_leave')
+    valid = True
+
+    #1: check if day details are not empty
+    if not leave_data['day_details']:
+        messages.append('Day details cannot be empty')
+
+    #2: check if leave overlaps
+    elif check_leave_overlap(leave_data):
+        messages.append('You have already applied leave for some of these days')
+        valid = False
+
+    #3: check if leave start date is after one week
+    elif datetime.strptime(leave_data['start_date'], "%Y-%m-%d").date() < datetime.now().date() + timedelta(days=7) and leave_data['leave_type'] not in misc_leave_types:
+        messages.append('Leave cannot be applied for less than one week')
+        valid = False
+
+    #4: if its a sick leave of at least 2 days, a file must be attached
+    elif leave_data['leave_type'] == str(sick_leave_id):
+        if len(leave_data['day_details']) >= 2 and leave_data['assets_documents'] is None:
+            messages.append('Sick Leave of at least 2 days must have a file attached')
+            valid = False
+    
+    #5: Block leave validation
+    elif is_block_leave(leave_data) and is_block_leave_taken(datetime.strptime(leave_data['start_date'], "%Y-%m-%d"), leave_data['user'])[0]:
+        messages.append("you can't take a block leave before 90 days of your last block leave")
+        valid = False
+        
+    return {'valid': valid, 'messages': messages}
