@@ -182,9 +182,10 @@ def user_leave_stats_user_view(user_id, year_range):
 
         #last block leave taken
         block_end_date = ""
+        block_limits = {x.name: int(x.max_days_allowed) for x in RuleSet.objects.filter(name__in=['block_leave_pto', 'block_leave_wfh'])}
         for leave in user_leaves_for_year:
             x = ''.join('1' if ((day.type.name == 'pto' or day.type.name == 'optional_leave') and not day.is_half_day) else '0' if day.type.name == 'wfh' else 'x' for day in leave.day_details.all().order_by('date'))
-            if x.find("1"*5) >= 0 and x.count("0") <= 2: #TODO: take block leave limit from constants or rule set table from db
+            if x.find("1"*block_limits['block_leave_pto']) >= 0 and x.count("0") <= block_limits['block_leave_wfh']: 
                 block_end_date = leave.end_date
         year_leave_stats['last_block_leave_taken'] = block_end_date
 
@@ -512,9 +513,11 @@ def check_leave_overlap(leave_data):
 
 def is_block_leave(leave_data):
     # if a combo of at least 5 consecutive leaves and at most 2 wfh are there -> block leave
+    # NOTE: this algo assuming block leave won't contain any half days, which is the case currently
     leave_type_dict = {leave_type.name: str(leave_type.id) for leave_type in LeaveType.objects.filter(name__in=['pto', 'wfh', 'optional_leave'])}
+    block_limits = {x.name: int(x.max_days_allowed) for x in RuleSet.objects.filter(name__in=['block_leave_pto', 'block_leave_wfh'])}
     x = ''.join('1' if ((day['type']==leave_type_dict['pto'] or day['type']==leave_type_dict['optional_leave']) and not day['is_half_day']) else '0' if day['type']==leave_type_dict['wfh'] else 'x' for day in leave_data['day_details'])
-    if x.find("1"*5) < 0 or x.count("0") > 2: #TODO: take block leave limit from constants or rule set table from db
+    if x.find("1"*block_limits['block_leave_pto']) < 0 or x.count("0") > block_limits['block_leave_wfh']: 
         return False
     return True
 
@@ -527,9 +530,10 @@ def is_block_leave_taken(curr_date, user_id):
         Q(leave_type__name='pto') &
         (Q(start_date__lte=end) & Q(end_date__gte=start))
     )
+    block_limits = {x.name: int(x.max_days_allowed) for x in RuleSet.objects.filter(name__in=['block_leave_pto', 'block_leave_wfh'])}
     for leave in leaves:
         x = ''.join('1' if ((day.type.name == 'pto' or day.type.name == 'optional_leave') and not day.is_half_day) else '0' if day.type.name == 'wfh' else 'x' for day in leave.day_details.all().order_by('date'))
-        if x.find("1"*5) >= 0 and x.count("0") <= 2: #TODO: take block leave limit from constants or rule set table from db
+        if x.find("1"*block_limits['block_leave_pto']) >= 0 and x.count("0") <= block_limits['block_leave_wfh']: 
             return [True, leave.start_date]
     return [False, None]
 
