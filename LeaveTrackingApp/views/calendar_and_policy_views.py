@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 from rest_framework import status
 from rest_framework.parsers import JSONParser
-from LeaveTrackingApp.models import YearPolicy, yearCalendar, STATUS_CHOICES
+from LeaveTrackingApp.models import RuleSet, YearPolicy, yearCalendar, STATUS_CHOICES
 from LeaveTrackingApp.serializers import YearCalendarSerializer, YearPolicySerializer
 from PushNotificationApp.models import Notification
 from PushNotificationApp.utils import send_notification
@@ -379,6 +379,8 @@ def updateYearPolicy(request, id):
             elif policy_obj.status == 'approved' and document_data['status'] == 'Published':
                 policy_obj.status = 'published'
                 policies = policy_obj.leave_policies.all()
+                block_leave_pto_ruleset = RuleSet.objects.get(name='block_leave_pto')
+                block_leave_wfh_ruleset = RuleSet.objects.get(name='block_leave_wfh')
                 with transaction.atomic():
                     for policy in policies:
                         if policy.leave_type:
@@ -386,6 +388,12 @@ def updateYearPolicy(request, id):
                                 max_days = policy.details.get('paid')
                             elif policy.name == 'paternity_leave' or policy.name == 'marriage_leave':
                                 max_days = policy.details.get('leaves')
+                            elif policy.name == 'block_leave':
+                                block_leave_pto_ruleset.max_days_allowed = policy.details.get('leaves')
+                                block_leave_pto_ruleset.save()
+                                block_leave_wfh_ruleset.max_days_allowed = policy.details.get('work_from_home')
+                                block_leave_wfh_ruleset.save()
+                                continue
                             elif policy.name == 'wfh' or policy.name == 'pto':
                                 max_days = policy.details.get('quarterly')
                             else:
