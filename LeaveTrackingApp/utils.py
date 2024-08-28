@@ -512,7 +512,7 @@ def check_leave_overlap(leave_data):
 
 def is_block_leave(leave_data):
     # if a combo of at least 5 consecutive leaves and at most 2 wfh are there -> block leave
-    leave_type_dict = {leave_type.name: str(leave_type.id) for leave_type in LeaveType.filter(name__in=['pto', 'wfh', 'optional_leave'])}
+    leave_type_dict = {leave_type.name: str(leave_type.id) for leave_type in LeaveType.objects.filter(name__in=['pto', 'wfh', 'optional_leave'])}
     x = ''.join('1' if ((day['type']==leave_type_dict['pto'] or day['type']==leave_type_dict['optional_leave']) and not day['is_half_day']) else '0' if day['type']==leave_type_dict['wfh'] else 'x' for day in leave_data['day_details'])
     if x.find("1"*5) < 0 or x.count("0") > 2: #TODO: take block leave limit from constants or rule set table from db
         return False
@@ -549,7 +549,7 @@ def is_leave_valid(leave_data):
         valid = False
 
     #3: check if leave start date is after one week
-    elif datetime.strptime(leave_data['start_date'], "%Y-%m-%d") < datetime.now() + timedelta(days=7) and leave_data['leave_type'] not in misc_leave_types:
+    elif datetime.strptime(leave_data['start_date'], "%Y-%m-%d").date() < datetime.now().date() + timedelta(days=7) and leave_data['leave_type'] not in misc_leave_types:
         messages.append('Leave cannot be applied for less than one week')
         valid = False
 
@@ -564,5 +564,4 @@ def is_leave_valid(leave_data):
         messages.append("you can't take a block leave before 90 days of your last block leave")
         valid = False
         
-
     return {'valid': valid, 'messages': messages}
