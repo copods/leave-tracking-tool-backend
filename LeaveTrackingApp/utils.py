@@ -238,6 +238,7 @@ def user_leave_stats_user_view(user_id, year_range):
 
         optional_cnt=0 #for counting the number of optional leaves
 
+        #TODO: handle the block leaves in calculations such as calculating unpaid leaves
         # Calculate quarterly statistics
         for i in range(4):
             quarter_obj = {
