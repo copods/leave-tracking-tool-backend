@@ -477,41 +477,27 @@ def check_leave_overlap(leave_data):
     return overlap
 
 def is_block_leave(leave_data):
-    # if a combo of 5 leaves and 2 wfh are there -> block leave
-    leave_type_name = LeaveType.objects.get(id=leave_data['leave_type']).name
-    if leave_type_name != 'pto':
+    # if a combo of at least 5 consecutive leaves and at most 2 wfh are there -> block leave
+    leave_type_dict = {leave_type.name: str(leave_type.id) for leave_type in LeaveType.objects.filter(name__in=['pto', 'wfh', 'optional_leave'])}
+    x = ''.join('1' if ((day['type']==leave_type_dict['pto'] or day['type']==leave_type_dict['optional_leave']) and not day['is_half_day']) else '0' if day['type']==leave_type_dict['wfh'] else 'x' for day in leave_data['day_details'])
+    if x.find("1"*5) < 0 or x.count("0") > 2: #TODO: take block leave limit from constants or rule set table from db
         return False
-    leave_cnt = wfh_cnt = 0
-    leave_type_ids = LeaveType.objects.filter(name__in=['pto', 'wfh']).values_list('id', flat=True)
-    for day in leave_data['day_details']:
-        if day['is_half_day']:
-                return False
-        if day['type'] == str(leave_type_ids[0]):
-            leave_cnt += 1
-        elif day['type'] == str(leave_type_ids[1]):
-            wfh_cnt += 1
-    
-    if leave_cnt == 5 and wfh_cnt == 2:
-        return True
-    return False
+    return True
 
-def is_block_leave_taken(leave_data):
-    #check if this is block leave
-    if not is_block_leave(leave_data):
-        return False
-
+def is_block_leave_taken(curr_date, user_id):
     #check if block leave is taken within last 90 days
-    start_date = datetime.strptime(leave_data['start_date'], "%Y-%m-%d") - timedelta(days=90)
-    end_date = datetime.strptime(leave_data['end_date'], "%Y-%m-%d")
+    start = curr_date - timedelta(days=90)
+    end = curr_date
     leaves = Leave.objects.filter(
-        Q(user__id=leave_data['user']) & Q(status__in=['A', 'P']) &
+        Q(user__id=user_id) & Q(status__in=['A', 'P']) &
         Q(leave_type__name='pto') &
-        (Q(start_date__lte=end_date) & Q(end_date__gte=start_date))
+        (Q(start_date__lte=end) & Q(end_date__gte=start))
     )
     for leave in leaves:
-        if len(leave['day_details']) == 7:
-            return True
-    return False
+        x = ''.join('1' if ((day.type.name == 'pto' or day.type.name == 'optional_leave') and not day.is_half_day) else '0' if day.type.name == 'wfh' else 'x' for day in leave.day_details.all().order_by('date'))
+        if x.find("1"*5) >= 0 and x.count("0") <= 2: #TODO: take block leave limit from constants or rule set table from db
+            return [True, leave.start_date]
+    return [False, None]
 
 def is_leave_valid(leave_data):
     messages = []
@@ -529,7 +515,7 @@ def is_leave_valid(leave_data):
         valid = False
 
     #3: check if leave start date is after one week
-    elif datetime.strptime(leave_data['start_date'], "%Y-%m-%d") < datetime.now() + timedelta(days=7) and leave_data['leave_type'] not in misc_leave_types:
+    elif datetime.strptime(leave_data['start_date'], "%Y-%m-%d").date() < datetime.now().date() + timedelta(days=7) and leave_data['leave_type'] not in misc_leave_types:
         messages.append('Leave cannot be applied for less than one week')
         valid = False
 
@@ -538,10 +524,10 @@ def is_leave_valid(leave_data):
         if len(leave_data['day_details']) >= 2 and leave_data['assets_documents'] is None:
             messages.append('Sick Leave of at least 2 days must have a file attached')
             valid = False
-
+    
     #5: Block leave validation
-    elif is_block_leave_taken(leave_data):
+    elif is_block_leave(leave_data) and is_block_leave_taken(datetime.strptime(leave_data['start_date'], "%Y-%m-%d"), leave_data['user'])[0]:
         messages.append("you can't take a block leave before 90 days of your last block leave")
         valid = False
-
+        
     return {'valid': valid, 'messages': messages}
