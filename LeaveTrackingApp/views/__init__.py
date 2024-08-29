@@ -23,11 +23,6 @@ from .leaves_views import (
     withdrawLeave
 )
 
-from .temp_view import (
-    clear_all_leaves,
-    clear_all_notifications,
-)
-
 __all__ = [
     'addLeaveStatus',
     'createLeaveRequest',
@@ -48,6 +43,4 @@ __all__ = [
     'editLeave',
     'getLeaveStatusCount',
     'withdrawLeave',
-    'clear_all_leaves',
-    'clear_all_notifications'
 ]

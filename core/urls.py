@@ -16,6 +16,9 @@ urlpatterns = [
     # notification related operations
     path("api/v1/", include("PushNotificationApp.urls")),
     
+    # dummy apis
+    path("api/v1/", include("common.urls")),
+
     #DEBUGGER
     path("__debug__/", include("debug_toolbar.urls")),
     
