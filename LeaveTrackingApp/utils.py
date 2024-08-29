@@ -501,8 +501,8 @@ def is_block_leave_taken(curr_date, user_id):
 
 def is_leave_valid(leave_data):
     messages = []
-    misc_leave_types = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(rule_set__name='miscellaneous_leave')}
-    sick_leave_id = misc_leave_types.get('sick_leave')
+    misc_leave_types_and_wfh = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(Q(rule_set__name='miscellaneous_leave') | Q(name='wfh'))}
+    sick_leave_id = misc_leave_types_and_wfh.get('sick_leave')
     valid = True
 
     #1: check if day details are not empty
@@ -515,7 +515,7 @@ def is_leave_valid(leave_data):
         valid = False
 
     #3: check if leave start date is after one week
-    elif datetime.strptime(leave_data['start_date'], "%Y-%m-%d").date() < datetime.now().date() + timedelta(days=7) and leave_data['leave_type'] not in list(misc_leave_types.values()):
+    elif datetime.strptime(leave_data['start_date'], "%Y-%m-%d").date() < datetime.now().date() + timedelta(days=7) and leave_data['leave_type'] not in list(misc_leave_types_and_wfh.values()):
         messages.append('Leave cannot be applied for less than one week')
         valid = False
 
