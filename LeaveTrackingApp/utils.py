@@ -65,6 +65,8 @@ def user_leave_stats_hr_view(user_id, year_range):
         quarterly_leave_types = user_leaves_for_year.filter(Q(leave_type__rule_set__duration="quarterly") | Q(leave_type__rule_set__name="miscellaneous_leave")).values_list('leave_type__name', flat=True).distinct()
         miscellaneous_types = user_leaves_for_year.filter(Q(leave_type__rule_set__name="miscellaneous_leave")).values_list('leave_type__name', flat=True).distinct()
 
+        #TODO: handle optional days and block leaves while calculating unpaid
+
         # Calculate quarterly statistics
         for i in range(4):
             quarter_obj = {
@@ -162,7 +164,10 @@ def user_leave_stats_user_view(user_id, year_range):
         user_leaves_for_year = Leave.objects.filter(
             Q(user__id=user_id) & ~Q(status__in=['W','R']) & 
             Q(start_date__lte=end_date) & Q(end_date__gte=start_date) 
-        )
+        ).order_by('start_date')
+        quarterly_leave_types = LeaveType.objects.filter(~Q(rule_set__duration="None") | Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
+        yearly_leave_types = LeaveType.objects.filter(Q(rule_set__duration="None") & ~Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
+        rulesets = RuleSet.objects.all()
 
         data = LeaveUtilSerializer(user_leaves_for_year, many=True).data
         leave_summary = get_leave_summary(data, start_date, end_date, yearly=True)
@@ -173,12 +178,18 @@ def user_leave_stats_user_view(user_id, year_range):
             'wfh_taken': leave_summary['wfh_taken'],
             'total_wfh': leave_summary['total_wfh'],
             'yearly_leaves': [],
+            'last_block_leave_taken': "",
             'data': [],
         }
 
-        quarterly_leave_types = LeaveType.objects.filter(~Q(rule_set__duration="None") | Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
-        yearly_leave_types = LeaveType.objects.filter(Q(rule_set__duration="None") & ~Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
-        rulesets = RuleSet.objects.all()
+        #last block leave taken
+        block_end_date = ""
+        block_limits = {x.name: int(x.max_days_allowed) for x in RuleSet.objects.filter(name__in=['block_leave_pto', 'block_leave_wfh'])}
+        for leave in user_leaves_for_year:
+            x = ''.join('1' if ((day.type.name == 'pto' or day.type.name == 'optional_leave') and not day.is_half_day) else '0' if day.type.name == 'wfh' else 'x' for day in leave.day_details.all().order_by('date'))
+            if x.find("1"*block_limits['block_leave_pto']) >= 0 and x.count("0") <= block_limits['block_leave_wfh']: 
+                block_end_date = leave.end_date
+        year_leave_stats['last_block_leave_taken'] = block_end_date
 
         ######TODO: handle the case when yearly leaves exceed the max allowed, they must be counted into quarterly leaves######
 
@@ -201,7 +212,8 @@ def user_leave_stats_user_view(user_id, year_range):
         # Organize quarterly leaves and day details
         leave_wfh_for_year = {
             'leaves': [],
-            'wfh': []
+            'wfh': [],
+            'optional_leaves': []
         }
 
         for leave_type in quarterly_leave_types:
@@ -219,10 +231,16 @@ def user_leave_stats_user_view(user_id, year_range):
                             'is_half_day': day['is_half_day'],
                             'type': day['type']
                         }
-                        if day['type'] == 'wfh':
+                        if day['type'] == 'optional_leave':
+                            leave_wfh_for_year['optional_leaves'].append(temp_day)
+                        elif day['type'] == 'wfh':
                             leave_wfh_for_year['wfh'].append(temp_day)
                         else:
                             leave_wfh_for_year['leaves'].append(temp_day)
+
+        optional_cnt=0 #for counting the number of optional leaves
+
+        #TODO: handle the block leaves in calculations such as calculating unpaid leaves
 
         # Calculate quarterly statistics
         for i in range(4):
@@ -234,35 +252,56 @@ def user_leave_stats_user_view(user_id, year_range):
 
             leave_days_in_curr_quarter = [day for day in leave_wfh_for_year['leaves'] if yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']]
             wfh_days_in_curr_quarter = [day for day in leave_wfh_for_year['wfh'] if yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']]
+            optional_days_in_quarter = [day for day in leave_wfh_for_year['optional_leaves'] if yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']]
+            
+            max_days = {ruleset.name: ruleset.max_days_allowed for ruleset in rulesets.filter(Q(name='optional_leave') | Q(name='wfh') | Q(name='pto'))}
+            temp_pto_max_days = max_days['pto']
 
-            max_days = list(rulesets.filter(Q(name='pto') | Q(name='wfh')).values_list('max_days_allowed', flat=True))
-            
-            cnt=0
+            #counting optional days
+            for day in optional_days_in_quarter:
+                optional_cnt += 0.5 if day['is_half_day'] else 1
+                if optional_cnt > max_days['optional_leave']:
+                    temp_pto_max_days -= 0.5 if day['is_half_day'] else 1
+                    if temp_pto_max_days < 0:
+                        temp_pto_max_days = 0
+                        quarter_obj['unpaid'].append(day)
+
+            pto_cnt=0 #counting leaves
             for day in leave_days_in_curr_quarter:
-                cnt += 0.5 if day['is_half_day'] else 1
-                if cnt > max_days[0]:
+                pto_cnt += 0.5 if day['is_half_day'] else 1
+                if pto_cnt > temp_pto_max_days:
                     quarter_obj['unpaid'].append(day)
-            cnt=0
+
+            wfh_cnt=0 #counting wfh
             for day in wfh_days_in_curr_quarter:
-                cnt += 0.5 if day['is_half_day'] else 1
-                if cnt > max_days[1]:
+                wfh_cnt += 0.5 if day['is_half_day'] else 1
+                if wfh_cnt > max_days['wfh']:
                     quarter_obj['unpaid'].append(day)
-            
+
             quarter_obj['unpaid'].sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
             
-            leave_days_cnt = sum(0.5 if day['is_half_day'] else 1 for day in leave_days_in_curr_quarter)
-            wfh_days_cnt = sum(0.5 if day['is_half_day'] else 1 for day in wfh_days_in_curr_quarter)
+            leave_days_cnt = pto_cnt + max(optional_cnt-max_days['optional_leave'], 0)
+            wfh_days_cnt = wfh_cnt
+
+            leave_days = (leave_days_in_curr_quarter + optional_days_in_quarter[int(max_days['optional_leave']):])
+            leave_days.sort(key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"))
             quarter_obj['leaves'] = {
                 'days_taken': leave_days_cnt,
-                'total_days': max_days[0],
-                'remaining': max(max_days[0] - leave_days_cnt, 0),
-                'day_details': leave_days_in_curr_quarter
+                'total_days': max_days['pto'],
+                'remaining': max(max_days['pto'] - leave_days_cnt, 0),
+                'day_details': leave_days
             }
             quarter_obj['wfh'] = {
                 'days_taken': wfh_days_cnt,
-                'total_days': max_days[1],
-                'remaining': max(max_days[1] - wfh_days_cnt, 0),
+                'total_days': max_days['wfh'],
+                'remaining': max(max_days['wfh'] - wfh_days_cnt, 0),
                 'day_details': wfh_days_in_curr_quarter
+            }
+            quarter_obj['optional_leaves'] = {
+                'days_taken': optional_cnt,
+                'total_days': max_days['optional_leave'],
+                'remaining': max(max_days['optional_leave'] - optional_cnt, 0),
+                'day_details': optional_days_in_quarter[:int(max_days['optional_leave'])]
             }
             year_leave_stats['data'].append(quarter_obj)
 
@@ -478,9 +517,11 @@ def check_leave_overlap(leave_data):
 
 def is_block_leave(leave_data):
     # if a combo of at least 5 consecutive leaves and at most 2 wfh are there -> block leave
+    # NOTE: this algo assuming block leave won't contain any half days, which is the case currently
     leave_type_dict = {leave_type.name: str(leave_type.id) for leave_type in LeaveType.objects.filter(name__in=['pto', 'wfh', 'optional_leave'])}
+    block_limits = {x.name: int(x.max_days_allowed) for x in RuleSet.objects.filter(name__in=['block_leave_pto', 'block_leave_wfh'])}
     x = ''.join('1' if ((day['type']==leave_type_dict['pto'] or day['type']==leave_type_dict['optional_leave']) and not day['is_half_day']) else '0' if day['type']==leave_type_dict['wfh'] else 'x' for day in leave_data['day_details'])
-    if x.find("1"*5) < 0 or x.count("0") > 2: #TODO: take block leave limit from constants or rule set table from db
+    if x.find("1"*block_limits['block_leave_pto']) < 0 or x.count("0") > block_limits['block_leave_wfh']: 
         return False
     return True
 
@@ -493,9 +534,10 @@ def is_block_leave_taken(curr_date, user_id):
         Q(leave_type__name='pto') &
         (Q(start_date__lte=end) & Q(end_date__gte=start))
     )
+    block_limits = {x.name: int(x.max_days_allowed) for x in RuleSet.objects.filter(name__in=['block_leave_pto', 'block_leave_wfh'])}
     for leave in leaves:
         x = ''.join('1' if ((day.type.name == 'pto' or day.type.name == 'optional_leave') and not day.is_half_day) else '0' if day.type.name == 'wfh' else 'x' for day in leave.day_details.all().order_by('date'))
-        if x.find("1"*5) >= 0 and x.count("0") <= 2: #TODO: take block leave limit from constants or rule set table from db
+        if x.find("1"*block_limits['block_leave_pto']) >= 0 and x.count("0") <= block_limits['block_leave_wfh']: 
             return [True, leave.start_date]
     return [False, None]
 
