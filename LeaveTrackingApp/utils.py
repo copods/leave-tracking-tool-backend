@@ -65,6 +65,8 @@ def user_leave_stats_hr_view(user_id, year_range):
         quarterly_leave_types = user_leaves_for_year.filter(Q(leave_type__rule_set__duration="quarterly") | Q(leave_type__rule_set__name="miscellaneous_leave")).values_list('leave_type__name', flat=True).distinct()
         miscellaneous_types = user_leaves_for_year.filter(Q(leave_type__rule_set__name="miscellaneous_leave")).values_list('leave_type__name', flat=True).distinct()
 
+        #TODO: handle optional days and block leaves while calculating unpaid
+
         # Calculate quarterly statistics
         for i in range(4):
             quarter_obj = {
@@ -239,6 +241,7 @@ def user_leave_stats_user_view(user_id, year_range):
         optional_cnt=0 #for counting the number of optional leaves
 
         #TODO: handle the block leaves in calculations such as calculating unpaid leaves
+
         # Calculate quarterly statistics
         for i in range(4):
             quarter_obj = {
