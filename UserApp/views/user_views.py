@@ -2,6 +2,7 @@ import math
 from django.db.models import Count, Q
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
 from rest_framework import status
 from rest_framework.parsers import JSONParser
 from UserApp.decorators import user_is_authorized
@@ -23,7 +24,7 @@ def createUserUnauthorized(request):
     if request.method=='POST':
         user_data = JSONParser().parse(request)
         role = RoleSerializer(Role.objects.get(role_key='admin'))
-        department = DepartmentSerializer(Department.objects.get(department_key='developer'))
+        department = DepartmentSerializer(Department.objects.get(department_key='development'))
         user_data['role'] = role.data['id']
         user_data['department'] = department.data['id']
         user_serializer = UserSerializer(data=user_data)
@@ -44,7 +45,7 @@ def userList(request):
             search = query_params.get('search', [None])[0] 
             sort = query_params.get('sort', [None])[0]
             page = query_params.get('page', [1])[0]
-            pageSize = query_params.get('pageSize', [10])[0]
+            pageSize = query_params.get('pageSize', [6])[0]
             serializer_class = UserListSerializer if query_params.get('admin', [False])[0] else ApproverListSerializer
             
             filters = {}
@@ -54,6 +55,9 @@ def userList(request):
                         filters['department__department_key__in'] = value
                     elif key == 'role':
                         filters['role__role_key__in'] = value
+                    elif key == 'work_type':
+                        value = [('in_office' if v == 'In-Office' else ('work_from_home' if v == 'Work-From-Home' else v)) for v in value]
+                        filters[f'{key}__in'] = value
                     else:
                         filters[f'{key}__in'] = value
             
@@ -67,7 +71,7 @@ def userList(request):
                     Q(department__department_name__icontains=search)
                 )
             
-            users = users.order_by(sort) if sort else users.order_by('-updated_at')
+            users = users.order_by(sort) if sort else users.order_by('-created_at')
             total_users = users.count()
 
             if page or pageSize:
@@ -80,8 +84,8 @@ def userList(request):
                 'current_page': int(page),
                 'page_size': int(pageSize),
                 'data': users_serializer.data,
-
             }, safe=False)
+        
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -91,14 +95,34 @@ def createUser(request):
     if request.method=='POST':
         try:
             user_data = JSONParser().parse(request)
-            user_serializer = UserSerializer(data=user_data)
-            if user_serializer.is_valid():
-                user_serializer.save()
-                #send email to user
+            user_readded = False
+            user_serializer = None
+            user = User.objects.all_with_deleted().filter(email=user_data['email'], is_deleted=True).first()
+            if user:
+                user.is_deleted = False
+                user.save()
+                user_serializer = UserSerializer(user, data=user_data)
+                if user_serializer.is_valid():
+                    user_serializer.save()
+                    user_readded = True
+                else:
+                    errors = user_serializer.errors
+                    return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                user_serializer = UserSerializer(data=user_data)
+                if user_serializer.is_valid():
+                    user_serializer.save()
+                else:
+                    errors = user_serializer.errors
+                    return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+
+            errors = []
+
+            #send email to user
+            try:
                 data = user_serializer.data
                 if not isinstance(data, list):
                     data = [data]
-
                 send_email(
                     recipients=data,
                     subject='Your Leave Management Platform Awaits!',
@@ -106,11 +130,14 @@ def createUser(request):
                     context={},
                     app_name='UserApp'
                 )
-
-                return JsonResponse("Added Successfully!!", safe=False)
-            else:
-                errors = user_serializer.errors
-                return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                errors.append(str(e))
+            
+            response = {"message": "Added Successfully!!" if not user_readded else "User readded successfully!!"}
+            if errors:
+                response["errors"] = errors
+            return JsonResponse(response, status=status.HTTP_201_CREATED)
+        
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
@@ -160,45 +187,80 @@ def user(request,id):
 def workTypeCounts(request):
     if request.method == 'GET':
         work_type_counts = User.objects.aggregate(
-            in_office=Count('id', filter=Q(work_type="In-Office")),
-            work_from_home=Count('id', filter=Q(work_type="Work-From-Home"))
+            in_office=Count('id', filter=Q(work_type="in_office")),
+            work_from_home=Count('id', filter=Q(work_type="work_from_home")),
+            total=Count('id')
         )
         return JsonResponse({
             "In-Office": work_type_counts['in_office'],
             "Work-From-Home": work_type_counts['work_from_home'],
-            "Total": work_type_counts['in_office'] + work_type_counts['work_from_home']
+            "Total": work_type_counts['total']
         }, safe=False)
 
 
 @csrf_exempt
 @user_is_authorized
+@transaction.atomic
 def bulkUserAdd(request):
     if request.method == 'POST':
-        users_data = JSONParser().parse(request)
+        try:
+            users_data = JSONParser().parse(request)                         
+            deleted_users = User.objects.all_with_deleted().filter(is_deleted=True)
+            deleted_users_emails = deleted_users.values_list('email', flat=True)
+            readded_users = []
 
-        for user in users_data:
-            role = Role.objects.get(role_key=user['role'])
-            department = Department.objects.get(department_key=user['department'])
+            roles = Role.objects.all()
+            departments = Department.objects.all()
 
-            role_serializer = RoleSerializer(role)
-            user['role'] = role_serializer.data['id']
+            idxs_to_remove = []
+            for idx, user in enumerate(users_data):
+                role = roles.get(role_key=user['role'])
+                department = departments.get(department_key=user['department'])
+                user['role'] = str(role.id)
+                user['department'] = str(department.id)
+                if user['email'] in deleted_users_emails:
+                    readded_users.append(user)
+                    idxs_to_remove.append(idx)
+            users_data = [user for i, user in enumerate(users_data) if i not in idxs_to_remove]
 
-            department_serializer = DepartmentSerializer(department)
-            user['department'] = department_serializer.data['id']
-
-
-        users_serializer = UserSerializer(data=users_data, many=True)
-        if users_serializer.is_valid():
-            users_serializer.save()
+            for user in readded_users:
+                instance = deleted_users.get(email=user['email'])
+                instance.is_deleted = False
+                instance.save()
+                user_serializer = UserSerializer(instance, data=user)
+                if user_serializer.is_valid():
+                    user_serializer.save()
+                else:
+                    return JsonResponse(user_serializer.errors, safe=False, status=status.HTTP_400_BAD_REQUEST)
+         
+            users_serializer = UserSerializer(data=users_data, many=True)
+            if users_serializer.is_valid():
+                users_serializer.save()
+            else:
+                return JsonResponse(users_serializer.errors, safe=False, status=status.HTTP_400_BAD_REQUEST)
+            
+            errors = []
             #send email to users
-            data = users_serializer.data
-            send_email(data)
-
-            return JsonResponse("Added Successfully!!", safe=False)
-        else:
-            errors = users_serializer.errors
-            return JsonResponse({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                data = users_serializer.data
+                data = [data] if not isinstance(data, list) else data
+                send_email(
+                    recipients=data,
+                    subject='Your Leave Management Platform Awaits!',
+                    template_name='onboarding_template.html',
+                    context={},
+                    app_name='UserApp'
+                )
+            except Exception as e:
+                errors.append(str(e))
+            
+            response = f"{len(users_data)} Added Successfully!!" if not readded_users else f"{len(users_data)} Added Successfully and {len(readded_users)} Re-Added Successfully!!"
+            if errors:
+                response['errors'] = errors
+            return JsonResponse(response, safe=False)
         
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt
 @user_is_authorized

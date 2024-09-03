@@ -5,4 +5,5 @@ urlpatterns = [
     re_path(r'^fcmTokenStore$', fcmTokenStore),
     re_path(r'^fcmTokenValidate$', fcmTokenValidate),
     re_path(r'^fetchNotifications$', fetchNotifications),
+    re_path(r'^updateNotifications$', updateNotifications),
 ]

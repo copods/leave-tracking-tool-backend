@@ -45,7 +45,7 @@ def sign_in_web(request):
             user = User.objects.get(email=user_info['email'])
             user.profile_image = user_info['picture']
             user.save()
-            if user.role.role_key in {'admin', 'super-admin'}:
+            if user.role.role_key in {'admin', 'hr'}:
                 access_token, refresh_token = generate_tokens(user)
                 return JsonResponse({
                     'access_token': str(access_token), 
@@ -89,6 +89,7 @@ def sign_in_app(request):
                 'last_name': user.last_name,
                 'email': user.email,
                 'profile_image': user.profile_image,
+                'onboarding_status': user.onboarding_status
             })
         except User.DoesNotExist:
             return JsonResponse({'error': 'User not found'}, status=404)
