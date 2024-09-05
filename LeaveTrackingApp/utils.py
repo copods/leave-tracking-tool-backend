@@ -102,9 +102,7 @@ def user_leave_stats_hr_view(user_id, year_range):
 
                 if leave['leave_type'] in miscellaneous_types:
                     temp_leaves_taken = taken_unpaid_obj['pto']['leaves_taken']
-                    print("temp leaves", temp_leaves_taken)
                     x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_pto, max_wfh_days=0)
-                    print("find unpaid", x)
                     taken_unpaid_obj['pto']['leaves_taken'] += x[3]
                     taken_unpaid_obj['pto']['unpaid'] += x[1]
 
@@ -112,14 +110,12 @@ def user_leave_stats_hr_view(user_id, year_range):
                     if leave['leave_type'] in ['pto', 'wfh']:
                         max_wfh_days = LeaveType.objects.get(name='wfh').rule_set.max_days_allowed
                         x = find_unpaid_days(days_in_quarter, leaves_taken=taken_unpaid_obj['pto']['leaves_taken'], wfh_taken=taken_unpaid_obj['wfh']['leaves_taken'], max_leave_days=max_pto, max_wfh_days=max_wfh_days)
-                        print("find unpaid2", x)
                         taken_unpaid_obj['pto']['leaves_taken'] += x[3]
                         taken_unpaid_obj['wfh']['leaves_taken'] += x[2]
                     else: 
                         max_days_allowed = LeaveType.objects.get(name=leave['leave_type']).rule_set.max_days_allowed
                         temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
                         x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
-                        print("find unpaid3", x)
                         taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
                         taken_unpaid_obj['pto']['leaves_taken'] += min(max_pto, x[3] - x[1]) #reducing available pto if these yearly leaves are taken in the current quarter
 
@@ -140,13 +136,10 @@ def user_leave_stats_hr_view(user_id, year_range):
             
             if 'pto' in taken_unpaid_obj.keys():
                 taken_unpaid_obj['pto']['unpaid'] = taken_unpaid_obj['pto']['leaves_taken'] = 0
-                print("ptoWala", taken_unpaid_obj['pto']['unpaid'])
             if 'wfh' in taken_unpaid_obj.keys():
                 taken_unpaid_obj['wfh']['unpaid'] = taken_unpaid_obj['wfh']['leaves_taken'] = 0
-                print("wfhWala", taken_unpaid_obj['wfh']['unpaid'])
             for lt in quarterly_leave_types:
                 taken_unpaid_obj[lt]['unpaid'] = taken_unpaid_obj[lt]['leaves_taken'] = 0
-                print("unpiadssss", taken_unpaid_obj[lt]['unpaid'])
 
             year_leave_stats['data'].append(quarter_obj)
 
