@@ -364,7 +364,7 @@ def enableEditLeave(request):
                     'content_object': leave,
                     'receivers': [leave.user.id],  
                     'title': f"{user.first_name.capitalize()} Has Requested For Edit.",
-                    'subtitle': f"{user.long_name()} has requested to edit your leave for {leave.start_date} to {leave.end_date}.",
+                    'subtitle': f"{user.long_name()} has requested to edit your leave for {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}.",
                     'created_by': user,
                     'target_platforms': ['mobile']
                 }
@@ -513,7 +513,7 @@ def withdrawLeave(request, id):
                     
                 #notify approver
                 title = f"{leave.user.first_name.capitalize()} Has Withdrawn the leave." if len(day_ids)==leave.day_details.count() else f"{leave.user.first_name.capitalize()} Has Withdrawn Some Days of Leave."
-                subtitle = f"{leave.user.long_name()} has withdrawn the leave from {leave.start_date} to {leave.end_date}." if len(day_ids)==leave.day_details.count() else f"{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave."
+                subtitle = f"{leave.user.long_name()} has withdrawn the leave from {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}." if len(day_ids)==leave.day_details.count() else f"{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave."
                 notification_data = {
                     'type': 'leave_request',  
                     'content_object': leave,
