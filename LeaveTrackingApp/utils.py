@@ -544,7 +544,10 @@ def is_block_leave_taken(curr_date, user_id):
 def is_leave_valid(leave_data):
     messages = []
     misc_leave_types_and_wfh = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(Q(rule_set__name='miscellaneous_leave') | Q(name='wfh'))}
+    print(misc_leave_types_and_wfh)
     sick_leave_id = misc_leave_types_and_wfh.get('sick_leave')
+    marriage_leave_id = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(Q(rule_set__name='marriage_leave'))}.get('marriage_leave')
+    print("marriage", marriage_leave_id)
     valid = True
 
     #1: check if day details are not empty
@@ -571,5 +574,11 @@ def is_leave_valid(leave_data):
     elif is_block_leave(leave_data) and is_block_leave_taken(datetime.strptime(leave_data['start_date'], "%Y-%m-%d"), leave_data['user'])[0]:
         messages.append("you can't take a block leave before 90 days of your last block leave")
         valid = False
+    
+    # #6: if its a Marriage leave, the total leave days count should be 5 days.
+    elif leave_data['leave_type'] == str(marriage_leave_id):
+        if len(leave_data['day_details']) != 5:
+            messages.append('Marriage leave should consist of 5 days.')
+            valid = False
         
     return {'valid': valid, 'messages': messages}
