@@ -15,7 +15,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1", 
     "localhost",
     "10.0.2.2", 
-    "192.168.1.59", 
+    "192.168.1.58", 
     "192.168.1.104",
     "0.0.0.0", 
     # prod
@@ -26,7 +26,7 @@ ALLOWED_HOSTS = [
     "ec2-13-201-76-70.ap-south-1.compute.amazonaws.com"
     "43.204.216.123",
 
-    "dev.api.podspace.copods.co",
+    "dev.podspace.copods.co",
     "api.podspace.copods.co"
 ]
 
