@@ -86,6 +86,11 @@ def user_leave_stats_hr_view(user_id, year_range):
             quarter_obj['quarter_summary'] = get_leave_summary(leaves_for_curr_quarter, yearly_quarters[year][i]['start_date'], yearly_quarters[year][i]['end_date'])
 
             for leave in leaves_for_curr_quarter:
+
+                # Skip leaves that are rejected
+                if leave['status'] == 'R':
+                    continue
+
                 # leaves overlapping quarters is handled here -> put days in respective quarter accordingly in respective leave
                 days_in_quarter = [
                     day
