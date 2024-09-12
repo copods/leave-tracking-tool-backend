@@ -78,7 +78,6 @@ def fetchNotifications(request):
             platform = query_params.get('platform', 'mobile')
             my_requests = query_params.get('my_requests')
             isRead = query_params.get('isRead', None)
-            print("read", isRead)
             user = User.objects.get(email=user_email)
             notifications = Notification.objects.filter(receivers__contains=[user.id])
 
@@ -88,12 +87,10 @@ def fetchNotifications(request):
                 leaves = Leave.objects.filter(user=user)
                 notifications = notifications.filter(object_id__in=[leave.id for leave in leaves])
             if isRead:
-                print(isRead)
                 notifications = notifications.filter(isRead=isRead)
             
             notifications = notifications.order_by('-created_at')
             notifications_serializer = FetchNotificationsSerializer(notifications, many=True)
-            print("notification", notifications_serializer)
             return JsonResponse(notifications_serializer.data, safe=False)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -106,7 +103,6 @@ def updateNotifications(request):
     if request.method == 'PUT':
         try:
             ids = JSONParser().parse(request)
-            print(ids)
             Notification.objects.filter(id__in=ids).update(isRead=True)
             return JsonResponse({'message': 'Notifications Updated Successfully!!'}, status=status.HTTP_200_OK)
         except Exception as e:

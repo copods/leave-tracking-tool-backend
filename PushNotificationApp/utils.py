@@ -3,6 +3,9 @@ from PushNotificationApp.models import FCMToken, Notification
 import firebase_admin
 from firebase_admin import credentials, messaging
 import os
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 
 server_key = {
   "type": os.environ.get('TYPE'),
@@ -35,29 +38,63 @@ def multi_fcm_tokens_validate(fcm_tokens):
     except Exception as e:
         raise e
     
+# def send_token_push(title, body, tokens):
+#     message = messaging.MulticastMessage(
+#         notification=messaging.Notification(
+#             title=title,
+#             body=body
+#         ),
+#         tokens=tokens
+#     )
+#     response = messaging.send(message)
+#     print(response)
+#     try:
+#         if response.failure_count > 0:
+#             error_reasons = [str(res.exception) for res in response.responses if not res.success]
+#             return {
+#                 'error': f'Failed to send to {response.failure_count} tokens due to: {", ".join(error_reasons)}'
+#             }
+#         else:
+#             return {
+#                 'success': True,
+#                 'message': 'Notification sent successfully to all tokens'}
+#     except Exception as e:
+#         return {'error': str(e)}
+
+
 def send_token_push(title, body, tokens):
-    message = messaging.MulticastMessage(
-        notification=messaging.Notification(
-            title=title,
-            body=body
-        ),
-        tokens=tokens
-    )
-    response = messaging.send_multicast(message)
-    try:
-        if response.failure_count > 0:
-            error_reasons = [str(res.exception) for res in response.responses if not res.success]
-            return {
-                'error': f'Failed to send to {response.failure_count} tokens due to: {", ".join(error_reasons)}'
-            }
-        else:
-            return {
-                'success': True,
-                'message': 'Notification sent successfully to all tokens'}
-    except Exception as e:
-        return {'error': str(e)}
+    success_count = 0
+    failure_count = 0
+    error_reasons = []
 
+    for token in tokens:
+        print("token", token)
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=title,
+                body=body,
+            ),
+            token=token
+        )
 
+        try:
+            response = messaging.send(message)
+            print(f'sent message: {response}')
+            success_count += 1
+        except Exception as e:
+            failure_count += 1
+            error_reasons.append(f"Token: {token}, Error: {str(e)}")
+
+    if failure_count > 0:
+        return {
+            'error': f'Failed to send to {failure_count} tokens. Errors: {", ".join(error_reasons)}'
+        }
+    else:
+        return {
+            'success': True,
+            'message': 'Notification sent successfully to all tokens'
+        }
+    
 # Create Notification
 def send_notification(notification_data, recievers):
     errors = []
@@ -72,9 +109,13 @@ def send_notification(notification_data, recievers):
 
     # Send Push Notification
     valid_tokens = multi_fcm_tokens_validate(fcm_tokens_queryset)
+    print("notification valid? ", valid_tokens)
     if valid_tokens:
+        print("here")
         response = send_token_push(notification_data['title'], notification_data['subtitle'], valid_tokens)
+        print(response,"send notification")
         if not 'success' in response:
+
             errors.append(response['error'])
 
     return errors
