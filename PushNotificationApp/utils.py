@@ -3,9 +3,6 @@ from PushNotificationApp.models import FCMToken, Notification
 import firebase_admin
 from firebase_admin import credentials, messaging
 import os
-import logging
-logging.basicConfig(level=logging.DEBUG)
-
 
 server_key = {
   "type": os.environ.get('TYPE'),
