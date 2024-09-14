@@ -24,12 +24,12 @@ import json
 
 
 @csrf_exempt
-@user_is_authorized
+# @user_is_authorized
 def getLeaveTypes(request):
     if request.method=='GET':
-        # leave_types = LeaveType.objects.filter(~Q(rule_set__duration='None') | Q(name='optional_leave') | Q(rule_set__name='miscellaneous_leave'))
+        leave_types = LeaveType.objects.filter(~Q(rule_set__duration='None') | Q(name='optional_leave') | Q(rule_set__name='miscellaneous_leave') | Q(name = 'marriage_leave'))
         # TODO: in phase 2
-        leave_types = LeaveType.objects.all() 
+        # leave_types = LeaveType.objects.all() 
         leave_types_serializer = LeaveTypeSerializer(leave_types, many=True)
         return JsonResponse(leave_types_serializer.data, safe=False)
 
