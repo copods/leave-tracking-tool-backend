@@ -208,6 +208,7 @@ def user_leave_stats_user_view(user_id, year_range):
                 year_leave_stats['yearly_leaves'].append({
                     'id': leave_request['id'],
                     'leaveType': leave_request['leave_type'],
+                    'status': leave_request['status'],
                     'daysTaken' : len(day_details),
                     'totalDays': max_days,
                     'remaining': max(0, max_days - len(day_details)),
