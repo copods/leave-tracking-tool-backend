@@ -139,7 +139,6 @@ def getLeavesList(request):
                         filters[f'{key}__in'] = value
             
             leaves = leaves.filter(**filters) 
-
             if search:
                 leaves = leaves.filter(
                     Q(user__first_name__icontains=search) | 
