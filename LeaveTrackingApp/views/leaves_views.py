@@ -24,7 +24,7 @@ import json
 
 
 @csrf_exempt
-# @user_is_authorized
+@user_is_authorized
 def getLeaveTypes(request):
     if request.method=='GET':
         leave_types = LeaveType.objects.filter(~Q(rule_set__duration='None') | Q(name='optional_leave') | Q(rule_set__name='miscellaneous_leave') | Q(name = 'marriage_leave'))
@@ -34,7 +34,7 @@ def getLeaveTypes(request):
         return JsonResponse(leave_types_serializer.data, safe=False)
 
 @csrf_exempt
-# @user_is_authorized
+@user_is_authorized
 def createLeaveRequest(request):
     if request.method == 'POST':
         try:
