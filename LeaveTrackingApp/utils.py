@@ -544,10 +544,8 @@ def is_block_leave_taken(curr_date, user_id):
 def is_leave_valid(leave_data):
     messages = []
     misc_leave_types_and_wfh = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(Q(rule_set__name='miscellaneous_leave') | Q(name='wfh'))}
-    print(misc_leave_types_and_wfh)
     sick_leave_id = misc_leave_types_and_wfh.get('sick_leave')
     marriage_leave_id = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(Q(rule_set__name='marriage_leave'))}.get('marriage_leave')
-    print("marriage", marriage_leave_id)
     valid = True
 
     #1: check if day details are not empty
@@ -577,6 +575,18 @@ def is_leave_valid(leave_data):
     
     # #6: if its a Marriage leave, the total leave days count should be 5 days.
     elif leave_data['leave_type'] == str(marriage_leave_id):
+        current_year = datetime.now().year
+        # Check if the user has already taken marriage leave this year
+        already_taken_marriage_leave = Leave.objects.filter(
+            leave_type_id=marriage_leave_id,
+            user_id=leave_data['user'],  # Assuming leave_data has 'user'
+            start_date__year=current_year
+        ).exists()
+        # Check if marriage leave has already been taken
+        if already_taken_marriage_leave:
+            messages.append('You have already taken marriage leave this year.')
+            valid = False
+
         if len(leave_data['day_details']) != 5:
             messages.append('Marriage leave should consist of 5 days.')
             valid = False
