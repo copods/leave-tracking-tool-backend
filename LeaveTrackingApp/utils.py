@@ -593,7 +593,7 @@ def is_leave_valid(leave_data):
             messages.append('You have already taken marriage leave this year.')
             valid = False
 
-        if len(leave_data['day_details']) != 5:
+        elif len(leave_data['day_details']) != 5:
             messages.append('Marriage leave should consist of 5 days.')
             valid = False
         
