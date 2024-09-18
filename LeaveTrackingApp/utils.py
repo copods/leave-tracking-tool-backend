@@ -551,6 +551,7 @@ def is_leave_valid(leave_data):
     messages = []
     misc_leave_types_and_wfh = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(Q(rule_set__name='miscellaneous_leave') | Q(name='wfh'))}
     sick_leave_id = misc_leave_types_and_wfh.get('sick_leave')
+    maternity_leave_id = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(Q(rule_set__name='maternity_leave'))}.get('maternity_leave')
     valid = True
 
     #1: check if day details are not empty
@@ -577,5 +578,18 @@ def is_leave_valid(leave_data):
     elif is_block_leave(leave_data) and is_block_leave_taken(datetime.strptime(leave_data['start_date'], "%Y-%m-%d"), leave_data['user'])[0]:
         messages.append("you can't take a block leave before 90 days of your last block leave")
         valid = False
+
+    elif leave_data['leave_type'] == str(maternity_leave_id):
+        current_year = datetime.now().year
+        # Check if the user has already taken marriage leave this year
+        already_taken_maternity_leave = Leave.objects.filter(
+            leave_type_id=maternity_leave_id,
+            user_id=leave_data['user'],  # Assuming leave_data has 'user'
+            start_date__year=current_year
+        ).exists()
+        # Check if marriage leave has already been taken
+        if already_taken_maternity_leave:
+            messages.append('You have already taken maternity leave this year.')
+            valid = False
         
     return {'valid': valid, 'messages': messages}
