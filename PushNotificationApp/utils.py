@@ -19,9 +19,12 @@ server_key = {
   "universe_domain": os.environ.get("UNIVERSE_DOMAIN")
 }
 
+print("server_key",server_key)
 # Initialize Firebase app
 firebase_cred = credentials.Certificate(server_key)
+print("firebase_cred",firebase_cred)
 firebase_app = firebase_admin.initialize_app(firebase_cred)
+print("firebase_app",firebase_app)
 
 def multi_fcm_tokens_validate(fcm_tokens):
     try:
