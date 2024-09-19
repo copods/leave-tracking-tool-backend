@@ -78,7 +78,7 @@ def createLeaveRequest(request):
                 leave_text = f'''Your Team member {user_data['first_name']} {user_data['last_name']} has requested 
                                  a leave request from {leave_data['start_date']} to {leave_data['end_date']}.
                                  Reason: {leave_data['leave_reason']}. Take action now on the app! '''
-                subject = f'Leave Request by {user_data['first_name']} {user_data['last_name']}'
+                subject = f"Leave Request by {user_data['first_name']} {user_data['last_name']}"
                 send_email(
                     recipients=[approver_data],
                     subject=subject,
