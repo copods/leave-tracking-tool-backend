@@ -4,6 +4,7 @@ import firebase_admin
 from firebase_admin import credentials, messaging
 import os
 
+print("anuragggg",os.environ.get("CLIENT_ID") )
 server_key = {
   "type": os.environ.get('TYPE'),
   "project_id": os.environ.get('PROJECT_ID'),
