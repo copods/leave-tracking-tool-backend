@@ -582,22 +582,25 @@ def is_leave_valid(leave_data):
 
     elif leave_data['leave_type'] == str(paternity_leave_id):
         current_year = datetime.now().year
-        # Check if the user has already taken marriage leave this year
+        # Check if the user has already taken paternity leave this year
         already_taken_paternity_leave = Leave.objects.filter(
             leave_type_id=paternity_leave_id,
-            user_id=leave_data['user'],  # Assuming leave_data has 'user'
+            user_id=leave_data['user'], 
             start_date__year=current_year
-        ).exists()
-        # Check if marriage leave has already been taken
+        )
+
+        print(already_taken_paternity_leave)
+       
+        paternity_count = sum(
+            leave.day_details.count() for leave in already_taken_paternity_leave
+        )
+        print("paternity",paternity_count)
+        # Check if paternity leave has already been taken
         if already_taken_paternity_leave and paternity_count == 10:
             messages.append('You have already taken all days of paternity leave this year.')
             valid = False
 
-        elif paternity_count < 10 and len(leave_data['day_details']) + paternity_count <= 10:
-            # Increase the paternity count if it is less than 10
-            paternity_count += len(leave_data['day_details'])
-    
-        else:
+        elif paternity_count < 10 and len(leave_data['day_details']) + paternity_count > 10:
             # If paternity_count is already 10 or exceeds 10, give a message and set valid to False
             messages.append('Paternity leave exceeds the limit of 10 days.')
             valid = False
