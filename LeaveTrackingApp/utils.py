@@ -552,6 +552,7 @@ def is_leave_valid(leave_data):
     misc_leave_types_and_wfh = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(Q(rule_set__name='miscellaneous_leave') | Q(name='wfh'))}
     sick_leave_id = misc_leave_types_and_wfh.get('sick_leave')
     paternity_leave_id = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(Q(rule_set__name='paternity_leave'))}.get('paternity_leave')
+    marriage_leave_id = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(Q(rule_set__name='marriage_leave'))}.get('marriage_leave')
     valid = True
     paternity_count = 0
 
@@ -580,6 +581,7 @@ def is_leave_valid(leave_data):
         messages.append("you can't take a block leave before 90 days of your last block leave")
         valid = False
 
+    #6: if its a Paternity leave, the total leave days count should be 10 days.
     elif leave_data['leave_type'] == str(paternity_leave_id):
         current_year = datetime.now().year
         # Check if the user has already taken paternity leave this year
@@ -603,6 +605,23 @@ def is_leave_valid(leave_data):
         elif paternity_count < 10 and len(leave_data['day_details']) + paternity_count > 10:
             # If paternity_count is already 10 or exceeds 10, give a message and set valid to False
             messages.append('Paternity leave exceeds the limit of 10 days.')
+    
+    #6: if its a Marriage leave, the total leave days count should be 5 days.
+    elif leave_data['leave_type'] == str(marriage_leave_id):
+        current_year = datetime.now().year
+        # Check if the user has already taken marriage leave this year
+        already_taken_marriage_leave = Leave.objects.filter(
+            leave_type_id=marriage_leave_id,
+            user_id=leave_data['user'],  # Assuming leave_data has 'user'
+            start_date__year=current_year
+        ).exists()
+        # Check if marriage leave has already been taken
+        if already_taken_marriage_leave:
+            messages.append('You have already taken marriage leave this year.')
+            valid = False
+
+        elif len(leave_data['day_details']) != 5:
+            messages.append('Marriage leave should consist of 5 days.')
             valid = False
         
     return {'valid': valid, 'messages': messages}
