@@ -1,4 +1,4 @@
-from LeaveTrackingApp.models import Leave, RuleSet, LeaveType
+from LeaveTrackingApp.models import DayDetails, Leave, RuleSet, LeaveType
 from django.db.models import Q
 from LeaveTrackingApp.serializers import LeaveUtilSerializer
 from UserApp.models import User
@@ -205,15 +205,51 @@ def user_leave_stats_user_view(user_id, year_range):
                 leave_request = LeaveUtilSerializer(leave_request).data
                 max_days = rulesets.filter(name=leave_type).first().max_days_allowed
                 day_details = [{'id': day['id'], 'date': day['date']} for day in leave_request['day_details'] if not day['is_withdrawn']]
-                year_leave_stats['yearly_leaves'].append({
-                    'id': leave_request['id'],
-                    'leaveType': leave_request['leave_type'],
-                    'status': leave_request['status'],
-                    'daysTaken' : len(day_details),
-                    'totalDays': max_days,
-                    'remaining': max(0, max_days - len(day_details)),
-                    'dayDetails': day_details
-                })
+                print(leave_type)
+                if leave_type == 'maternity_leave':
+                    paid_leave, unpaid_leave = is_maternity_leave_request(day_details)
+                    # Process paid leave
+            paid_day_details = [
+                {'id': day.id, 'date': day.date, 'is_half_day': day.is_half_day, 'type': day.type}
+                for day in paid_leave.day_details.all()
+            ]
+            year_leave_stats['yearly_leaves'].append({
+                'id': paid_leave.id,
+                'leaveType': paid_leave.leave_type.name,
+                'status': paid_leave.status,
+                'paid': True,
+                'daysTaken': len(paid_day_details),
+                'totalDays': max_days,
+                'remaining': max(0, max_days - len(day_details)),
+                'dayDetails': paid_day_details
+            })
+
+            # Process unpaid leave
+            unpaid_day_details = [
+                {'id': day.id, 'date': day.date, 'is_half_day': day.is_half_day, 'type': day.type}
+                for day in unpaid_leave.day_details.all()
+            ]
+            year_leave_stats['yearly_leaves'].append({
+                'id': unpaid_leave.id,
+                'leaveType': unpaid_leave.leave_type.name,
+                'status': unpaid_leave.status,
+                'paid': False,
+                'daysTaken': len(unpaid_day_details),
+                'totalDays': max_days,
+                'remaining': max(0, max_days - len(day_details)),
+                'dayDetails': unpaid_day_details
+            })
+
+        else:  # Default processing for other leave types
+            year_leave_stats['yearly_leaves'].append({
+                'id': leave_request['id'],
+                'leaveType': leave_request['leave_type'],
+                'status': leave_request['status'],
+                'daysTaken': len(day_details),
+                'totalDays': max_days,
+                'remaining': max(0, max_days - len(day_details)),
+                'dayDetails': day_details
+            })
 
         # Organize quarterly leaves and day details
         leave_wfh_for_year = {
@@ -546,6 +582,52 @@ def is_block_leave_taken(curr_date, user_id):
         if x.find("1"*block_limits['block_leave_pto']) >= 0 and x.count("0") <= block_limits['block_leave_wfh']: 
             return [True, leave.start_date]
     return [False, None]
+
+
+def is_maternity_leave_request(leave):
+    day_details = list(leave.day_details.all())
+
+    modified_days, unpaid_days_count, wfh_days_count, leave_days_count = find_unpaid_days(
+        days=day_details,
+        leaves_taken=0,  # Initially, no leave has been taken
+        wfh_taken=0,     # Initially, no WFH has been taken
+        max_leave_days=90,  # First 90 days are paid
+        max_wfh_days=0      # No WFH in this scenario
+    )
+
+    # Separate paid and unpaid days
+    paid_days = [day for day in modified_days if not day.get('unpaid')]
+    unpaid_days = [day for day in modified_days if day.get('unpaid')]
+
+    paid_leave = Leave.objects.create(
+        user=leave.user,
+        leave_type=leave.leave_type,  # Assuming the same leave type
+        start_date=paid_days[0]['date'],
+        end_date=paid_days[-1]['date'],
+        is_paid=True,
+        status=leave.status
+    )
+    
+    unpaid_leave = Leave.objects.create(
+        user=leave.user,
+        leave_type=leave.leave_type,
+        start_date=unpaid_days[0]['date'],
+        end_date=unpaid_days[-1]['date'],
+        is_paid=False,
+        status=leave.status
+    )
+
+    # Add day details to the respective leaves
+    for day in paid_days:
+        paid_leave.day_details.add(DayDetails.objects.get(id=day['id']))
+
+    for day in unpaid_days:
+        unpaid_leave.day_details.add(DayDetails.objects.get(id=day['id']))
+
+    return {
+       paid_leave,
+       unpaid_leave
+    }
 
 def is_leave_valid(leave_data):
     messages = []
