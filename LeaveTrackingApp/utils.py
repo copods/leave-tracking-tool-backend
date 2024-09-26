@@ -1,4 +1,4 @@
-from LeaveTrackingApp.models import DayDetails, Leave, RuleSet, LeaveType
+from LeaveTrackingApp.models import Leave, RuleSet, LeaveType
 from django.db.models import Q
 from LeaveTrackingApp.serializers import LeaveUtilSerializer
 from UserApp.models import User
