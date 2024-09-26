@@ -204,37 +204,32 @@ def user_leave_stats_user_view(user_id, year_range):
             if leave_request:
                 leave_request = LeaveUtilSerializer(leave_request).data
                 max_days = rulesets.filter(name=leave_type).first().max_days_allowed
-                day_details = [{'id': day['id'], 'date': day['date']} for day in leave_request['day_details'] if not day['is_withdrawn']]
-                print(leave_type)
+                day_details = [{'id': day['id'], 'date': day['date'], 'type':day['type']} for day in leave_request['day_details'] if not day['is_withdrawn']]
+                
                 if leave_type == 'maternity_leave':
                     paid_days, unpaid_days = is_maternity_leave_request(day_details)
                     merged_days = paid_days + unpaid_days
                     # Process paid leave
-            
-            year_leave_stats['yearly_leaves'].append({
-                'id': leave_request['id'],
-                'leaveType': leave_request['leave_type'],
-                'status': leave_request['status'],
-                'daysTaken': len(day_details),
-                'totalDays': max_days,
-                'remaining': max(0, max_days - len(day_details)),
-                'dayDetails': merged_days,
-            })
-
-            
-
-        else:  # Default processing for other leave types
-            year_leave_stats['yearly_leaves'].append({
-                'id': leave_request['id'],
-                'leaveType': leave_request['leave_type'],
-                'status': leave_request['status'],
-                'daysTaken': len(day_details),
-                'totalDays': max_days,
-                'remaining': max(0, max_days - len(day_details)),
-                'dayDetails': day_details
-            })
-
-        # Organize quarterly leaves and day details
+                    year_leave_stats['yearly_leaves'].append({
+                        'id': leave_request['id'],
+                        'leaveType': leave_request['leave_type'],
+                        'status': leave_request['status'],
+                        'daysTaken': len(day_details),
+                        'totalDays': max_days,
+                        'remaining': max(0, max_days - len(day_details)),
+                        'dayDetails': merged_days,
+                    })
+                else:  
+                    year_leave_stats['yearly_leaves'].append({
+                        'id': leave_request['id'],
+                        'leaveType': leave_request['leave_type'],
+                        'status': leave_request['status'],
+                        'daysTaken': len(day_details),
+                        'totalDays': max_days,
+                        'remaining': max(0, max_days - len(day_details)),
+                        'dayDetails': day_details
+                    })
+ # Organize quarterly leaves and day details
         leave_wfh_for_year = {
             'leaves': [],
             'wfh': [],
@@ -383,22 +378,39 @@ def find_unpaid_days(days, leaves_taken, wfh_taken, max_leave_days, max_wfh_days
     unpaid = 0
     modified_days = days
     leave_count = wfh_count = 0
+    print(max_leave_days)
+    # print("days in modified_days",modified_days)
     for day in modified_days:
-        if day['type'] != 'wfh':
-            leave_count += 0.5 if day['is_half_day'] else 1
-            if leaves_taken + leave_count > max_leave_days:
-                unpaid += 1
-                day['unpaid'] = True
-            else:
-                day['unpaid'] = False
+        print("in loop")
+        print(day)
+        print("day type",day['type'])
+        if day['type'] == 'maternity_leave':
+                leave_count += 1
+                print("leave count 2", leave_count)
+                if leaves_taken + leave_count > max_leave_days:
+                    unpaid += 1
+                    day['unpaid'] = True
+                else:
+                    day['unpaid'] = False
         else:
-            wfh_count += 1 if day['is_half_day'] else 1
-            if wfh_taken + wfh_count > max_wfh_days:
-                unpaid += 1
-                day['unpaid'] = True
+            
+            if day['type'] != 'wfh':
+                leave_count += 0.5 if day['is_half_day'] else 1
+                print("leave count", leave_count)
+                if leaves_taken + leave_count > max_leave_days:
+                    unpaid += 1
+                    day['unpaid'] = True
+                else:
+                    day['unpaid'] = False
             else:
-                day['unpaid'] = False
-
+                print("else count")
+                wfh_count += 1 if day['is_half_day'] else 1
+                if wfh_taken + wfh_count > max_wfh_days:
+                    unpaid += 1
+                    day['unpaid'] = True
+                else:
+                    day['unpaid'] = False
+  
     return modified_days, unpaid, wfh_count, leave_count
 
 def get_leave_summary(leaves_data, start_date, end_date, yearly=False):
@@ -567,8 +579,7 @@ def is_block_leave_taken(curr_date, user_id):
     return [False, None]
 
 
-def is_maternity_leave_request(leave):
-    day_details = list(leave.day_details.all())
+def is_maternity_leave_request(day_details):
 
     modified_days, unpaid_days_count, wfh_days_count, leave_days_count = find_unpaid_days(
         days=day_details,
@@ -577,14 +588,11 @@ def is_maternity_leave_request(leave):
         max_leave_days=90,  
         max_wfh_days=0     
     )
-
     # Separate paid and unpaid days
     paid_days = [day for day in modified_days if not day.get('unpaid')]
     unpaid_days = [day for day in modified_days if day.get('unpaid')]
-    return {
-       paid_days,
-       unpaid_days
-    }
+    print("maternity paid", paid_days)
+    return paid_days, unpaid_days 
 
 def is_leave_valid(leave_data):
     messages = []
