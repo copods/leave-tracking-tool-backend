@@ -443,6 +443,7 @@ def getUnpaidData(request):
                     unpaids_for_month = get_unpaid_data(user, user_leaves, leave_types, curr_year, month)
                     if len(unpaids_for_month):
                         response_obj['months_data'][month].append({
+                            'id': user.id,
                             'name': user.long_name(),
                             'email': user.email,
                             'profile_image': user.profile_image,
