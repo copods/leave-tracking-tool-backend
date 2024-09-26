@@ -28,8 +28,10 @@ import json
 @user_is_authorized
 def getLeaveTypes(request):
     if request.method=='GET':
-        # leave_types = LeaveType.objects.filter(~Q(rule_set__duration='None') | Q(name='optional_leave') | Q(rule_set__name='miscellaneous_leave'))
+       
         leave_types = LeaveType.objects.all() # TODO: in phase 2
+        # leave_types = LeaveType.objects.filter(~Q(rule_set__duration='None') | Q(name='optional_leave') | Q(rule_set__name='miscellaneous_leave') | Q(name = 'marriage_leave'))
+       
         leave_types_serializer = LeaveTypeSerializer(leave_types, many=True)
         return JsonResponse(leave_types_serializer.data, safe=False)
 
@@ -456,6 +458,7 @@ def getUnpaidData(request):
                     unpaids_for_month = get_unpaid_data(user, user_leaves, leave_types, curr_year, month)
                     if len(unpaids_for_month):
                         response_obj['months_data'][month].append({
+                            'id': user.id,
                             'name': user.long_name(),
                             'email': user.email,
                             'profile_image': user.profile_image,

@@ -378,15 +378,9 @@ def find_unpaid_days(days, leaves_taken, wfh_taken, max_leave_days, max_wfh_days
     unpaid = 0
     modified_days = days
     leave_count = wfh_count = 0
-    print(max_leave_days)
-    # print("days in modified_days",modified_days)
     for day in modified_days:
-        print("in loop")
-        print(day)
-        print("day type",day['type'])
         if day['type'] == 'maternity_leave':
                 leave_count += 1
-                print("leave count 2", leave_count)
                 if leaves_taken + leave_count > max_leave_days:
                     unpaid += 1
                     day['unpaid'] = True
@@ -396,14 +390,12 @@ def find_unpaid_days(days, leaves_taken, wfh_taken, max_leave_days, max_wfh_days
             
             if day['type'] != 'wfh':
                 leave_count += 0.5 if day['is_half_day'] else 1
-                print("leave count", leave_count)
                 if leaves_taken + leave_count > max_leave_days:
                     unpaid += 1
                     day['unpaid'] = True
                 else:
                     day['unpaid'] = False
             else:
-                print("else count")
                 wfh_count += 1 if day['is_half_day'] else 1
                 if wfh_taken + wfh_count > max_wfh_days:
                     unpaid += 1
@@ -591,13 +583,13 @@ def is_maternity_leave_request(day_details):
     # Separate paid and unpaid days
     paid_days = [day for day in modified_days if not day.get('unpaid')]
     unpaid_days = [day for day in modified_days if day.get('unpaid')]
-    print("maternity paid", paid_days)
     return paid_days, unpaid_days 
 
 def is_leave_valid(leave_data):
     messages = []
     misc_leave_types_and_wfh = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(Q(rule_set__name='miscellaneous_leave') | Q(name='wfh'))}
     sick_leave_id = misc_leave_types_and_wfh.get('sick_leave')
+    marriage_leave_id = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(Q(rule_set__name='marriage_leave'))}.get('marriage_leave')
     maternity_leave_id = {f'{leave_type.name}': str(leave_type.id) for leave_type in LeaveType.objects.filter(Q(rule_set__name='maternity_leave'))}.get('maternity_leave')
     valid = True
 
@@ -625,16 +617,34 @@ def is_leave_valid(leave_data):
     elif is_block_leave(leave_data) and is_block_leave_taken(datetime.strptime(leave_data['start_date'], "%Y-%m-%d"), leave_data['user'])[0]:
         messages.append("you can't take a block leave before 90 days of your last block leave")
         valid = False
-
-    elif leave_data['leave_type'] == str(maternity_leave_id):
+    
+    # #6: if its a Marriage leave, the total leave days count should be 5 days.
+    elif leave_data['leave_type'] == str(marriage_leave_id):
         current_year = datetime.now().year
         # Check if the user has already taken marriage leave this year
-        already_taken_maternity_leave = Leave.objects.filter(
-            leave_type_id=maternity_leave_id,
+        already_taken_marriage_leave = Leave.objects.filter(
+            leave_type_id=marriage_leave_id,
             user_id=leave_data['user'],  # Assuming leave_data has 'user'
             start_date__year=current_year
         ).exists()
         # Check if marriage leave has already been taken
+        if already_taken_marriage_leave:
+            messages.append('You have already taken marriage leave this year.')
+            valid = False
+
+        elif len(leave_data['day_details']) != 5:
+            messages.append('Marriage leave should consist of 5 days.')
+            valid = False
+
+    elif leave_data['leave_type'] == str(maternity_leave_id):
+        current_year = datetime.now().year
+        # Check if the user has already taken maternity leave this year
+        already_taken_maternity_leave = Leave.objects.filter(
+            leave_type_id=maternity_leave_id,
+            user_id=leave_data['user'],  
+            start_date__year=current_year
+        ).exists()
+        # Check if maternity leave has already been taken
         if already_taken_maternity_leave:
             messages.append('You have already taken maternity leave this year.')
             valid = False
