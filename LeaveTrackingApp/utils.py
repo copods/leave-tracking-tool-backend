@@ -5,6 +5,7 @@ from UserApp.models import User
 from datetime import date, datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import calendar
+from LeaveTrackingApp.constant import LEAVE_TYPES
 
 
 def user_leave_stats_hr_view(user_id, year_range):
@@ -113,7 +114,11 @@ def user_leave_stats_hr_view(user_id, year_range):
                         taken_unpaid_obj['pto']['leaves_taken'] += x[3]
                         taken_unpaid_obj['wfh']['leaves_taken'] += x[2]
                     else: 
-                        max_days_allowed = LeaveType.objects.get(name=leave['leave_type']).rule_set.max_days_allowed
+                        if leave['leave_type'] == 'maternity_leave':
+                            max_days_allowed = LEAVE_TYPES.get('MATERNITY_PAID_COUNT')
+                            print("max maternity", max_days_allowed)
+                        else:
+                            max_days_allowed = LeaveType.objects.get(name=leave['leave_type']).rule_set.max_days_allowed
                         temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
                         x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
                         taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
@@ -510,7 +515,10 @@ def get_unpaid_data(user, user_leaves, leave_types, curr_year, month):
                         taken_unpaid_obj['pto']['leaves_taken'] += x[3]
                         taken_unpaid_obj['wfh']['leaves_taken'] += x[2]
                     else: 
-                        max_days_allowed = leave_types.get(name=leave['leave_type']).rule_set.max_days_allowed
+                        if leave['leave_type'] == 'maternity_leave':
+                            max_days_allowed = LEAVE_TYPES.get('MATERNITY_PAID_COUNT')
+                        else:
+                            max_days_allowed = LeaveType.objects.get(name=leave['leave_type']).rule_set.max_days_allowed
                         temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
                         x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
                         taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
