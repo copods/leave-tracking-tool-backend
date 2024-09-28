@@ -172,8 +172,7 @@ def user_leave_stats_user_view(user_id, year_range):
         end_date = yearly_quarters[year][3]['end_date']
 
         user_leaves_for_year = Leave.objects.filter(
-            Q(user__id=user_id) & ~Q(status__in=['W','R']) & 
-            Q(start_date__lte=end_date) & Q(end_date__gte=start_date) 
+            Q(user__id=user_id) & ~Q(status__in=['W','R']) 
         ).order_by('start_date')
         quarterly_leave_types = LeaveType.objects.filter(~Q(rule_set__duration="None") | Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
         yearly_leave_types = LeaveType.objects.filter(Q(rule_set__duration="None") & ~Q(rule_set__name="miscellaneous_leave")).values_list('name', flat=True)
@@ -275,10 +274,15 @@ def user_leave_stats_user_view(user_id, year_range):
                 'unpaid': []  
             }
 
-            leave_days_in_curr_quarter = [day for day in leave_wfh_for_year['leaves'] if yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']]
-            wfh_days_in_curr_quarter = [day for day in leave_wfh_for_year['wfh'] if yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']]
-            optional_days_in_quarter = [day for day in leave_wfh_for_year['optional_leaves'] if yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']]
+            leave_days_in_curr_quarter = []
+            wfh_days_in_curr_quarter = []
+            optional_days_in_quarter = []
             
+            # leaves overlapping quarters is handled here -> put days in respective quarter of days array accordingly
+            for day in leave_wfh_for_year['leaves']:
+                if calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month] in yearly_quarters[year][i]['months']:
+                        leave_days_in_curr_quarter.append(day)
+
             max_days = {ruleset.name: ruleset.max_days_allowed for ruleset in rulesets.filter(Q(name='optional_leave') | Q(name='wfh') | Q(name='pto'))}
             temp_pto_max_days = max_days['pto']
 
