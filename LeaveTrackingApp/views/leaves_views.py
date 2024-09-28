@@ -4,7 +4,6 @@ from django.db import transaction
 from django.db.models import Count, Q, Prefetch
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from LeaveTrackingApp.constant import LEAVE_TYPES
 from LeaveTrackingApp.models import DayDetails, Leave, LeaveType, StatusReason
 from LeaveTrackingApp.serializers import *
 from LeaveTrackingApp.utils import (
@@ -35,11 +34,6 @@ def getLeaveTypes(request):
        
         leave_types_serializer = LeaveTypeSerializer(leave_types, many=True)
         return JsonResponse(leave_types_serializer.data, safe=False)
-    
-@csrf_exempt
-@user_is_authorized
-def getConstants(request):
-    return JsonResponse({'leaveTypes': LEAVE_TYPES})
 
 @csrf_exempt
 @user_is_authorized
