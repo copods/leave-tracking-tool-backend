@@ -1,6 +1,7 @@
 from LeaveTrackingApp.models import Leave, RuleSet, LeaveType
 from django.db.models import Q
 from LeaveTrackingApp.serializers import LeaveUtilSerializer
+from LeaveTrackingApp.serializers.leave_serializers import DayDetailSerializer
 from UserApp.models import User
 from datetime import date, datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -36,12 +37,11 @@ def user_leave_stats_hr_view(user_id, year_range):
         year = list(yearly_quarters.keys())[0]
         start_date = yearly_quarters[year][0]['start_date']
         end_date = yearly_quarters[year][3]['end_date']
+        paid_count = 0
 
         user_leaves_for_year = Leave.objects.filter(
-            Q(user__id=user_id) & ~Q(status="W") & 
-            ( (Q(start_date__lte=end_date) & Q(end_date__gte=start_date)) )
+            Q(user__id=user_id) & ~Q(status="W") 
         ).order_by('start_date')
-
         leaves_data = LeaveUtilSerializer(user_leaves_for_year, many=True).data
         leave_summary = get_leave_summary(leaves_data, start_date, end_date, yearly=True)
 
@@ -66,8 +66,6 @@ def user_leave_stats_hr_view(user_id, year_range):
         quarterly_leave_types = user_leaves_for_year.filter(Q(leave_type__rule_set__duration="quarterly") | Q(leave_type__rule_set__name="miscellaneous_leave")).values_list('leave_type__name', flat=True).distinct()
         miscellaneous_types = user_leaves_for_year.filter(Q(leave_type__rule_set__name="miscellaneous_leave")).values_list('leave_type__name', flat=True).distinct()
 
-        #TODO: handle optional days and block leaves while calculating unpaid
-
         # Calculate quarterly statistics
         for i in range(4):
             quarter_obj = {
@@ -77,12 +75,20 @@ def user_leave_stats_hr_view(user_id, year_range):
                 'quarter_summary': {},
                 'leaves': []
             }
-            
-            leaves_for_curr_quarter = LeaveUtilSerializer(
-                user_leaves_for_year.filter(
-                    Q(start_date__lte=yearly_quarters[year][i]['end_date']) & Q(end_date__gte=yearly_quarters[year][i]['start_date'])
-                ).order_by('start_date'), many=True
-            ).data
+
+            leaves_for_curr_quarter = []
+
+            # Filter leaves that intersect with the current quarter's date range
+            for leave in user_leaves_for_year:
+                # Check if any of the day details fall within the current quarter's months
+                if any(
+                    calendar.month_abbr[day.date.month] in yearly_quarters[year][i]['months']
+                    for day in leave.day_details.all()
+                ):
+                    leaves_for_curr_quarter.append(leave)
+
+            # Serialize the filtered leaves
+            leaves_for_curr_quarter = LeaveUtilSerializer(leaves_for_curr_quarter, many=True).data
         
             quarter_obj['quarter_summary'] = get_leave_summary(leaves_for_curr_quarter, yearly_quarters[year][i]['start_date'], yearly_quarters[year][i]['end_date'])
 
@@ -116,13 +122,15 @@ def user_leave_stats_hr_view(user_id, year_range):
                     else: 
                         if leave['leave_type'] == 'maternity_leave':
                             max_days_allowed = LEAVE_TYPES.get('MATERNITY_PAID_COUNT')
-                            print("max maternity", max_days_allowed)
+                            temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken'] + paid_count
+                            x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
+                            paid_count += x[3]
                         else:
                             max_days_allowed = LeaveType.objects.get(name=leave['leave_type']).rule_set.max_days_allowed
-                        temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
-                        x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
-                        taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
-                        taken_unpaid_obj['pto']['leaves_taken'] += min(max_pto, x[3] - x[1]) #reducing available pto if these yearly leaves are taken in the current quarter
+                            temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
+                            x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
+                            taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
+                            taken_unpaid_obj['pto']['leaves_taken'] += min(max_pto, x[3] - x[1]) #reducing available pto if these yearly leaves are taken in the current quarter
 
                     taken_unpaid_obj[leave['leave_type']]['unpaid'] += x[1]
 
@@ -526,6 +534,7 @@ def get_unpaid_data(user, user_leaves, leave_types, curr_year, month):
                         temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
                         x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
                         taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
+                        taken_unpaid_obj[leave['leave_type']]['unpaid'] += x[1]
                         taken_unpaid_obj['pto']['leaves_taken'] += min(max_pto, x[3] - x[1]) #reducing available pto if these yearly leaves are taken in the current quarter
 
                     taken_unpaid_obj[leave['leave_type']]['unpaid'] += x[1]
