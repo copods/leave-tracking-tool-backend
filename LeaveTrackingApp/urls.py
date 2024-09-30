@@ -1,10 +1,12 @@
 from django.urls import path, re_path
 from LeaveTrackingApp.views import *
+from LeaveTrackingApp.views.leaves_views import getConstants
 
 
 urlpatterns = [
     re_path(r'^createLeaveRequest$', createLeaveRequest),
     re_path(r'^getLeaveTypes$', getLeaveTypes),
+    re_path(r'^getConstants$', getConstants),
     re_path(r'^getLeavesList$', getLeavesList),
     re_path(r'^getLeaveDetails/([0-9a-f-]+)$', getLeaveDetails),
     re_path(r'^getUserLeaveStats$', getUserLeaveStats),
