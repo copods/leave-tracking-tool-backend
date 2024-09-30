@@ -4,12 +4,14 @@ from django.db import transaction
 from django.db.models import Count, Q, Prefetch
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from LeaveTrackingApp.constant import LEAVE_TYPES
 from LeaveTrackingApp.models import DayDetails, Leave, LeaveType, StatusReason
 from LeaveTrackingApp.serializers import *
 from LeaveTrackingApp.utils import (
     get_unpaid_data,
     get_users_for_day,
     is_leave_valid,
+    is_maternity_leave_request,
     user_leave_stats_hr_view,
     user_leave_stats_user_view
 )
@@ -30,6 +32,11 @@ def getLeaveTypes(request):
         leave_types = LeaveType.objects.all() 
         leave_types_serializer = LeaveTypeSerializer(leave_types, many=True)
         return JsonResponse(leave_types_serializer.data, safe=False)
+    
+@csrf_exempt
+@user_is_authorized
+def getConstants(request):
+    return JsonResponse({'leaveTypes': LEAVE_TYPES})
 
 @csrf_exempt
 @user_is_authorized
@@ -110,10 +117,10 @@ def createLeaveRequest(request):
 @csrf_exempt
 @user_is_authorized
 def getLeavesList(request):
-    if request.method=='GET':
+    if request.method == 'GET':
         try:
             query_params = {key: request.GET.getlist(key) for key in request.GET.keys()}
-            search = query_params.get('search', [None])[0] 
+            search = query_params.get('search', [None])[0]
             sort = query_params.get('sort', [None])[0]
             page = query_params.get('page', [1])[0]
             pageSize = query_params.get('pageSize', [10])[0]
@@ -131,27 +138,40 @@ def getLeavesList(request):
 
             filters = {}
             for key, value in query_params.items():
-                if not key in ['search', 'sort', 'page', 'pageSize']:
+                if key not in ['search', 'sort', 'page', 'pageSize']:
                     if key == 'leave_type':
                         filters['leave_type__name__in'] = value
                     else:
                         filters[f'{key}__in'] = value
-            
-            leaves = leaves.filter(**filters) 
+
+            leaves = leaves.filter(**filters)
+
+            if 'maternity_leave' in filters.get('leave_type__name__in', []):
+                maternity_leaves = []
+                maternity_leaves_queryset = leaves.filter(leave_type__name='maternity_leave')
+
+                for maternity_leave in maternity_leaves_queryset:
+                    paid_leave, unpaid_leave = is_maternity_leave_request(maternity_leave)
+                    maternity_leaves.extend([paid_leave, unpaid_leave])
+
+                leaves = list(leaves.exclude(leave_type__name='maternity_leave')) + maternity_leaves
+
             if search:
                 leaves = leaves.filter(
-                    Q(user__first_name__icontains=search) | 
-                    Q(user__last_name__icontains=search) | 
-                    Q(leave_type__name__icontains=search) 
+                    Q(user__first_name__icontains=search) |
+                    Q(user__last_name__icontains=search) |
+                    Q(leave_type__name__icontains=search)
                 )
+
             if sort:
                 leaves = leaves.order_by(sort)
+
             if page or pageSize:
                 leaves = leaves[(int(page)-1)*int(pageSize):int(page)*int(pageSize)]
 
             leaves_serializer = serializer_class(leaves, many=True)
             return JsonResponse(leaves_serializer.data, safe=False)
-        
+
         except User.DoesNotExist:
             return JsonResponse({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
@@ -231,7 +251,7 @@ def addLeaveStatus(request):
                 approver_data = UserSerializer(user).data
                 user_data = UserSerializer(leave.user).data
                 subject = f'Leave {status.capitalize()} by {approver_data["first_name"]} {approver_data["last_name"]}'
-                leave_text = f'''Your leave request from {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')} has been {status.capitalize()}!.
+                leave_text = f'''Your request from {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')} has been {status.capitalize()}!.
                                 For more details, check out on the app''' 
                 send_email(
                     recipients=[user_data],
@@ -441,6 +461,7 @@ def getUnpaidData(request):
                     unpaids_for_month = get_unpaid_data(user, user_leaves, leave_types, curr_year, month)
                     if len(unpaids_for_month):
                         response_obj['months_data'][month].append({
+                            'id': user.id,
                             'name': user.long_name(),
                             'email': user.email,
                             'profile_image': user.profile_image,
