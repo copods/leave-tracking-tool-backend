@@ -62,6 +62,7 @@ def createLeaveRequest(request):
             
             #validations
             response = is_leave_valid(leave_data)
+            print(response)
             if not response['valid']:
                 return JsonResponse({'message': response['messages']}, status=status.HTTP_400_BAD_REQUEST)
                 
@@ -376,6 +377,21 @@ def enableEditLeave(request):
                 leave.editReason = leave_data['edit_reason']
                 leave.save()
                 errors = []
+
+                try:
+                    user_data = UserSerializer(leave.user).data
+                    subject = f"{user.first_name.capitalize()} Has Requested For Edit."
+                    leave_text = f"{user.long_name()} has requested to edit your leave for {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}.",
+                    send_email(
+                        recipients=[user_data],
+                        subject=subject,
+                        template_name='leave_notification_template.html',
+                        context={'leave_text': leave_text},
+                        app_name='LeaveTrackingApp'
+                    )
+                except Exception as e:
+                    errors.append(str(e))
+
                 # send notification
                 notification_data = {
                     'type': 'leave_request',  
@@ -411,6 +427,21 @@ def editLeave(request, id):
                 if leave_serializer.is_valid():
                     leave_serializer.save()
                     errors = []
+
+                    try:
+                        user_data = UserSerializer(leave.approver).data
+                        subject = f"{leave.user.first_name.capitalize()} Has Edited the leave.",
+                        leave_text = f"{leave.user.long_name()} has made the changes you requested.",
+                        send_email(
+                            recipients=[user_data],
+                            subject=subject,
+                            template_name='leave_notification_template.html',
+                            context={'leave_text': leave_text},
+                            app_name='LeaveTrackingApp'
+                        )
+                    except Exception as e:
+                        errors.append(str(e))
+                
                     notification_data = {
                         'type': 'leave_request',  
                         'content_object': leave,
