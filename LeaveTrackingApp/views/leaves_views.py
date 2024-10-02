@@ -147,16 +147,6 @@ def getLeavesList(request):
 
             leaves = leaves.filter(**filters)
 
-            if 'maternity_leave' in filters.get('leave_type__name__in', []):
-                maternity_leaves = []
-                maternity_leaves_queryset = leaves.filter(leave_type__name='maternity_leave')
-
-                for maternity_leave in maternity_leaves_queryset:
-                    paid_leave, unpaid_leave = is_maternity_leave_request(maternity_leave)
-                    maternity_leaves.extend([paid_leave, unpaid_leave])
-
-                leaves = list(leaves.exclude(leave_type__name='maternity_leave')) + maternity_leaves
-
             if search:
                 leaves = leaves.filter(
                     Q(user__first_name__icontains=search) |

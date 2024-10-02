@@ -97,7 +97,8 @@ def user_leave_stats_hr_view(user_id, year_range):
                 # Skip leaves that are rejected
                 if leave['status'] == 'R':
                     continue
-
+                
+                # print(yearly_quarters[year][i]['start_date'], yearly_quarters[year][i]['end_date'] )
                 # leaves overlapping quarters is handled here -> put days in respective quarter accordingly in respective leave
                 days_in_quarter = [
                     day
@@ -212,39 +213,10 @@ def user_leave_stats_user_view(user_id, year_range):
 
         #find yearly leaves taken
         total_paternity_leave_days_taken = 0
-        paternity_leaves = []
-
         # Fetch all approved and pending ab_leave requests for the user in the current year
         paternity_leave_requests = user_leaves_for_year.filter(
             leave_type__name='paternity_leave', status__in=['A', 'P']
         )
-
-        print("paternity", paternity_leave_requests)
-
-        # Calculate total days taken for ab_leave from existing requests
-        # for leave_request in paternity_leave_requests:
-        #     leave_request = LeaveUtilSerializer(leave_request).data
-        #     print("leave",leave_request['leave_type'])
-        #     # day_details = LeaveUtilSerializer(leave_request).data['day_details']
-        #     # Count only the non-withdrawn days
-        #     # total_paternity_leave_days_taken += len([day for day in day_details if not day['is_withdrawn']])
-        #     non_withdrawn_days = [{'id': day['id'], 'date': day['date'], 'type':day['type']} for day in leave_request['day_details'] if not day['is_withdrawn']]
-        #     days_taken = len(non_withdrawn_days)
-        #     max_days = rulesets.filter(name=leave_type).first().max_days_allowed
-        #     total_paternity_leave_days_taken += days_taken
-
-           
-            # year_leave_stats['yearly_leaves'].append({
-            #     'id': leave_request['id'],
-            #     'leaveType': leave_request['leave_type'],
-            #     'status': leave_request['status'],
-            #     'daysTaken': total_paternity_leave_days_taken,
-            #     'totalDays': max_days,
-            #     'remaining': max(0, max_days - total_paternity_leave_days_taken),
-            #     'dayDetails': non_withdrawn_days
-            # })
-
-
         for leave_type in yearly_leave_types:
             leave_request = user_leaves_for_year.filter(leave_type__name=leave_type, status__in=['A', 'P']).order_by('start_date').first()
             if leave_request:
