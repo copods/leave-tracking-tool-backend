@@ -125,6 +125,7 @@ def user_leave_stats_hr_view(user_id, year_range):
                             temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken'] + paid_count
                             x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
                             paid_count += x[3]
+                            print(paid_count)
                         else:
                             max_days_allowed = LeaveType.objects.get(name=leave['leave_type']).rule_set.max_days_allowed
                             temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
