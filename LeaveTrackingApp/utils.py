@@ -204,6 +204,7 @@ def user_leave_stats_user_view(user_id, year_range):
         block_limits = {x.name: int(x.max_days_allowed) for x in RuleSet.objects.filter(name__in=['block_leave_pto', 'block_leave_wfh'])}
         for leave in user_leaves_for_year:
             x = ''.join('1' if ((day.type.name == 'pto' or day.type.name == 'optional_leave') and not day.is_half_day) else '0' if day.type.name == 'wfh' else 'x' for day in leave.day_details.all().order_by('date'))
+            print("optional",x)
             if x.find("1"*block_limits['block_leave_pto']) >= 0 and x.count("0") <= block_limits['block_leave_wfh']: 
                 block_end_date = leave.end_date
         year_leave_stats['last_block_leave_taken'] = block_end_date
@@ -280,6 +281,7 @@ def user_leave_stats_user_view(user_id, year_range):
             for leave in leave_requests:
                 day_details = leave['day_details']
                 for day in day_details:
+                    print("daysssss", day)
                     #case where quarterly leave overlapped two years, filter off their days accordingly
                     if start_date <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= end_date and not day['is_withdrawn']:
                         temp_day = {
@@ -295,6 +297,7 @@ def user_leave_stats_user_view(user_id, year_range):
                             leave_wfh_for_year['wfh'].append(temp_day)
                         else:
                             leave_wfh_for_year['leaves'].append(temp_day)
+        print("leave for year.......................", leave_wfh_for_year)
 
         optional_cnt=0 #for counting the number of optional leaves
 
@@ -316,18 +319,26 @@ def user_leave_stats_user_view(user_id, year_range):
             for day in leave_wfh_for_year['leaves']:
                 if calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month] in yearly_quarters[year][i]['months']:
                         leave_days_in_curr_quarter.append(day)
+            
+            for day in leave_wfh_for_year['optional_leaves']:
+                if calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month] in yearly_quarters[year][i]['months']:
+                        optional_days_in_quarter.append(day)
 
             max_days = {ruleset.name: ruleset.max_days_allowed for ruleset in rulesets.filter(Q(name='optional_leave') | Q(name='wfh') | Q(name='pto'))}
             temp_pto_max_days = max_days['pto']
 
             #counting optional days
             for day in optional_days_in_quarter:
+                print("optionalllllll", day)
                 optional_cnt += 0.5 if day['is_half_day'] else 1
+                print("optional count", optional_cnt)
                 if optional_cnt > max_days['optional_leave']:
                     temp_pto_max_days -= 0.5 if day['is_half_day'] else 1
                     if temp_pto_max_days < 0:
                         temp_pto_max_days = 0
                         quarter_obj['unpaid'].append(day)
+            
+            print("optional days", optional_days_in_quarter)
 
             pto_cnt=0 #counting leaves
             for day in leave_days_in_curr_quarter:
@@ -367,6 +378,7 @@ def user_leave_stats_user_view(user_id, year_range):
                 'day_details': optional_days_in_quarter[:int(max_days['optional_leave'])]
             }
             year_leave_stats['data'].append(quarter_obj)
+            # print("year_leave_stats", year_leave_stats)
 
         return year_leave_stats
 
