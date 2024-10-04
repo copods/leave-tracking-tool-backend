@@ -97,8 +97,7 @@ def user_leave_stats_hr_view(user_id, year_range):
                 # Skip leaves that are rejected
                 if leave['status'] == 'R':
                     continue
-
-                # leaves overlapping quarters is handled here -> put days in respective quarter accordingly in respective leave
+                
                 days_in_quarter = [
                     day
                     for day in leave['day_details']
@@ -211,6 +210,11 @@ def user_leave_stats_user_view(user_id, year_range):
         ######TODO: handle the case when yearly leaves exceed the max allowed, they must be counted into quarterly leaves######
 
         #find yearly leaves taken
+        total_paternity_leave_days_taken = 0
+        # Fetch all approved and pending ab_leave requests for the user in the current year
+        paternity_leave_requests = user_leaves_for_year.filter(
+            leave_type__name='paternity_leave', status__in=['A', 'P']
+        )
         for leave_type in yearly_leave_types:
             leave_request = user_leaves_for_year.filter(leave_type__name=leave_type, status__in=['A', 'P']).order_by('start_date').first()
             if leave_request:
@@ -231,6 +235,24 @@ def user_leave_stats_user_view(user_id, year_range):
                         'remaining': max(0, max_days - len(day_details)),
                         'dayDetails': merged_days,
                     })
+                elif leave_type == 'paternity_leave':
+                    for leave_request in paternity_leave_requests:
+                        leave_request = LeaveUtilSerializer(leave_request).data
+                        non_withdrawn_days = [{'id': day['id'], 'date': day['date'], 'type':day['type']} for day in leave_request['day_details'] if not day['is_withdrawn']]
+                        days_taken = len(non_withdrawn_days)
+                        max_days = rulesets.filter(name=leave_type).first().max_days_allowed
+                        total_paternity_leave_days_taken += days_taken
+
+                    
+                        year_leave_stats['yearly_leaves'].append({
+                            'id': leave_request['id'],
+                            'leaveType': leave_request['leave_type'],
+                            'status': leave_request['status'],
+                            'daysTaken': total_paternity_leave_days_taken,
+                            'totalDays': max_days,
+                            'remaining': max(0, max_days - total_paternity_leave_days_taken),
+                            'dayDetails': non_withdrawn_days
+                        })
                 else:  
                     year_leave_stats['yearly_leaves'].append({
                         'id': leave_request['id'],
@@ -241,6 +263,9 @@ def user_leave_stats_user_view(user_id, year_range):
                         'remaining': max(0, max_days - len(day_details)),
                         'dayDetails': day_details
                     })
+        
+        
+
  # Organize quarterly leaves and day details
         leave_wfh_for_year = {
             'leaves': [],
@@ -650,13 +675,10 @@ def is_leave_valid(leave_data):
             user_id=leave_data['user'], 
             start_date__year=current_year
         )
-
-        print(already_taken_paternity_leave)
        
         paternity_count = sum(
             leave.day_details.count() for leave in already_taken_paternity_leave
         )
-        print("paternity",paternity_count)
         # Check if paternity leave has already been taken
         if already_taken_paternity_leave and paternity_count == 10:
             messages.append('You have already taken all days of paternity leave this year.')

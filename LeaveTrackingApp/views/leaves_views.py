@@ -146,16 +146,6 @@ def getLeavesList(request):
 
             leaves = leaves.filter(**filters)
 
-            if 'maternity_leave' in filters.get('leave_type__name__in', []):
-                maternity_leaves = []
-                maternity_leaves_queryset = leaves.filter(leave_type__name='maternity_leave')
-
-                for maternity_leave in maternity_leaves_queryset:
-                    paid_leave, unpaid_leave = is_maternity_leave_request(maternity_leave)
-                    maternity_leaves.extend([paid_leave, unpaid_leave])
-
-                leaves = list(leaves.exclude(leave_type__name='maternity_leave')) + maternity_leaves
-
             if search:
                 leaves = leaves.filter(
                     Q(user__first_name__icontains=search) |
@@ -376,6 +366,21 @@ def enableEditLeave(request):
                 leave.editReason = leave_data['edit_reason']
                 leave.save()
                 errors = []
+
+                try:
+                    user_data = UserSerializer(leave.user).data
+                    subject = f"{user.first_name.capitalize()} Has Requested For Edit."
+                    leave_text = f"{user.long_name()} has requested to edit your leave for {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}.",
+                    send_email(
+                        recipients=[user_data],
+                        subject=subject,
+                        template_name='leave_notification_template.html',
+                        context={'leave_text': leave_text},
+                        app_name='LeaveTrackingApp'
+                    )
+                except Exception as e:
+                    errors.append(str(e))
+
                 # send notification
                 notification_data = {
                     'type': 'leave_request',  
@@ -411,6 +416,21 @@ def editLeave(request, id):
                 if leave_serializer.is_valid():
                     leave_serializer.save()
                     errors = []
+
+                    try:
+                        user_data = UserSerializer(leave.approver).data
+                        subject = f"{leave.user.first_name.capitalize()} Has Edited the leave.",
+                        leave_text = f"{leave.user.long_name()} has made the changes you requested.",
+                        send_email(
+                            recipients=[user_data],
+                            subject=subject,
+                            template_name='leave_notification_template.html',
+                            context={'leave_text': leave_text},
+                            app_name='LeaveTrackingApp'
+                        )
+                    except Exception as e:
+                        errors.append(str(e))
+                
                     notification_data = {
                         'type': 'leave_request',  
                         'content_object': leave,
