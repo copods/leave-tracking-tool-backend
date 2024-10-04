@@ -98,8 +98,6 @@ def user_leave_stats_hr_view(user_id, year_range):
                 if leave['status'] == 'R':
                     continue
                 
-                # print(yearly_quarters[year][i]['start_date'], yearly_quarters[year][i]['end_date'] )
-                # leaves overlapping quarters is handled here -> put days in respective quarter accordingly in respective leave
                 days_in_quarter = [
                     day
                     for day in leave['day_details']
@@ -238,14 +236,8 @@ def user_leave_stats_user_view(user_id, year_range):
                         'dayDetails': merged_days,
                     })
                 elif leave_type == 'paternity_leave':
-                    # continue
-                    # year_leave_stats['yearly_leaves'].extend(paternity_leaves)
                     for leave_request in paternity_leave_requests:
                         leave_request = LeaveUtilSerializer(leave_request).data
-                        # print("leave",leave_request['leave_type'])
-                        # day_details = LeaveUtilSerializer(leave_request).data['day_details']
-                        # Count only the non-withdrawn days
-                        # total_paternity_leave_days_taken += len([day for day in day_details if not day['is_withdrawn']])
                         non_withdrawn_days = [{'id': day['id'], 'date': day['date'], 'type':day['type']} for day in leave_request['day_details'] if not day['is_withdrawn']]
                         days_taken = len(non_withdrawn_days)
                         max_days = rulesets.filter(name=leave_type).first().max_days_allowed
@@ -683,13 +675,10 @@ def is_leave_valid(leave_data):
             user_id=leave_data['user'], 
             start_date__year=current_year
         )
-
-        print(already_taken_paternity_leave)
        
         paternity_count = sum(
             leave.day_details.count() for leave in already_taken_paternity_leave
         )
-        print("paternity",paternity_count)
         # Check if paternity leave has already been taken
         if already_taken_paternity_leave and paternity_count == 10:
             messages.append('You have already taken all days of paternity leave this year.')

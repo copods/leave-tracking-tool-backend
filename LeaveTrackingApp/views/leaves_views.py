@@ -62,7 +62,6 @@ def createLeaveRequest(request):
             
             #validations
             response = is_leave_valid(leave_data)
-            print(response)
             if not response['valid']:
                 return JsonResponse({'message': response['messages']}, status=status.HTTP_400_BAD_REQUEST)
                 
