@@ -368,11 +368,7 @@ def enableEditLeave(request):
                 errors = []
 
                 try:
-                    print("hi")
-
                     user_data = UserSerializer(leave.user).data
-                    print(user_data)
-                    print(user.first_name)
                     subject = f"{user.first_name.capitalize()} Has Requested For Edit."
                     leave_text = f"{user.long_name()} has requested to edit your leave for {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}.",
                     send_email(
@@ -422,10 +418,7 @@ def editLeave(request, id):
                     errors = []
                     # send email
                     try:
-                        print("hi")
-
                         user_data = UserSerializer(leave.user).data
-                        print(user_data)
                         subject = f"{leave.user.first_name.capitalize()} Has Edited the leave."
                         leave_text =  f"{leave.user.long_name()} has made the changes you requested.",
                         send_email(
