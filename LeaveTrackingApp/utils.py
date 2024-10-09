@@ -796,7 +796,6 @@ def is_leave_valid(leave_data):
 
     #4: if its a sick leave of at least 2 days, a file must be attached
     elif leave_data['leave_type'] == str(sick_leave_id):
-        print(leave_data['day_details'])
         if len(leave_data['day_details']) > 2 and leave_data['assets_documents'] is None:
             messages.append('Sick Leave of at least 2 days must have a file attached')
             valid = False
