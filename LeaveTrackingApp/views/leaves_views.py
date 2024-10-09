@@ -550,6 +550,20 @@ def withdrawLeave(request, id):
                                 start_flag = True
                             leave.end_date = day.date
                     leave.save()
+
+                try:
+                    user_data = UserSerializer(leave.approver).data
+                    subject = f'{leave.user.first_name.capitalize()} Has Withdrawn the leave." if len(day_ids)==leave.day_details.count() else f"{leave.user.first_name.capitalize()} Has Withdrawn Some Days of Leave.'
+                    leave_text =  f'''{leave.user.long_name()} has withdrawn the leave from {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}." if len(day_ids)==leave.day_details.count() else f"{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave.'''
+                    send_email(
+                        recipients=[user_data],
+                        subject=subject,
+                        template_name='leave_notification_template.html',
+                        context={'leave_text': leave_text},
+                        app_name='LeaveTrackingApp'
+                    )
+                except Exception as e:
+                    errors.append(str(e))
                     
                 #notify approver
                 title = f"{leave.user.first_name.capitalize()} Has Withdrawn the leave." if len(day_ids)==leave.day_details.count() else f"{leave.user.first_name.capitalize()} Has Withdrawn Some Days of Leave."
