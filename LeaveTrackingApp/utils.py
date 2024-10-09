@@ -38,7 +38,6 @@ def user_leave_stats_hr_view(user_id, year_range):
         start_date = yearly_quarters[year][0]['start_date']
         end_date = yearly_quarters[year][3]['end_date']
         paid_count = 0
-        maternity_count = 0
 
         user_leaves_for_year = Leave.objects.filter(
             Q(user__id=user_id) & ~Q(status="W") 
@@ -93,7 +92,6 @@ def user_leave_stats_hr_view(user_id, year_range):
             leaves_for_curr_quarter = LeaveUtilSerializer(leaves_for_curr_quarter, many=True).data
         
             quarter_obj['quarter_summary'] = get_leave_summary(leaves_for_curr_quarter, yearly_quarters[year][i]['start_date'], yearly_quarters[year][i]['end_date'])
-            # print("curr",leaves_for_curr_quarter)
             for leave in leaves_for_curr_quarter:
 
                 # Skip leaves that are rejected
@@ -126,7 +124,6 @@ def user_leave_stats_hr_view(user_id, year_range):
                             temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken'] + paid_count
                             x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
                             taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
-                            print(taken_unpaid_obj[leave['leave_type']]['leaves_taken'])
                         else:
                             max_days_allowed = LeaveType.objects.get(name=leave['leave_type']).rule_set.max_days_allowed
                             temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
@@ -157,7 +154,6 @@ def user_leave_stats_hr_view(user_id, year_range):
                 taken_unpaid_obj[lt]['unpaid'] = taken_unpaid_obj[lt]['leaves_taken'] = 0
 
             year_leave_stats['data'].append(quarter_obj)
-            print("maternity_count", maternity_count)
 
         return year_leave_stats
 
