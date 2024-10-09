@@ -38,6 +38,7 @@ def user_leave_stats_hr_view(user_id, year_range):
         start_date = yearly_quarters[year][0]['start_date']
         end_date = yearly_quarters[year][3]['end_date']
         paid_count = 0
+        maternity_count = 0
 
         user_leaves_for_year = Leave.objects.filter(
             Q(user__id=user_id) & ~Q(status="W") 
@@ -104,7 +105,6 @@ def user_leave_stats_hr_view(user_id, year_range):
                     for day in leave['day_details']
                     if (yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']) and not day['is_withdrawn']
                 ]
-                # print('days_in_quarter', days_in_quarter)
 
                 max_pto = LeaveType.objects.get(name='pto').rule_set.max_days_allowed
 
@@ -157,6 +157,7 @@ def user_leave_stats_hr_view(user_id, year_range):
                 taken_unpaid_obj[lt]['unpaid'] = taken_unpaid_obj[lt]['leaves_taken'] = 0
 
             year_leave_stats['data'].append(quarter_obj)
+            print("maternity_count", maternity_count)
 
         return year_leave_stats
 
@@ -322,6 +323,10 @@ def user_leave_stats_user_view(user_id, year_range):
             for day in leave_wfh_for_year['optional_leaves']:
                 if calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month] in yearly_quarters[year][i]['months']:
                         optional_days_in_quarter.append(day)
+            
+            for day in leave_wfh_for_year['wfh']:
+                if calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month] in yearly_quarters[year][i]['months']:
+                        wfh_days_in_curr_quarter.append(day)
 
             max_days = {ruleset.name: ruleset.max_days_allowed for ruleset in rulesets.filter(Q(name='optional_leave') | Q(name='wfh') | Q(name='pto'))}
             temp_pto_max_days = max_days['pto']

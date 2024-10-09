@@ -194,11 +194,12 @@ def getUserLeaveStats(request):
             return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt
-@user_is_authorized
+# @user_is_authorized
 def getEmployeeLeaveStats(request, id):
     if request.method == 'GET':
         try:
             year = request.GET.get('year', None)
+            # year= "2025-2026"
             user = User.objects.get(id=id)
             leave_stats = user_leave_stats_hr_view(user.id, year)
             return JsonResponse(leave_stats, safe=False)
