@@ -552,8 +552,18 @@ def withdrawLeave(request, id):
 
                 try:
                     user_data = UserSerializer(leave.approver).data
-                    subject = f'{leave.user.first_name.capitalize()} Has Withdrawn the leave." if len(day_ids)==leave.day_details.count() else f"{leave.user.first_name.capitalize()} Has Withdrawn Some Days of Leave.'
-                    leave_text =  f'''{leave.user.long_name()} has withdrawn the leave from {leave.start_date:%d %b} to {leave.end_date:%d %b}''' if len(day_ids) == leave.day_details.count() else f'''{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave.'''
+                    subject = (
+                        f'{leave.user.first_name.capitalize()} Has Withdrawn the Leave.'
+                        if len(day_ids) == leave.day_details.count()
+                        else f'{leave.user.first_name.capitalize()} Has Withdrawn Some Days of Leave.'
+                    )
+
+                    # Correct the leave_text line with triple single quotes
+                    leave_text = (
+                        f'''{leave.user.long_name()} has withdrawn the leave from {leave.start_date:%d %b} to {leave.end_date:%d %b}.'''
+                        if len(day_ids) == leave.day_details.count()
+                        else f'''{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave.'''
+                    )
                     send_email(
                         recipients=[user_data],
                         subject=subject,
