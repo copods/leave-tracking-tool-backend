@@ -49,9 +49,6 @@ def createLeaveRequest(request):
                 leave_data = request.POST.dict()
                 leave_data['day_details'] = json.loads(request.POST.get('day_details', '[]'))
                 leave_data['assets_documents'] = request.FILES.get('assets_documents')
-                print("leave", leave_data)
-                print(leave_data['assets_documents'])
-
             try:
                 user = User.objects.get(id=leave_data['user'])
             except User.DoesNotExist:
