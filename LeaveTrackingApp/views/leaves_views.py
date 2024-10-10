@@ -49,6 +49,8 @@ def createLeaveRequest(request):
                 leave_data = request.POST.dict()
                 leave_data['day_details'] = json.loads(request.POST.get('day_details', '[]'))
                 leave_data['assets_documents'] = request.FILES.get('assets_documents')
+                print("leave", leave_data)
+                print(leave_data['assets_documents'])
 
             try:
                 user = User.objects.get(id=leave_data['user'])
@@ -554,7 +556,7 @@ def withdrawLeave(request, id):
                 try:
                     user_data = UserSerializer(leave.approver).data
                     subject = f'{leave.user.first_name.capitalize()} Has Withdrawn the leave." if len(day_ids)==leave.day_details.count() else f"{leave.user.first_name.capitalize()} Has Withdrawn Some Days of Leave.'
-                    leave_text =  f'''{leave.user.long_name()} has withdrawn the leave from {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}." if len(day_ids)==leave.day_details.count() else f"{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave.'''
+                    leave_text =  f'''{leave.user.long_name()} has withdrawn the leave from {leave.start_date:%d %b} to {leave.end_date:%d %b}''' if len(day_ids) == leave.day_details.count() else f'''{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave.'''
                     send_email(
                         recipients=[user_data],
                         subject=subject,
