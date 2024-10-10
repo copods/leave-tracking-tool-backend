@@ -35,9 +35,10 @@ def user_leave_stats_hr_view(user_id, year_range):
         doj = user.date_of_joining
         yearly_quarters = get_quarters(doj, year_range)
         year = list(yearly_quarters.keys())[0]
+        next_year = str(int(year) +1)
         start_date = yearly_quarters[year][0]['start_date']
         end_date = yearly_quarters[year][3]['end_date']
-        paid_count = 0
+        leave_summary = {}
 
         user_leaves_for_year = Leave.objects.filter(
             Q(user__id=user_id) & ~Q(status="W") 
@@ -60,6 +61,7 @@ def user_leave_stats_hr_view(user_id, year_range):
                 'leaves_taken' : 0,
                 'unpaid' : 0
             }
+            # for type in leave_types
             for type in leave_types
         }
         
@@ -67,95 +69,92 @@ def user_leave_stats_hr_view(user_id, year_range):
         miscellaneous_types = user_leaves_for_year.filter(Q(leave_type__rule_set__name="miscellaneous_leave")).values_list('leave_type__name', flat=True).distinct()
 
         # Calculate quarterly statistics
-        for i in range(4):
-            quarter_obj = {
-                'title': f'Q{i + 1}',
-                'months': yearly_quarters[year][i]['months'],
-                'total_unpaid': 0,
-                'quarter_summary': {},
-                'leaves': []
-            }
-
-            leaves_for_curr_quarter = []
-
-            # Filter leaves that intersect with the current quarter's date range
-            for leave in user_leaves_for_year:
-                # Check if any of the day details fall within the current quarter's months
-                # check here for maternity
-                if any(
-                    calendar.month_abbr[day.date.month] in yearly_quarters[year][i]['months']
-                    for day in leave.day_details.all()
-                ):
-                    leaves_for_curr_quarter.append(leave)
-
-            # Serialize the filtered leaves
-            leaves_for_curr_quarter = LeaveUtilSerializer(leaves_for_curr_quarter, many=True).data
-        
-            quarter_obj['quarter_summary'] = get_leave_summary(leaves_for_curr_quarter, yearly_quarters[year][i]['start_date'], yearly_quarters[year][i]['end_date'])
-            for leave in leaves_for_curr_quarter:
-
-                # Skip leaves that are rejected
-                if leave['status'] == 'R':
-                    continue
-                 # check here for maternity
-                days_in_quarter = [
-                    day
-                    for day in leave['day_details']
-                    if (yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']) and not day['is_withdrawn']
-                ]
-
-                max_pto = LeaveType.objects.get(name='pto').rule_set.max_days_allowed
-
-                if leave['leave_type'] in miscellaneous_types:
-                    temp_leaves_taken = taken_unpaid_obj['pto']['leaves_taken']
-                    x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_pto, max_wfh_days=0)
-                    taken_unpaid_obj['pto']['leaves_taken'] += x[3]
-                    taken_unpaid_obj['pto']['unpaid'] += x[1]
-
-                else:
-                    if leave['leave_type'] in ['pto', 'wfh']:
-                        max_wfh_days = LeaveType.objects.get(name='wfh').rule_set.max_days_allowed
-                        x = find_unpaid_days(days_in_quarter, leaves_taken=taken_unpaid_obj['pto']['leaves_taken'], wfh_taken=taken_unpaid_obj['wfh']['leaves_taken'], max_leave_days=max_pto, max_wfh_days=max_wfh_days)
-                        taken_unpaid_obj['pto']['leaves_taken'] += x[3]
-                        taken_unpaid_obj['wfh']['leaves_taken'] += x[2]
-                    else: 
-                        if leave['leave_type'] == 'maternity_leave':
-                            max_days_allowed = LEAVE_TYPES.get('MATERNITY_PAID_COUNT')
-                            temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken'] + paid_count
-                            x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
-                            taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
-                        else:
-                            max_days_allowed = LeaveType.objects.get(name=leave['leave_type']).rule_set.max_days_allowed
-                            temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
-                            x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
-                            taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
-                            taken_unpaid_obj['pto']['leaves_taken'] += min(max_pto, x[3] - x[1]) #reducing available pto if these yearly leaves are taken in the current quarter
-
-                    taken_unpaid_obj[leave['leave_type']]['unpaid'] += x[1]
-
-                leave['day_details'] = x[0]
-
-                temp = {
-                    'id': leave['id'],
-                    'start_date': leave['start_date'],
-                    'end_date': leave['end_date'],
-                    'type': leave['leave_type'],
-                    'status': leave['status'],
-                    'unpaid_count': x[1]
+        for yearrange in [year, next_year]:
+            for i in range(4):
+                quarter_obj = {
+                    'title': f'Q{i + 1}',
+                    'months': yearly_quarters[year][i]['months'],
+                    'total_unpaid': 0,
+                    'quarter_summary': {},
+                    'leaves': []
                 }
-                quarter_obj['total_unpaid'] += x[1]       
-                quarter_obj['leaves'].append(temp)
+
+                leaves_for_curr_quarter = []
+
+                # Filter leaves that intersect with the current quarter's date range
+                for leave in user_leaves_for_year:
+                    if leave.start_date <= yearly_quarters[yearrange][i]['end_date'] and leave.end_date >= yearly_quarters[yearrange][i]['start_date']:
+                        leaves_for_curr_quarter.append(leave)
+
+                # Serialize the filtered leaves
+                leaves_for_curr_quarter = LeaveUtilSerializer(leaves_for_curr_quarter, many=True).data
             
-            if 'pto' in taken_unpaid_obj.keys():
-                taken_unpaid_obj['pto']['unpaid'] = taken_unpaid_obj['pto']['leaves_taken'] = 0
-            if 'wfh' in taken_unpaid_obj.keys():
-                taken_unpaid_obj['wfh']['unpaid'] = taken_unpaid_obj['wfh']['leaves_taken'] = 0
-            for lt in quarterly_leave_types:
-                taken_unpaid_obj[lt]['unpaid'] = taken_unpaid_obj[lt]['leaves_taken'] = 0
+                quarter_obj['quarter_summary'] = get_leave_summary(leaves_for_curr_quarter, yearly_quarters[year][i]['start_date'], yearly_quarters[year][i]['end_date'])
+                for leave in leaves_for_curr_quarter:
 
-            year_leave_stats['data'].append(quarter_obj)
+                    # Skip leaves that are rejected
+                    if leave['status'] == 'R':
+                        continue
+                    # check here for maternity
+                    days_in_quarter = [
+                        day
+                        for day in leave['day_details']
+                        if (yearly_quarters[year][i]['start_date'] <= datetime.strptime(day['date'], "%Y-%m-%d").date() <= yearly_quarters[year][i]['end_date']) and not day['is_withdrawn']
+                    ]
 
-        return year_leave_stats
+                    max_pto = LeaveType.objects.get(name='pto').rule_set.max_days_allowed
+
+                    if leave['leave_type'] in miscellaneous_types:
+                        temp_leaves_taken = taken_unpaid_obj['pto']['leaves_taken']
+                        x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_pto, max_wfh_days=0)
+                        taken_unpaid_obj['pto']['leaves_taken'] += x[3]
+                        taken_unpaid_obj['pto']['unpaid'] += x[1]
+
+                    else:
+                        if leave['leave_type'] in ['pto', 'wfh']:
+                            max_wfh_days = LeaveType.objects.get(name='wfh').rule_set.max_days_allowed
+                            x = find_unpaid_days(days_in_quarter, leaves_taken=taken_unpaid_obj['pto']['leaves_taken'], wfh_taken=taken_unpaid_obj['wfh']['leaves_taken'], max_leave_days=max_pto, max_wfh_days=max_wfh_days)
+                            taken_unpaid_obj['pto']['leaves_taken'] += x[3]
+                            taken_unpaid_obj['wfh']['leaves_taken'] += x[2]
+                        else: 
+                            if leave['leave_type'] == 'maternity_leave':
+                                max_days_allowed = LEAVE_TYPES.get('MATERNITY_PAID_COUNT')
+                                temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
+                                x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
+                                taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
+                            else:
+                                max_days_allowed = LeaveType.objects.get(name=leave['leave_type']).rule_set.max_days_allowed
+                                temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
+                                x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
+                                taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
+                                taken_unpaid_obj['pto']['leaves_taken'] += min(max_pto, x[3] - x[1]) #reducing available pto if these yearly leaves are taken in the current quarter
+
+                        taken_unpaid_obj[leave['leave_type']]['unpaid'] += x[1]
+
+                    leave['day_details'] = x[0]
+
+                    temp = {
+                        'id': leave['id'],
+                        'start_date': leave['start_date'],
+                        'end_date': leave['end_date'],
+                        'type': leave['leave_type'],
+                        'status': leave['status'],
+                        'unpaid_count': x[1]
+                    }
+                    # taken_unpaid_obj[leave['leave_type']]['unpaid'] += x[1]
+                    quarter_obj['total_unpaid'] += x[1]       
+                    quarter_obj['leaves'].append(temp)
+                
+                if 'pto' in taken_unpaid_obj.keys():
+                    taken_unpaid_obj['pto']['unpaid'] = taken_unpaid_obj['pto']['leaves_taken'] = 0
+                if 'wfh' in taken_unpaid_obj.keys():
+                    taken_unpaid_obj['wfh']['unpaid'] = taken_unpaid_obj['wfh']['leaves_taken'] = 0
+                for lt in quarterly_leave_types:
+                    taken_unpaid_obj[lt]['unpaid'] = taken_unpaid_obj[lt]['leaves_taken'] = 0
+
+                year_leave_stats['data'].append(quarter_obj)
+
+            return year_leave_stats
 
     except Exception as e:
         raise e
