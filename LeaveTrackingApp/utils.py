@@ -39,6 +39,8 @@ def user_leave_stats_hr_view(user_id, year_range):
         start_date = yearly_quarters[year][0]['start_date']
         end_date = yearly_quarters[year][3]['end_date']
         leave_summary = {}
+        paid_count = 0
+        maternity_leave_data = {}
 
         user_leaves_for_year = Leave.objects.filter(
             Q(user__id=user_id) & ~Q(status="W") 
@@ -70,6 +72,9 @@ def user_leave_stats_hr_view(user_id, year_range):
 
         # Calculate quarterly statistics
         for yearrange in [year, next_year]:
+            print("hi")
+            print("emnd", end_date)
+            next_year_start_date = end_date + timedelta(days=1)
             for i in range(4):
                 quarter_obj = {
                     'title': f'Q{i + 1}',
@@ -119,9 +124,18 @@ def user_leave_stats_hr_view(user_id, year_range):
                         else: 
                             if leave['leave_type'] == 'maternity_leave':
                                 max_days_allowed = LEAVE_TYPES.get('MATERNITY_PAID_COUNT')
-                                temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
+                                print("paid before", paid_count)
+                                temp_leaves_taken = paid_count + taken_unpaid_obj[leave['leave_type']]['leaves_taken']
+                                print("temp", temp_leaves_taken)
                                 x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
+                                print("paid after", paid_count)
+                                paid_count += x[3]
                                 taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
+                                print("yaha chala")
+                                span_data = handle_maternity_leave_data(leave, next_year_start_date, paid_count, taken_unpaid_obj)
+                                print("span", span_data)
+                                if span_data:
+                                    maternity_leave_data[leave['leave_type']] = span_data
                             else:
                                 max_days_allowed = LeaveType.objects.get(name=leave['leave_type']).rule_set.max_days_allowed
                                 temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
@@ -153,6 +167,12 @@ def user_leave_stats_hr_view(user_id, year_range):
                     taken_unpaid_obj[lt]['unpaid'] = taken_unpaid_obj[lt]['leaves_taken'] = 0
 
                 year_leave_stats['data'].append(quarter_obj)
+                print("maternity leave Data", maternity_leave_data)
+
+                for leave_type, data in maternity_leave_data.items():
+                    paid_count = data['maternity_paid_count']
+                    taken_unpaid_obj[leave_type]['leaves_taken'] = data['maternity_leaves_taken']
+                    taken_unpaid_obj[leave_type]['unpaid'] = data['maternity_unpaid_count']
 
             return year_leave_stats
 
@@ -379,6 +399,26 @@ def user_leave_stats_user_view(user_id, year_range):
     except Exception as e:
         raise e
 
+def handle_maternity_leave_data(leave, next_year, paid_count, taken_unpaid_obj):
+    """
+    Check if the maternity leave spans into the next year and return accumulated data if applicable.
+    """
+    # Convert the leave end_date to a datetime object if it's a string
+    end_date = leave['end_date']
+    if isinstance(end_date, str):
+        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+
+    # Now perform the comparison
+    if leave['leave_type'] == 'maternity_leave' and end_date > next_year:
+        leave_type = leave['leave_type']
+        span_data = {
+            'type': leave_type,
+            'maternity_paid_count': paid_count,
+            'maternity_leaves_taken': taken_unpaid_obj[leave_type]['leaves_taken'],
+            'maternity_unpaid_count': taken_unpaid_obj[leave_type]['unpaid']
+        }
+        return span_data
+    return None
 
 def get_quarters(user_doj, year_range):
     doj_year = user_doj.year
