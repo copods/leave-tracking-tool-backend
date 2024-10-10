@@ -81,6 +81,7 @@ def user_leave_stats_hr_view(user_id, year_range):
             # Filter leaves that intersect with the current quarter's date range
             for leave in user_leaves_for_year:
                 # Check if any of the day details fall within the current quarter's months
+                # check here for maternity
                 if any(
                     calendar.month_abbr[day.date.month] in yearly_quarters[year][i]['months']
                     for day in leave.day_details.all()
@@ -91,13 +92,12 @@ def user_leave_stats_hr_view(user_id, year_range):
             leaves_for_curr_quarter = LeaveUtilSerializer(leaves_for_curr_quarter, many=True).data
         
             quarter_obj['quarter_summary'] = get_leave_summary(leaves_for_curr_quarter, yearly_quarters[year][i]['start_date'], yearly_quarters[year][i]['end_date'])
-
             for leave in leaves_for_curr_quarter:
 
                 # Skip leaves that are rejected
                 if leave['status'] == 'R':
                     continue
-                
+                 # check here for maternity
                 days_in_quarter = [
                     day
                     for day in leave['day_details']
@@ -123,7 +123,7 @@ def user_leave_stats_hr_view(user_id, year_range):
                             max_days_allowed = LEAVE_TYPES.get('MATERNITY_PAID_COUNT')
                             temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken'] + paid_count
                             x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
-                            paid_count += x[3]
+                            taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
                         else:
                             max_days_allowed = LeaveType.objects.get(name=leave['leave_type']).rule_set.max_days_allowed
                             temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
@@ -315,6 +315,14 @@ def user_leave_stats_user_view(user_id, year_range):
             for day in leave_wfh_for_year['leaves']:
                 if calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month] in yearly_quarters[year][i]['months']:
                         leave_days_in_curr_quarter.append(day)
+            
+            for day in leave_wfh_for_year['optional_leaves']:
+                if calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month] in yearly_quarters[year][i]['months']:
+                        optional_days_in_quarter.append(day)
+            
+            for day in leave_wfh_for_year['wfh']:
+                if calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month] in yearly_quarters[year][i]['months']:
+                        wfh_days_in_curr_quarter.append(day)
 
             max_days = {ruleset.name: ruleset.max_days_allowed for ruleset in rulesets.filter(Q(name='optional_leave') | Q(name='wfh') | Q(name='pto'))}
             temp_pto_max_days = max_days['pto']
@@ -657,7 +665,7 @@ def is_leave_valid(leave_data):
 
     #4: if its a sick leave of at least 2 days, a file must be attached
     elif leave_data['leave_type'] == str(sick_leave_id):
-        if len(leave_data['day_details']) >= 2 and leave_data['assets_documents'] is None:
+        if len(leave_data['day_details']) > 2 and leave_data['assets_documents'] is None:
             messages.append('Sick Leave of at least 2 days must have a file attached')
             valid = False
     
