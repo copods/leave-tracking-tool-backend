@@ -72,8 +72,6 @@ def user_leave_stats_hr_view(user_id, year_range):
 
         # Calculate quarterly statistics
         for yearrange in [year, next_year]:
-            print("hi")
-            print("emnd", end_date)
             next_year_start_date = end_date + timedelta(days=1)
             for i in range(4):
                 quarter_obj = {
@@ -124,18 +122,15 @@ def user_leave_stats_hr_view(user_id, year_range):
                         else: 
                             if leave['leave_type'] == 'maternity_leave':
                                 max_days_allowed = LEAVE_TYPES.get('MATERNITY_PAID_COUNT')
-                                print("paid before", paid_count)
-                                temp_leaves_taken = paid_count + taken_unpaid_obj[leave['leave_type']]['leaves_taken']
-                                print("temp", temp_leaves_taken)
+                                paid_count = handle_maternity_leave_data(
+                                            leave,
+                                            next_year_start_date,
+                                            paid_count,
+                                            yearly_quarters[year][i]['start_date']
+                                        )
+                                temp_leaves_taken = paid_count
                                 x = find_unpaid_days(days_in_quarter, leaves_taken=temp_leaves_taken, wfh_taken=0, max_leave_days=max_days_allowed, max_wfh_days=0)
-                                print("paid after", paid_count)
-                                paid_count += x[3]
                                 taken_unpaid_obj[leave['leave_type']]['leaves_taken'] += x[3]
-                                print("yaha chala")
-                                span_data = handle_maternity_leave_data(leave, next_year_start_date, paid_count, taken_unpaid_obj)
-                                print("span", span_data)
-                                if span_data:
-                                    maternity_leave_data[leave['leave_type']] = span_data
                             else:
                                 max_days_allowed = LeaveType.objects.get(name=leave['leave_type']).rule_set.max_days_allowed
                                 temp_leaves_taken = taken_unpaid_obj[leave['leave_type']]['leaves_taken']
@@ -167,13 +162,6 @@ def user_leave_stats_hr_view(user_id, year_range):
                     taken_unpaid_obj[lt]['unpaid'] = taken_unpaid_obj[lt]['leaves_taken'] = 0
 
                 year_leave_stats['data'].append(quarter_obj)
-                print("maternity leave Data", maternity_leave_data)
-
-                for leave_type, data in maternity_leave_data.items():
-                    paid_count = data['maternity_paid_count']
-                    taken_unpaid_obj[leave_type]['leaves_taken'] = data['maternity_leaves_taken']
-                    taken_unpaid_obj[leave_type]['unpaid'] = data['maternity_unpaid_count']
-
             return year_leave_stats
 
     except Exception as e:
@@ -399,26 +387,24 @@ def user_leave_stats_user_view(user_id, year_range):
     except Exception as e:
         raise e
 
-def handle_maternity_leave_data(leave, next_year, paid_count, taken_unpaid_obj):
+def handle_maternity_leave_data(leave, next_year, paid_count, quarter_start_date):
     """
-    Check if the maternity leave spans into the next year and return accumulated data if applicable.
+    Calculate the updated paid count for maternity leave, considering days before the quarter start date.
     """
-    # Convert the leave end_date to a datetime object if it's a string
+    # Convert the leave start and end dates to datetime objects if they are strings
+    start_date = leave['start_date']
     end_date = leave['end_date']
+    if isinstance(start_date, str):
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
     if isinstance(end_date, str):
         end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
 
-    # Now perform the comparison
-    if leave['leave_type'] == 'maternity_leave' and end_date > next_year:
-        leave_type = leave['leave_type']
-        span_data = {
-            'type': leave_type,
-            'maternity_paid_count': paid_count,
-            'maternity_leaves_taken': taken_unpaid_obj[leave_type]['leaves_taken'],
-            'maternity_unpaid_count': taken_unpaid_obj[leave_type]['unpaid']
-        }
-        return span_data
-    return None
+    # Calculate the number of days before the quarter's start date from the leave start date
+    days_before_quarter = (quarter_start_date - start_date).days if start_date < quarter_start_date else 0
+
+    # Update the paid count by adding these days
+    paid_count += days_before_quarter
+    return paid_count 
 
 def get_quarters(user_doj, year_range):
     doj_year = user_doj.year
@@ -467,7 +453,10 @@ def find_unpaid_days(days, leaves_taken, wfh_taken, max_leave_days, max_wfh_days
     unpaid = 0
     modified_days = days
     leave_count = wfh_count = 0
+    count = 0
     for day in modified_days:
+        count += 1
+        
         if day['type'] == 'maternity_leave':
                 leave_count += 1
                 if leaves_taken + leave_count > max_leave_days:

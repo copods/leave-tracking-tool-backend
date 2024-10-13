@@ -82,7 +82,7 @@ def createLeaveRequest(request):
             try:
                 leave_text = f'''Your Team member {user_data['first_name']} {user_data['last_name']} has requested 
                                  a leave request from {leave_data['start_date']} to {leave_data['end_date']}.
-                                 Reason: {leave_data['leave_reason']}. Take action now on the app! '''
+                                 Reason: {leave_data['leave_reason']}.'''
                 subject = f'Leave Request by {user_data['first_name']} {user_data['last_name']}'
                 send_email(
                     recipients=[approver_data],
@@ -96,7 +96,7 @@ def createLeaveRequest(request):
 
             # Create Notification
             notification_data = {
-                'type': 'leave_request',  
+                'type': 'leave_request_for_approver',  
                 'content_object': leave_instance,
                 'receivers': [approver.id],  
                 'title': f"Leave Request by {user.long_name()}",
@@ -256,7 +256,7 @@ def addLeaveStatus(request):
 
             # send notification
             notification_data = {
-                'type': 'leave_request',  
+                'type': 'leave_requested_by_creator',  
                 'content_object': leave,
                 'receivers': [leave.user.id],  
                 'title': f"Your Leave is {status.capitalize()}",
@@ -371,7 +371,7 @@ def enableEditLeave(request):
                 try:
                     user_data = UserSerializer(leave.user).data
                     subject = f'{user.first_name.capitalize()} Has Requested For Edit.'
-                    leave_text = f'''{user.long_name()} has requested to edit your leave for {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}.''',
+                    leave_text = f'''{user.long_name()} has requested to edit your leave for {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}. Reason: {leave_data['editReason']}.''',
                     send_email(
                         recipients=[user_data],
                         subject=subject,
@@ -384,7 +384,7 @@ def enableEditLeave(request):
 
                 # send notification
                 notification_data = {
-                    'type': 'leave_request',  
+                    'type': 'leave_requested_by_creator',  
                     'content_object': leave,
                     'receivers': [leave.user.id],  
                     'title': f"{user.first_name.capitalize()} Has Requested For Edit.",
@@ -433,7 +433,7 @@ def editLeave(request, id):
                         errors.append(str(e))
                 
                     notification_data = {
-                        'type': 'leave_request',  
+                        'type': 'leave_request_for_approver',  
                         'content_object': leave,
                         'receivers': [leave.approver.id],  
                         'title': f"{leave.user.first_name.capitalize()} Has Edited the leave.",
@@ -569,7 +569,7 @@ def withdrawLeave(request, id):
                 title = f"{leave.user.first_name.capitalize()} Has Withdrawn the leave." if len(day_ids)==leave.day_details.count() else f"{leave.user.first_name.capitalize()} Has Withdrawn Some Days of Leave."
                 subtitle = f"{leave.user.long_name()} has withdrawn the leave from {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}." if len(day_ids)==leave.day_details.count() else f"{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave."
                 notification_data = {
-                    'type': 'leave_request',  
+                    'type': 'leave_request_for_approver',  
                     'content_object': leave,
                     'receivers': [leave.approver.id],  
                     'title': title,
