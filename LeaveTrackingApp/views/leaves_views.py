@@ -370,7 +370,7 @@ def enableEditLeave(request):
 
                 try:
                     user_data = UserSerializer(leave.user).data
-                    subject = f'{user.first_name.capitalize()} Has Requested For Edit.'
+                    subject = f'{user.first_name.capitalize()} has Requested For Edit.'
                     leave_text = f'''{user.long_name()} has requested to edit your leave for {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}. Reason: {leave_data['editReason']}.''',
                     send_email(
                         recipients=[user_data],
@@ -387,7 +387,7 @@ def enableEditLeave(request):
                     'type': 'leave_requested_by_creator',  
                     'content_object': leave,
                     'receivers': [leave.user.id],  
-                    'title': f"{user.first_name.capitalize()} Has Requested For Edit.",
+                    'title': f"{user.first_name.capitalize()} has Requested For Edit.",
                     'subtitle': f"{user.long_name()} has requested to edit your leave for {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}.",
                     'created_by': user,
                     'target_platforms': ['mobile']
@@ -420,7 +420,7 @@ def editLeave(request, id):
                     # send email
                     try:
                         user_data = UserSerializer(leave.user).data
-                        subject = f'{leave.user.first_name.capitalize()} Has Edited the leave.'
+                        subject = f'{leave.user.first_name.capitalize()} has Edited the leave.'
                         leave_text =  f'''{leave.user.long_name()} has made the changes you requested.''',
                         send_email(
                             recipients=[user_data],
@@ -436,7 +436,7 @@ def editLeave(request, id):
                         'type': 'leave_request_for_approver',  
                         'content_object': leave,
                         'receivers': [leave.approver.id],  
-                        'title': f"{leave.user.first_name.capitalize()} Has Edited the leave.",
+                        'title': f"{leave.user.first_name.capitalize()} has Edited the leave.",
                         'subtitle': f"{leave.user.long_name()} has made the changes you requested.",
                         'created_by': leave.user,
                         'target_platforms': ['mobile']
@@ -553,7 +553,7 @@ def withdrawLeave(request, id):
 
                 try:
                     user_data = UserSerializer(leave.approver).data
-                    subject = f'{leave.user.first_name.capitalize()} Has Withdrawn the leave.' if len(day_ids)==leave.day_details.count() else f'{leave.user.first_name.capitalize()} Has Withdrawn Some Days of Leave.'
+                    subject = f'{leave.user.first_name.capitalize()} has Withdrawn the leave.' if len(day_ids)==leave.day_details.count() else f'{leave.user.first_name.capitalize()} has Withdrawn Some Days of Leave.'
                     leave_text =  f'''{leave.user.long_name()} has withdrawn the leave from {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}.''' if len(day_ids)==leave.day_details.count() else f'''{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave. Reason: {leave['leave_reason']}.'''
                     send_email(
                         recipients=[user_data],
@@ -566,7 +566,7 @@ def withdrawLeave(request, id):
                     errors.append(str(e))
                     
                 #notify approver
-                title = f"{leave.user.first_name.capitalize()} Has Withdrawn the leave." if len(day_ids)==leave.day_details.count() else f"{leave.user.first_name.capitalize()} Has Withdrawn Some Days of Leave."
+                title = f"{leave.user.first_name.capitalize()} has Withdrawn the leave." if len(day_ids)==leave.day_details.count() else f"{leave.user.first_name.capitalize()} has Withdrawn Some Days of Leave."
                 subtitle = f"{leave.user.long_name()} has withdrawn the leave from {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}." if len(day_ids)==leave.day_details.count() else f"{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave."
                 notification_data = {
                     'type': 'leave_request_for_approver',  
