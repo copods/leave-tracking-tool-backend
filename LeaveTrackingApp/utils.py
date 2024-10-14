@@ -150,7 +150,6 @@ def user_leave_stats_hr_view(user_id, year_range):
                         'status': leave['status'],
                         'unpaid_count': x[1]
                     }
-                    # taken_unpaid_obj[leave['leave_type']]['unpaid'] += x[1]
                     quarter_obj['total_unpaid'] += x[1]       
                     quarter_obj['leaves'].append(temp)
                 
