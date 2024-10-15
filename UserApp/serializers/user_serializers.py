@@ -29,14 +29,16 @@ class UserAppProfileSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     emergency_contact = serializers.SerializerMethodField()
     work_type = serializers.CharField(source='work_type_choices')
+    role =serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = [
             'name', 
             'email',
-            'profile_image', 
+            'profile_image',
             'designation',
+            'role',
             'work_type',
             'date_of_joining', 
             'phone_number', 
@@ -49,6 +51,9 @@ class UserAppProfileSerializer(serializers.ModelSerializer):
 
     def get_name(self, obj):
         return obj.long_name()
+    
+    def get_role(self, obj):
+        return obj.role.role_name
     
     def get_emergency_contact(self, obj):
         return {
