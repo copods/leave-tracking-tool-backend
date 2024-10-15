@@ -330,7 +330,7 @@ def user_leave_stats_user_view(user_id, year_range):
                 if calendar.month_abbr[datetime.strptime(day['date'], "%Y-%m-%d").month] in yearly_quarters[year][i]['months']:
                         wfh_days_in_curr_quarter.append(day)
 
-            max_days = {ruleset.name: ruleset.max_days_allowed for ruleset in rulesets.filter(Q(name='optional_leave') | Q(name='wfh') | Q(name='pto'))}
+            max_days = {ruleset.name: ruleset.max_days_allowed for ruleset in rulesets.filter(Q(name='optional_leave') | Q(name='wfh') | Q(name='pto')| Q(name='block_leave_pto'))}
             temp_pto_max_days = max_days['pto']
 
             #counting optional days
@@ -344,6 +344,10 @@ def user_leave_stats_user_view(user_id, year_range):
 
             pto_cnt=0 #counting leaves
             for day in leave_days_in_curr_quarter:
+                leave_count = pto_cnt + max(optional_cnt-max_days['optional_leave'], 0)
+                remaining = max(max_days['pto'] - leave_count, 0)
+                if remaining >= max_days['pto']:
+                    temp_pto_max_days = max_days['block_leave_pto']
                 pto_cnt += 0.5 if day['is_half_day'] else 1
                 if pto_cnt > temp_pto_max_days:
                     quarter_obj['unpaid'].append(day)
