@@ -567,7 +567,7 @@ def withdrawLeave(request, id):
                     
                 #notify approver
                 title = f"{leave.user.first_name.capitalize()} has Withdrawn the leave." if len(day_ids)==leave.day_details.count() else f"{leave.user.first_name.capitalize()} has Withdrawn Some Days of Leave."
-                subtitle = f"{leave.user.long_name()} has withdrawn the leave from {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}." if len(day_ids)==leave.day_details.count() else f"{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave. Reason: {leave.status_reasons}."
+                subtitle = f"{leave.user.long_name()} has withdrawn the leave from {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}." if len(day_ids)==leave.day_details.count() else f"{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave."
                 notification_data = {
                     'type': 'leave_request_for_approver',  
                     'content_object': leave,
