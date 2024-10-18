@@ -23,6 +23,8 @@ class Notification(models.Model):
     id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, verbose_name="Public identifier")
     TYPE_CHOICES = [
         ('leave_request', 'Leave Request'),
+        ('leave_requested_by_creater', 'Leave Requested by Creater'),
+        ('leave_request_for_approver', 'Leave Request for Approver'),
         ('calendar', 'Calendar'),
         ('leave_policy', 'Leave Policy'),
     ]
