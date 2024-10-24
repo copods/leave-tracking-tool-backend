@@ -77,13 +77,14 @@ def createLeaveRequest(request):
             user_data = UserSerializer(user).data
 
             errors = []
+            leave_or_wfh = 'Work from home' if leave_data['leave_type'] == 'wfh' else 'Leave'
 
             # Send Email
             try:
                 leave_text = f'''Your Team member {user_data['first_name']} {user_data['last_name']} has requested 
-                                 a leave request from {leave_data['start_date']} to {leave_data['end_date']}.
-                                 Reason: {leave_data['leave_reason']}.'''
-                subject = f'Leave Request by {user_data['first_name']} {user_data['last_name']}'
+                                 a {leave_or_wfh} request from {leave_data['start_date']} to {leave_data['end_date']}.
+                                 Reason: {leave_data['leave_reason']}'''
+                subject = f'{leave_or_wfh} Request by {user_data['first_name']} {user_data['last_name']}'
                 send_email(
                     recipients=[approver_data],
                     subject=subject,
@@ -554,7 +555,7 @@ def withdrawLeave(request, id):
                 try:
                     user_data = UserSerializer(leave.approver).data
                     subject = f'{leave.user.first_name.capitalize()} has Withdrawn the leave.' if len(day_ids)==leave.day_details.count() else f'{leave.user.first_name.capitalize()} has Withdrawn Some Days of Leave.'
-                    leave_text =  f'''{leave.user.long_name()} has withdrawn the leave from {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}.''' if len(day_ids)==leave.day_details.count() else f'''{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave. Reason: {leave.status_reasons}.'''
+                    leave_text =  f'''{leave.user.long_name()} has withdrawn the leave from {leave.start_date.strftime('%d %b')} to {leave.end_date.strftime('%d %b')}.''' if len(day_ids)==leave.day_details.count() else f'''{leave.user.long_name()} has withdrawn {len(day_ids)} days of their leave. Reason: {leave.leave_reason}'''
                     send_email(
                         recipients=[user_data],
                         subject=subject,

@@ -752,7 +752,7 @@ def is_leave_valid(leave_data):
             leave_type_id=maternity_leave_id,
             user_id=leave_data['user'],  
             start_date__year=current_year
-        ).exists()
+        ).exclude(status='R').exists()
         # Check if maternity leave has already been taken
         if already_taken_maternity_leave:
             messages.append('You have already taken maternity leave this year.')
