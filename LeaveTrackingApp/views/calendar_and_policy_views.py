@@ -385,7 +385,7 @@ def updateYearPolicy(request, id):
                     for policy in policies:
                         if policy.leave_type:
                             if policy.name == 'maternity_leave':
-                                max_days = policy.details.get('paid')
+                                max_days = policy.details.get('paid') + policy.details.get('unpaid')
                             elif policy.name == 'paternity_leave' or policy.name == 'marriage_leave':
                                 max_days = policy.details.get('leaves')
                             elif policy.name == 'block_leave':
@@ -407,8 +407,8 @@ def updateYearPolicy(request, id):
                     'type': 'leave_policy',  
                     'content_object': policy_obj,
                     'receivers': [user.id for user in all_users],  
-                    'title': f"New Calendar Published",
-                    'subtitle': f"A new holidays calendar has been published for year {policy_obj.year}.",
+                    'title': f"New Leave Policy Published",
+                    'subtitle': f"A new Leave Policy has been published for year {policy_obj.year}.",
                     'created_by': user,
                     'target_platforms': ['mobile']
                 }
