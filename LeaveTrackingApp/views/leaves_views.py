@@ -77,12 +77,16 @@ def createLeaveRequest(request):
             user_data = UserSerializer(user).data
 
             errors = []
-            leave_or_wfh = 'Work from home' if leave_data['leave_type'] == 'wfh' else 'Leave'
+            wfh_leave_type = LeaveType.objects.filter(name__iexact='wfh').first()
+
+            # Get the WFH ID
+            wfh_id = wfh_leave_type.id if wfh_leave_type else None
+            leave_or_wfh = 'Work from home' if leave_data['leave_type'] == wfh_id else 'Leave'
 
             # Send Email
             try:
                 leave_text = f'''Your Team member {user_data['first_name']} {user_data['last_name']} has requested 
-                                 a {leave_or_wfh} request from {leave_data['start_date']} to {leave_data['end_date']}.
+                                 a {leave_or_wfh} from {leave_data['start_date']} to {leave_data['end_date']}.
                                  Reason: {leave_data['leave_reason']}'''
                 subject = f'{leave_or_wfh} Request by {user_data['first_name']} {user_data['last_name']}'
                 send_email(
@@ -100,8 +104,8 @@ def createLeaveRequest(request):
                 'type': 'leave_request_for_approver',  
                 'content_object': leave_instance,
                 'receivers': [approver.id],  
-                'title': f"Leave Request by {user.long_name()}",
-                'subtitle': f"{user.long_name()} has requested leave.",
+                'title': f"{leave_or_wfh} Request by {user.long_name()}",
+                'subtitle': f"{user.long_name()} has requested {leave_or_wfh}.",
                 'created_by': user,
                 'target_platforms': ['mobile']
             }

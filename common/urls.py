@@ -9,5 +9,7 @@ urlpatterns = [
     re_path(r'^getFcmTokens$', get_fcm_tokens),
     re_path(r'^fetchNotificationsDummy$', fetch_notifications),
     re_path(r'^clearLeavesOfUser/([0-9a-f-]+)$', clear_leaves_of_user),
+    re_path(r'^clearPolicy$', clear_all_policy),
+    re_path(r'^clearHoliday$', clear_all_holiday),
 
 ]
