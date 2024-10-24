@@ -2,7 +2,7 @@ from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 from rest_framework import status
-from LeaveTrackingApp.models import DayDetails, Leave
+from LeaveTrackingApp.models import DayDetails, Holiday, Leave, LeavePolicy, YearPolicy, yearCalendar
 from PushNotificationApp.models import FCMToken, Notification
 from PushNotificationApp.serializers import FCMTokenSerializer
 from PushNotificationApp.serializers import FetchNotificationsSerializer
@@ -119,3 +119,30 @@ def fetch_notifications(request):
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+
+@csrf_exempt
+def clear_all_policy(request):
+    if request.method == 'DELETE':
+        try:
+            yearpolicy = YearPolicy.objects.all()
+            leavepolicy = LeavePolicy.objects.all()
+            leavepolicy.delete()
+            yearpolicy.delete()
+            return JsonResponse({'msg': f'policy deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+        
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+@csrf_exempt
+def clear_all_holiday(request):
+    if request.method == 'DELETE':
+        try:
+            year_calendar = yearCalendar.objects.all()
+            holidays = Holiday.objects.all()
+            holidays.delete()
+            year_calendar.delete()
+            return JsonResponse({'msg': f'Holiday deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+        
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

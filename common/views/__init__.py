@@ -4,7 +4,9 @@ from .temp_views import (
     send_dummy_notification,
     get_fcm_tokens,
     fetch_notifications,
-    clear_leaves_of_user
+    clear_leaves_of_user,
+    clear_all_policy,
+    clear_all_holiday
 )
 
 __all__ = [
@@ -13,5 +15,7 @@ __all__ = [
     'send_dummy_notification',
     'get_fcm_tokens',
     'fetch_notifications',
-    'clear_leaves_of_user'
+    'clear_leaves_of_user',
+    'clear_all_policy',
+   'clear_all_holiday'
 ]
